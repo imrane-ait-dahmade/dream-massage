@@ -8,8 +8,8 @@ datasource db {
 
 // ─── Models ───────────────────────────────────────────────────────────────────
 
-// A person who can log in to the system.
-// Role is stored as an enum column — no join table needed.
+// A person who can log in to the system. Only OWNER and ADMIN roles exist —
+// physical staff members who work shifts are tracked via StaffMember (no login).
 // passwordHash stores the bcrypt digest; the raw password is never persisted.
 // lastLoginAt is updated on every successful authentication.
 model User {
@@ -17,18 +17,21 @@ model User {
   name         String    @db.VarChar(100)
   email        String    @unique @db.VarChar(150)
   passwordHash String    @map("password_hash") @db.VarChar(255)
-  role         UserRole  @default(ASSISTANT)
+  role         UserRole  @default(ADMIN)
   isActive     Boolean   @default(true) @map("is_active")
   lastLoginAt  DateTime? @map("last_login_at")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
-  // Relations populated in later model groups
   createdDetectionConfigs ChairDetectionConfig[] @relation("DetectionConfigCreatedBy")
   createdPricingPlans     PricingPlan[]          @relation("PricingPlanCreatedBy")
   createdPricingRules     PricingRule[]          @relation("PricingRuleCreatedBy")
   settingsAuditLogs       SettingsAuditLog[]     @relation("SettingsAuditLogUser")
   updatedSettings         AppSetting[]           @relation("AppSettingUpdatedBy")
+  openedShifts            Shift[]                @relation("ShiftOpenedBy")
+  closedShifts            Shift[]                @relation("ShiftClosedBy")
+  cashDeclarations        CashDeclaration[]      @relation("CashDeclarationRecordedBy")
+  correctedSessions       ChairSession[]         @relation("SessionCorrectedBy")
 
   @@map("users")
 }
@@ -58,12 +61,21 @@ model Chair {
   currentSessionId  String?     @map("current_session_id") // denormalized; overwritten by polling service
   isEnabled         Boolean     @default(true) @map("is_enabled")
 
+  // ── State machine timing (persisted so backend restart resumes mid-window) ──
+  maybeActiveSince    DateTime?    @map("maybe_active_since")
+  maybeFinishedSince  DateTime?    @map("maybe_finished_since")
+  stateChangedAt      DateTime?    @map("state_changed_at")
+  statusBeforeOffline ChairStatus? @map("status_before_offline")
+  offlineSince        DateTime?    @map("offline_since")
+  lastOnlineAt        DateTime?    @map("last_online_at")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   detectionConfigs ChairDetectionConfig[]
   sessions         ChairSession[]
   deviceLogs       DeviceLog[]
+  chairEvents      ChairEvent[]
 
   @@index([status])
   @@index([isOnline])
@@ -77,8 +89,7 @@ model Chair {
 // under a specific config version.
 //
 // Only one config per chair should have isActive = true at any given time.
-// This is enforced in the service layer; a partial unique index can be added
-// in the migration when needed.
+// Enforced at DB level by the unique_active_detection_config_per_chair partial index.
 //
 // Threshold semantics:
 //   startThresholdWatts  — power must EXCEED this to trigger MAYBE_ACTIVE
@@ -146,9 +157,8 @@ model PricingPlan {
 }
 
 // Global ruleset that governs how a raw session duration is converted into a
-// price. Only one PricingRule should have isActive = true at any time; this is
-// enforced in the service layer (a partial unique index can be added in the
-// migration if stricter enforcement is needed).
+// price. Only one PricingRule should have isActive = true at any time; enforced
+// at DB level by the unique_active_pricing_rule partial index.
 //
 // Field semantics:
 //   roundingMode      — how a duration is snapped to the nearest plan bucket
@@ -195,8 +205,6 @@ model PricingRule {
 //   confirmedEndAt     — stopConfirmSeconds elapsed below threshold
 //   endedAt            — authoritative close timestamp; durationSeconds is set here
 //
-// shiftId is a plain String until the Shift model is added in the next group.
-//
 // detectionConfigId is a plain String (not a FK) holding the ID of the
 // ChairDetectionConfig row that was active when this session was opened.
 // detectionSnapshot and pricingSnapshot are immutable JSON copies taken at
@@ -205,7 +213,7 @@ model PricingRule {
 model ChairSession {
   id      String  @id @default(uuid())
   chairId String  @map("chair_id")
-  shiftId String? @map("shift_id") // plain String; FK added when Shift model is created
+  shiftId String? @map("shift_id")
 
   // ── Lifecycle ──
   status SessionStatus @default(ACTIVE)
@@ -241,8 +249,10 @@ model ChairSession {
   // expectedAmount is intentionally never overwritten so the original
   // auto-calculated value remains auditable alongside the correction.
   // effectiveAmount = correctedAmount ?? expectedAmount (computed in service).
-  correctedAmount  Decimal?      @map("corrected_amount") @db.Decimal(10, 2)
-  pricingSnapshot  Json?         @map("pricing_snapshot") // frozen copy of PricingRule + PricingPlan at billing
+  correctedAmount   Decimal?      @map("corrected_amount") @db.Decimal(10, 2)
+  correctedByUserId String?       @map("corrected_by_user_id")
+  correctedAt       DateTime?     @map("corrected_at")
+  pricingSnapshot   Json?         @map("pricing_snapshot") // frozen copy of PricingRule + PricingPlan at billing
   billingStatus    BillingStatus @default(PENDING) @map("billing_status")
 
   // ── Anomaly / manual correction ──
@@ -254,8 +264,11 @@ model ChairSession {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   chair       Chair          @relation(fields: [chairId], references: [id])
+  shift       Shift?         @relation(fields: [shiftId], references: [id])
   matchedPlan PricingPlan?   @relation(fields: [matchedPlanId], references: [id])
+  correctedBy User?          @relation("SessionCorrectedBy", fields: [correctedByUserId], references: [id])
   events      SessionEvent[]
+  chairEvents ChairEvent[]
 
   // Single-column indexes
   @@index([chairId])
@@ -409,16 +422,131 @@ model AppSetting {
   @@map("app_settings")
 }
 
+// A physical staff member who is assigned to work shifts. Has no system account,
+// no password, and cannot log in. Session-to-staff linkage flows through Shift.
+model StaffMember {
+  id        String   @id @default(uuid())
+  name      String   @db.VarChar(100)
+  phone     String?  @db.VarChar(30)
+  isActive  Boolean  @default(true) @map("is_active")
+  notes     String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  shifts Shift[]
+
+  @@index([isActive])
+  @@map("staff_members")
+}
+
+// A work period during which a staff member is on duty. An admin opens a shift
+// before the staff member starts and closes it at end of day. Sessions that occur
+// while a shift is OPEN are automatically linked to it via ChairSession.shiftId.
+// Sessions with no open shift get anomalyType = 'NO_OPEN_SHIFT'.
+//
+// Cash fields:
+//   expectedCash   — sum of all session expectedAmounts during this shift
+//   declaredCash   — physical cash counted at shift close
+//   differenceCash — declaredCash - expectedCash (negative = shortage)
+//
+// ── Partial unique index (raw SQL only) ──────────────────────────────────────
+// Only one OPEN shift is allowed at a time; enforced by unique_open_shift index.
+model Shift {
+  id               String      @id @default(uuid())
+  staffMemberId    String      @map("staff_member_id")
+  openedByUserId   String      @map("opened_by_user_id")
+  closedByUserId   String?     @map("closed_by_user_id")
+  startedAt        DateTime    @map("started_at")
+  endedAt          DateTime?   @map("ended_at")
+  status           ShiftStatus @default(OPEN)
+  expectedCash     Decimal?    @map("expected_cash") @db.Decimal(10, 2)
+  declaredCash     Decimal?    @map("declared_cash") @db.Decimal(10, 2)
+  differenceCash   Decimal?    @map("difference_cash") @db.Decimal(10, 2)
+  notes            String?     @db.Text
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
+
+  staffMember      StaffMember       @relation(fields: [staffMemberId], references: [id])
+  openedBy         User              @relation("ShiftOpenedBy", fields: [openedByUserId], references: [id])
+  closedBy         User?             @relation("ShiftClosedBy", fields: [closedByUserId], references: [id])
+  sessions         ChairSession[]
+  cashDeclarations CashDeclaration[]
+
+  @@index([status])
+  @@index([startedAt])
+  @@index([staffMemberId])
+  @@map("shifts")
+}
+
+// Immutable record of a cash count performed at the end of a shift.
+// No updatedAt — once written this record is never modified.
+// differenceAmount = declaredAmount - expectedAmount; negative means shortage.
+// Multiple declarations per shift are allowed (e.g. mid-shift interim count).
+model CashDeclaration {
+  id               String   @id @default(uuid())
+  shiftId          String   @map("shift_id")
+  recordedByUserId String   @map("recorded_by_user_id")
+  expectedAmount   Decimal  @map("expected_amount") @db.Decimal(10, 2)
+  declaredAmount   Decimal  @map("declared_amount") @db.Decimal(10, 2)
+  differenceAmount Decimal  @map("difference_amount") @db.Decimal(10, 2)
+  declarationType  String   @default("end_shift") @map("declaration_type") @db.VarChar(50)
+  notes            String?  @db.Text
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  shift      Shift @relation(fields: [shiftId], references: [id])
+  recordedBy User  @relation("CashDeclarationRecordedBy", fields: [recordedByUserId], references: [id])
+
+  @@index([shiftId])
+  @@index([createdAt])
+  @@map("cash_declarations")
+}
+
+// Append-only log of chair-level state transitions and device events that occur
+// outside of (or before) a session. Separates pre-session telemetry from the
+// in-session SessionEvent stream.
+//
+// Common eventType values:
+//   START_DETECTED   — power crossed startThreshold; debounce window starting
+//   STATE_CHANGED    — chair.status transitioned (e.g. IDLE → MAYBE_ACTIVE)
+//   DEVICE_OFFLINE   — Shelly unreachable during poll
+//   DEVICE_ONLINE    — Shelly reachable again after offline period
+//   POWER_RECOVERED  — power returned above baseline after drop
+//   ERROR            — device returned malformed or unexpected payload
+//
+// sessionId is nullable because pre-session events have no open session yet.
+// fromStatus / toStatus record the exact transition for every state change.
+model ChairEvent {
+  id         String       @id @default(uuid())
+  chairId    String       @map("chair_id")
+  sessionId  String?      @map("session_id")
+  eventType  String       @map("event_type") @db.VarChar(50)
+  fromStatus ChairStatus? @map("from_status")
+  toStatus   ChairStatus? @map("to_status")
+  powerWatts Float?       @map("power_watts")
+  message    String?      @db.Text
+  metadata   Json?
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  chair   Chair         @relation(fields: [chairId], references: [id])
+  session ChairSession? @relation(fields: [sessionId], references: [id])
+
+  @@index([chairId])
+  @@index([sessionId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@index([chairId, createdAt])
+  @@map("chair_events")
+}
+
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
 // What a user is allowed to do in the system.
 // OWNER has unrestricted access (billing, config, user management).
 // ADMIN manages daily operations: sessions, pricing, user accounts.
-// ASSISTANT can view data and submit manual session corrections only.
+// Staff members who physically work shifts are tracked via StaffMember (no login).
 enum UserRole {
   OWNER
   ADMIN
-  ASSISTANT
 }
 
 // Real-time operational state of a chair, derived from Shelly power readings.
