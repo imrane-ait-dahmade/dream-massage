@@ -1,0 +1,487 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+// A person who can log in to the system.
+// Role is stored as an enum column — no join table needed.
+// passwordHash stores the bcrypt digest; the raw password is never persisted.
+// lastLoginAt is updated on every successful authentication.
+model User {
+  id           String    @id @default(uuid())
+  name         String    @db.VarChar(100)
+  email        String    @unique @db.VarChar(150)
+  passwordHash String    @map("password_hash") @db.VarChar(255)
+  role         UserRole  @default(ASSISTANT)
+  isActive     Boolean   @default(true) @map("is_active")
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // Relations populated in later model groups
+  createdDetectionConfigs ChairDetectionConfig[] @relation("DetectionConfigCreatedBy")
+  createdPricingPlans     PricingPlan[]          @relation("PricingPlanCreatedBy")
+  createdPricingRules     PricingRule[]          @relation("PricingRuleCreatedBy")
+  settingsAuditLogs       SettingsAuditLog[]     @relation("SettingsAuditLogUser")
+  updatedSettings         AppSetting[]           @relation("AppSettingUpdatedBy")
+
+  @@map("users")
+}
+
+// One of the 5 physical massage chairs connected to Shelly Cloud.
+// Combines stable identity fields (name, shellyDeviceId) with a live-state
+// block that is overwritten on every poll — no history kept here, only
+// current snapshot. Historical readings belong in the device log.
+//
+// currentSessionId is intentionally kept as a plain String (not a FK relation).
+// It is a denormalized pointer the polling service overwrites on every state
+// change. Enforcing a FK would require cascade rules that conflict with the
+// audit-trail requirement: sessions must survive chair configuration edits.
+model Chair {
+  id             String  @id @default(uuid())
+  name           String  @unique @db.VarChar(10) // "F1" … "F5"
+  displayName    String? @map("display_name") @db.VarChar(100)
+  shellyDeviceId String  @unique @map("shelly_device_id") @db.VarChar(100)
+  shellyChannel  Int     @default(0) @map("shelly_channel")
+
+  // ── Live state (overwritten on every Shelly poll) ──
+  status            ChairStatus @default(IDLE)
+  isOnline          Boolean     @default(false) @map("is_online")
+  currentPowerWatts Float?      @map("current_power_watts")
+  relayIsOn         Boolean?    @map("relay_is_on")
+  lastSyncedAt      DateTime?   @map("last_synced_at")
+  currentSessionId  String?     @map("current_session_id") // denormalized; overwritten by polling service
+  isEnabled         Boolean     @default(true) @map("is_enabled")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  detectionConfigs ChairDetectionConfig[]
+  sessions         ChairSession[]
+  deviceLogs       DeviceLog[]
+
+  @@index([status])
+  @@index([isOnline])
+  @@index([lastSyncedAt])
+  @@map("chairs")
+}
+
+// Power-threshold configuration that drives automatic session detection for
+// one chair. Versioned with validFrom/validTo so that changing thresholds
+// never retroactively alters past session records — each session was opened
+// under a specific config version.
+//
+// Only one config per chair should have isActive = true at any given time.
+// This is enforced in the service layer; a partial unique index can be added
+// in the migration when needed.
+//
+// Threshold semantics:
+//   startThresholdWatts  — power must EXCEED this to trigger MAYBE_ACTIVE
+//   stopThresholdWatts   — power must DROP BELOW this to trigger MAYBE_FINISHED
+//   startConfirmSeconds  — how long power must stay above start threshold
+//                          before the state advances to ACTIVE
+//   stopConfirmSeconds   — how long power must stay below stop threshold
+//                          before the session is closed (longer = fewer false stops)
+//   activationDelaySeconds — grace period after relay turns on before
+//                            detection begins (allows motor warm-up spike to pass)
+//   baselinePowerWatts   — idle standby draw of the chair (informational; used
+//                          by anomaly detection to spot stuck-on relays)
+model ChairDetectionConfig {
+  id                     String    @id @default(uuid())
+  chairId                String    @map("chair_id")
+  startThresholdWatts    Float     @default(7) @map("start_threshold_watts")
+  stopThresholdWatts     Float     @default(5) @map("stop_threshold_watts")
+  startConfirmSeconds    Int       @default(30) @map("start_confirm_seconds")
+  stopConfirmSeconds     Int       @default(180) @map("stop_confirm_seconds")
+  activationDelaySeconds Int       @default(30) @map("activation_delay_seconds")
+  baselinePowerWatts     Float?    @map("baseline_power_watts")
+  isActive               Boolean   @default(true) @map("is_active")
+  version                Int       @default(1)
+  validFrom              DateTime  @default(now()) @map("valid_from")
+  validTo                DateTime? @map("valid_to")
+  createdByUserId        String?   @map("created_by_user_id")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+
+  chair     Chair @relation(fields: [chairId], references: [id])
+  createdBy User? @relation("DetectionConfigCreatedBy", fields: [createdByUserId], references: [id])
+
+  // Hottest query in the system: "get active config for chair X" fires on every poll.
+  @@index([chairId, isActive])
+  @@index([chairId])
+  @@map("chair_detection_configs")
+}
+
+// A single duration-to-price mapping, e.g. "30 minutes = 30 MAD".
+// Plans are stored in seconds (not minutes) for future sub-minute precision.
+// isActive allows plans to be soft-retired without deleting historical references —
+// a completed session will always point to the plan that was active when it ran.
+// sortOrder controls display order in the admin UI independently of price or duration.
+//
+// Sessions reference this model via matchedPlanId (nullable FK).
+// UNCERTAIN and CANCELLED sessions carry no matched plan.
+model PricingPlan {
+  id              String   @id @default(uuid())
+  name            String   @db.VarChar(100)
+  durationSeconds Int      @map("duration_seconds")
+  priceAmount     Decimal  @map("price_amount") @db.Decimal(10, 2)
+  currency        String   @default("MAD") @db.VarChar(10)
+  isActive        Boolean  @default(true) @map("is_active")
+  sortOrder       Int      @default(0) @map("sort_order")
+  createdByUserId String?  @map("created_by_user_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  createdBy        User?          @relation("PricingPlanCreatedBy", fields: [createdByUserId], references: [id])
+  minimumPlanRules PricingRule[]  @relation("MinimumPlan")
+  sessions         ChairSession[]
+
+  @@index([isActive]) // billing service filters active plans on every session close
+  @@map("pricing_plans")
+}
+
+// Global ruleset that governs how a raw session duration is converted into a
+// price. Only one PricingRule should have isActive = true at any time; this is
+// enforced in the service layer (a partial unique index can be added in the
+// migration if stricter enforcement is needed).
+//
+// Field semantics:
+//   roundingMode      — how a duration is snapped to the nearest plan bucket
+//                       (see RoundingMode enum).
+//   graceSeconds      — tolerance window applied before rounding.
+//                       Example: graceSeconds=120, plan=30min → a 32-minute
+//                       session is still priced at 30 min because it falls
+//                       within the 2-minute grace of that plan boundary.
+//   minimumPlanId     — the cheapest plan that may ever be assigned; sessions
+//                       that would resolve below this are bumped up to it.
+//                       Prevents sub-threshold sessions from generating 0 MAD.
+//   overtimePolicy    — what to do when a session exceeds the longest plan
+//                       (see OvertimePolicy enum).
+//   extraMinutePrice  — per-minute charge applied only when overtimePolicy
+//                       is EXTRA_MINUTE; ignored otherwise.
+model PricingRule {
+  id               String         @id @default(uuid())
+  roundingMode     RoundingMode   @default(NEXT_PLAN) @map("rounding_mode")
+  graceSeconds     Int            @default(120) @map("grace_seconds")
+  minimumPlanId    String?        @map("minimum_plan_id")
+  overtimePolicy   OvertimePolicy @default(NEXT_PLAN) @map("overtime_policy")
+  extraMinutePrice Decimal?       @map("extra_minute_price") @db.Decimal(10, 2)
+  isActive         Boolean        @default(true) @map("is_active")
+  createdByUserId  String?        @map("created_by_user_id")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  minimumPlan PricingPlan? @relation("MinimumPlan", fields: [minimumPlanId], references: [id])
+  createdBy   User?        @relation("PricingRuleCreatedBy", fields: [createdByUserId], references: [id])
+
+  @@index([isActive]) // service fetches the single active rule on every billing calculation
+  @@map("pricing_rules")
+}
+
+// Records a single usage session on one chair, from power-on detection to
+// power-off confirmation. Six timestamp fields capture the full debounce
+// lifecycle so every detection decision can be audited after the fact:
+//
+//   detectedStartAt    — first poll where power exceeded startThresholdWatts
+//   confirmedStartAt   — startConfirmSeconds elapsed above threshold → ACTIVE
+//   startedAt          — authoritative open timestamp written to the record
+//
+//   lowPowerDetectedAt — first poll where power dropped below stopThresholdWatts
+//   confirmedEndAt     — stopConfirmSeconds elapsed below threshold
+//   endedAt            — authoritative close timestamp; durationSeconds is set here
+//
+// shiftId is a plain String until the Shift model is added in the next group.
+//
+// detectionConfigId is a plain String (not a FK) holding the ID of the
+// ChairDetectionConfig row that was active when this session was opened.
+// detectionSnapshot and pricingSnapshot are immutable JSON copies taken at
+// session-open and at billing time respectively — historical sessions are
+// never retroactively affected by later config or plan changes.
+model ChairSession {
+  id      String  @id @default(uuid())
+  chairId String  @map("chair_id")
+  shiftId String? @map("shift_id") // plain String; FK added when Shift model is created
+
+  // ── Lifecycle ──
+  status SessionStatus @default(ACTIVE)
+
+  // ── Start timestamps (debounce state machine) ──
+  detectedStartAt  DateTime? @map("detected_start_at") // power first crossed startThreshold
+  confirmedStartAt DateTime? @map("confirmed_start_at") // held above threshold for startConfirmSeconds
+  startedAt        DateTime  @map("started_at") // authoritative session open
+
+  // ── End timestamps ──
+  lowPowerDetectedAt DateTime? @map("low_power_detected_at") // power first dropped below stopThreshold
+  confirmedEndAt     DateTime? @map("confirmed_end_at") // held below threshold for stopConfirmSeconds
+  endedAt            DateTime? @map("ended_at") // authoritative session close
+
+  // ── Duration ──
+  durationSeconds Int? @map("duration_seconds") // set when endedAt is written
+
+  // ── Power statistics (aggregated from SessionEvent rows at session close) ──
+  startPowerWatts Float? @map("start_power_watts")
+  endPowerWatts   Float? @map("end_power_watts")
+  minPowerWatts   Float? @map("min_power_watts")
+  maxPowerWatts   Float? @map("max_power_watts")
+  avgPowerWatts   Float? @map("avg_power_watts")
+
+  // ── Detection provenance ──
+  detectionConfigId String? @map("detection_config_id") // plain String; FK upgrade deferred
+  detectionSnapshot Json?   @map("detection_snapshot") // frozen copy of ChairDetectionConfig at open
+
+  // ── Pricing ──
+  matchedPlanId    String?       @map("matched_plan_id")
+  expectedAmount   Decimal?      @map("expected_amount") @db.Decimal(10, 2)
+  // correctedAmount is written only when billingStatus = CORRECTED.
+  // expectedAmount is intentionally never overwritten so the original
+  // auto-calculated value remains auditable alongside the correction.
+  // effectiveAmount = correctedAmount ?? expectedAmount (computed in service).
+  correctedAmount  Decimal?      @map("corrected_amount") @db.Decimal(10, 2)
+  pricingSnapshot  Json?         @map("pricing_snapshot") // frozen copy of PricingRule + PricingPlan at billing
+  billingStatus    BillingStatus @default(PENDING) @map("billing_status")
+
+  // ── Anomaly / manual correction ──
+  anomalyType      String? @map("anomaly_type") @db.VarChar(100)
+  correctionReason String? @map("correction_reason") @db.Text
+  notes            String? @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  chair       Chair          @relation(fields: [chairId], references: [id])
+  matchedPlan PricingPlan?   @relation(fields: [matchedPlanId], references: [id])
+  events      SessionEvent[]
+
+  // Single-column indexes
+  @@index([chairId])
+  @@index([status])
+  @@index([startedAt])
+  @@index([endedAt])
+  @@index([matchedPlanId])
+  @@index([billingStatus])
+  // Compound indexes for the most frequent access patterns
+  @@index([chairId, status]) // "get the active session for chair F3"
+  @@index([chairId, startedAt]) // "sessions for chair F3 sorted by date"
+  // ── Partial unique index — must be applied as raw SQL in the migration ──────
+  // Prisma cannot express WHERE-clause partial indexes. Add to the generated
+  // migration file after `prisma migrate dev` creates it:
+  //
+  //   CREATE UNIQUE INDEX unique_active_session_per_chair
+  //   ON chair_sessions (chair_id)
+  //   WHERE status = 'ACTIVE';
+  //
+  // This guarantees at the database level that no chair can ever have two
+  // simultaneous ACTIVE sessions, even under concurrent writes.
+  @@map("chair_sessions")
+}
+
+// Append-only log of every discrete event that occurred during a session.
+// Serves three purposes:
+//   1. Debug detection decisions (which poll crossed which threshold and when)
+//   2. Audit state transitions (complete trail from IDLE → ACTIVE → COMPLETED)
+//   3. Power-stat source (min/max/avg are computed from these rows at session close)
+//
+// chairId is denormalized (plain String, not a FK) so dashboards and device-
+// health queries can filter events by chair without joining through ChairSession.
+//
+// Common eventType values:
+//   POWER_READING       — periodic Shelly poll result
+//   STATE_TRANSITION    — chair status changed (e.g. IDLE → MAYBE_ACTIVE)
+//   SESSION_OPENED      — session record created
+//   SESSION_CLOSED      — session endedAt written, billing triggered
+//   ANOMALY_DETECTED    — unexpected power pattern flagged
+//   MANUAL_CORRECTION   — admin overrode session price or status
+model SessionEvent {
+  id         String   @id @default(uuid())
+  sessionId  String   @map("session_id")
+  chairId    String   @map("chair_id") // denormalized; not a FK
+  eventType  String   @map("event_type") @db.VarChar(50)
+  powerWatts Float?   @map("power_watts")
+  message    String?  @db.Text
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  session ChairSession @relation(fields: [sessionId], references: [id])
+
+  @@index([sessionId])
+  @@index([chairId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@index([sessionId, createdAt]) // ordered event stream for a session
+  @@map("session_events")
+}
+
+// Records significant technical events at the device level.
+// Intentionally NOT used for high-frequency power readings — SessionEvent
+// handles those. DeviceLog captures meaningful operational events: a device
+// going offline, a failed Shelly poll, an unexpected payload, a relay command.
+//
+// chairId is nullable so system-level events not tied to a specific chair
+// (e.g. Shelly Cloud token expiry, network-wide outages) can still be logged.
+//
+// Common eventType values:
+//   DEVICE_OFFLINE      — Shelly unreachable during poll
+//   DEVICE_RECOVERED    — Shelly reachable again after an offline period
+//   POLL_FAILED         — HTTP error or timeout from Shelly Cloud API
+//   UNEXPECTED_PAYLOAD  — response parsed but missing required fields
+//   RELAY_COMMAND_SENT  — a relay on/off command was issued
+//   AUTH_ERROR          — Shelly Cloud authentication failure
+model DeviceLog {
+  id         String            @id @default(uuid())
+  chairId    String?           @map("chair_id")
+  eventType  String            @map("event_type") @db.VarChar(50)
+  message    String?           @db.Text
+  powerWatts Float?            @map("power_watts")
+  rawData    Json?             @map("raw_data")
+  severity   DeviceLogSeverity @default(INFO)
+  createdAt  DateTime          @default(now()) @map("created_at")
+
+  chair Chair? @relation(fields: [chairId], references: [id])
+
+  @@index([chairId])
+  @@index([eventType])
+  @@index([severity])
+  @@index([createdAt])
+  @@map("device_logs")
+}
+
+// Immutable audit record written whenever a privileged entity is created,
+// modified, or deleted by a user. Stores before/after JSON values so any
+// change is fully reconstructable without relying on database backups.
+//
+// entityType mirrors the Prisma model name: "PricingPlan", "PricingRule",
+//   "ChairDetectionConfig", "AppSetting", "User", "Chair"
+// action mirrors the operation: "create" | "update" | "delete" |
+//   "activate" | "deactivate"
+//
+// userId is nullable to cover system-initiated changes (e.g. seed data applied
+// at startup, or automated config rotations with no human actor).
+model SettingsAuditLog {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  entityType String   @map("entity_type") @db.VarChar(100)
+  entityId   String?  @map("entity_id")
+  action     String   @db.VarChar(50)
+  oldValue   Json?    @map("old_value")
+  newValue   Json?    @map("new_value")
+  reason     String?  @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User? @relation("SettingsAuditLogUser", fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([createdAt])
+  @@index([entityType, entityId]) // "all changes to PricingPlan <uuid>"
+  @@map("settings_audit_logs")
+}
+
+// Key-value store for runtime settings configurable by the owner without a
+// code deploy. Examples: Shelly polling interval, anomaly alert thresholds,
+// maximum session duration before auto-close.
+//
+// key uses dot-notation by convention: "shelly.pollIntervalSeconds",
+//   "session.maxDurationSeconds", "billing.overtimeAlertThresholdMAD"
+//
+// type is informational (not DB-enforced) and tells the UI and service layer
+// how to parse value: "string" | "number" | "boolean" | "json"
+//
+// updatedByUserId records the last human actor. Combined with SettingsAuditLog,
+// the full change history for any key is always recoverable.
+model AppSetting {
+  id              String   @id @default(uuid())
+  key             String   @unique @db.VarChar(100)
+  value           String   @db.Text
+  type            String   @default("string") @db.VarChar(20)
+  description     String?  @db.Text
+  updatedByUserId String?  @map("updated_by_user_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  updatedBy User? @relation("AppSettingUpdatedBy", fields: [updatedByUserId], references: [id])
+
+  @@map("app_settings")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+// What a user is allowed to do in the system.
+// OWNER has unrestricted access (billing, config, user management).
+// ADMIN manages daily operations: sessions, pricing, user accounts.
+// ASSISTANT can view data and submit manual session corrections only.
+enum UserRole {
+  OWNER
+  ADMIN
+  ASSISTANT
+}
+
+// Real-time operational state of a chair, derived from Shelly power readings.
+// The two debounce states (MAYBE_ACTIVE, MAYBE_FINISHED) absorb brief power
+// fluctuations and prevent false session starts/stops before a state is confirmed.
+enum ChairStatus {
+  IDLE // Power below start threshold; no session running
+  MAYBE_ACTIVE // Power crossed start threshold; waiting for confirmation window
+  ACTIVE // Confirmed in use; a session record is open
+  MAYBE_FINISHED // Power dropped below stop threshold; waiting for confirmation
+  OFFLINE // Shelly device unreachable; state unknown
+  ERROR // Device returned an unexpected or malformed payload
+  MAINTENANCE // Manually taken out of service by an admin
+}
+
+// Lifecycle stage of a single massage session record.
+// UNCERTAIN covers sessions whose end signal was missed (e.g. Shelly went
+// offline mid-session) and that require admin review before billing.
+enum SessionStatus {
+  ACTIVE // Session is currently running
+  COMPLETED // Session ended cleanly with a measured duration
+  UNCERTAIN // End event not detected; duration and billing require review
+  CANCELLED // Voided by an admin (e.g. false trigger, accidental start)
+  ERROR // System failed to determine session outcome
+}
+
+// Where a session stands in the billing pipeline.
+// Lets admins audit and filter sessions by pricing confidence level.
+enum BillingStatus {
+  PENDING // Session closed; price not yet assigned
+  CALCULATED // Price automatically matched to a pricing-plan bucket
+  CORRECTED // Admin overrode the auto-calculated price
+  DISPUTED // Flagged for review; price is contested or unclear
+}
+
+// How session duration is mapped to the nearest pricing-plan bucket.
+// Applied when a session duration falls between two defined plan tiers.
+enum RoundingMode {
+  NEAREST_PLAN // Round to the closest plan duration (up or down)
+  NEXT_PLAN // Always round up to the next higher plan tier
+  EXACT_MINUTES // No bucket rounding; charge is calculated per minute
+}
+
+// What happens when a session exceeds the longest defined pricing-plan tier.
+// Prevents unbounded sessions from being silently mispriced.
+enum OvertimePolicy {
+  NEXT_PLAN // Apply the next plan tier if one exists beyond the last
+  EXTRA_MINUTE // Charge a per-minute rate for every minute past the last tier
+  ANOMALY // Mark the session as an anomaly; do not auto-price; alert admin
+}
+
+// Lifecycle state of a work shift used for reporting and commission calculation.
+// Commission (prime) totals are only computed on CLOSED or REVIEWED shifts.
+enum ShiftStatus {
+  OPEN // Shift is currently active; sessions are still being added
+  CLOSED // Shift has ended; eligible for commission calculation
+  REVIEWED // Admin has verified and locked the shift; data is final
+}
+
+// Severity level attached to entries in the device event log.
+// Mirrors standard syslog levels to allow dashboard filtering and alert routing.
+enum DeviceLogSeverity {
+  INFO // Normal operational event (successful poll, state transition)
+  WARNING // Unexpected but self-recovering (brief disconnect, slow response)
+  ERROR // Requires human attention (device unreachable, invalid payload)
+}
