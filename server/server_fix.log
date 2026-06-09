@@ -1,0 +1,139 @@
+
+> dream-massage-server@0.1.0 dev
+> tsx watch index.ts
+
+[2026-06-09T23:30:28.107Z] [INFO ] ─────────────────────────────────────────
+[2026-06-09T23:30:28.109Z] [INFO ] Dream Massage realtime server started
+[2026-06-09T23:30:28.109Z] [INFO ]   Port       : 4000
+[2026-06-09T23:30:28.109Z] [INFO ]   Mode       : development
+[2026-06-09T23:30:28.109Z] [INFO ]   Origin     : http://localhost:3000
+[2026-06-09T23:30:28.109Z] [INFO ]   simulationEnabled : false
+[2026-06-09T23:30:28.109Z] [INFO ]   activeSource      : shelly
+[2026-06-09T23:30:28.118Z] [INFO ]   shellyConfigured  : true
+[2026-06-09T23:30:28.119Z] [INFO ] ─────────────────────────────────────────
+[2026-06-09T23:30:28.119Z] [INFO ] [realtime-job] Starting — interval 1000ms | source: shelly
+[2026-06-09T23:30:29.304Z] [INFO ] [shelly-sync] Chair ID map loaded: F1, F2, F3, F4, F5
+[2026-06-09T23:30:29.305Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:30.126Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:30.173Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:30:31.132Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:32.135Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:32.179Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:30:33.144Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:33.216Z] [INFO ] [realtime-job] Tick #5 (shelly) — 0 ACTIVE, 3 MAYBE_FINISHED
+[2026-06-09T23:30:34.153Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:35.159Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:36.163Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:36.206Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:30:37.176Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:38.179Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:38.223Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:30:38.230Z] [INFO ] [realtime-job] Tick #10 (shelly) — 0 ACTIVE, 3 MAYBE_FINISHED
+[2026-06-09T23:30:39.189Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:40.196Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:40.241Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:30:41.198Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:42.203Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:43.205Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:43.252Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:30:43.257Z] [INFO ] [realtime-job] Tick #15 (shelly) — 0 ACTIVE, 3 MAYBE_FINISHED
+[2026-06-09T23:30:44.217Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:45.226Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:46.234Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:47.235Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:47.290Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:30:48.239Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:48.321Z] [INFO ] [realtime-job] Tick #20 (shelly) — 0 ACTIVE, 3 MAYBE_FINISHED
+[2026-06-09T23:30:49.253Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:50.259Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:50.306Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:30:51.266Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:52.272Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:53.287Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:53.331Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:30:53.337Z] [INFO ] [realtime-job] Tick #25 (shelly) — 0 ACTIVE, 3 MAYBE_FINISHED
+[2026-06-09T23:30:54.287Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:55.302Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:56.306Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:56.355Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:30:57.312Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:58.313Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:30:58.398Z] [INFO ] [realtime-job] Tick #30 (shelly) — 0 ACTIVE, 3 MAYBE_FINISHED
+[2026-06-09T23:30:59.316Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:31:00.320Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:31:00.368Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:31:01.327Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:31:02.333Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:31:02.383Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:31:03.335Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:31:03.425Z] [INFO ] [realtime-job] Tick #35 (shelly) — 0 ACTIVE, 3 MAYBE_FINISHED
+[2026-06-09T23:31:04.342Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:31:05.348Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:31:05.400Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+01:31:05 [tsx] change in ./config\env.ts Restarting...
+c[2026-06-09T23:31:06.644Z] [INFO ] ─────────────────────────────────────────
+[2026-06-09T23:31:06.646Z] [INFO ] Dream Massage realtime server started
+[2026-06-09T23:31:06.646Z] [INFO ]   Port       : 4000
+[2026-06-09T23:31:06.646Z] [INFO ]   Mode       : development
+[2026-06-09T23:31:06.646Z] [INFO ]   Origin     : http://localhost:3000
+[2026-06-09T23:31:06.646Z] [INFO ]   simulationEnabled : false
+[2026-06-09T23:31:06.646Z] [INFO ]   activeSource      : shelly
+[2026-06-09T23:31:06.646Z] [INFO ]   shellyConfigured  : true
+[2026-06-09T23:31:06.646Z] [INFO ] ─────────────────────────────────────────
+[2026-06-09T23:31:06.646Z] [INFO ] [realtime-job] Starting — interval 1000ms | source: shelly
+[2026-06-09T23:31:07.872Z] [INFO ] [shelly-sync] Chair ID map loaded: F1, F2, F3, F4, F5
+[2026-06-09T23:31:07.873Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:31:08.666Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:31:08.719Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:31:09.674Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:31:10.676Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+01:31:11 [tsx] change in ./jobs\mock-realtime.job.ts Restarting...
+c[2026-06-09T23:31:11.995Z] [INFO ] ─────────────────────────────────────────
+[2026-06-09T23:31:11.997Z] [INFO ] Dream Massage realtime server started
+[2026-06-09T23:31:11.997Z] [INFO ]   Port       : 4000
+[2026-06-09T23:31:11.997Z] [INFO ]   Mode       : development
+[2026-06-09T23:31:11.997Z] [INFO ]   Origin     : http://localhost:3000
+[2026-06-09T23:31:11.997Z] [INFO ]   simulationEnabled : false
+[2026-06-09T23:31:11.997Z] [INFO ]   activeSource      : shelly
+[2026-06-09T23:31:11.997Z] [INFO ]   shellyConfigured  : true
+[2026-06-09T23:31:11.997Z] [INFO ] ─────────────────────────────────────────
+[2026-06-09T23:31:11.997Z] [INFO ] [realtime-job] Starting — interval 1000ms | source: shelly
+[2026-06-09T23:31:13.323Z] [INFO ] [shelly-sync] Chair ID map loaded: F1, F2, F3, F4, F5
+[2026-06-09T23:31:13.323Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:31:14.000Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:31:14.052Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:31:15.004Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+01:31:15 [tsx] change in ./jobs\mock-realtime.job.ts Restarting...
+c[2026-06-09T23:31:16.424Z] [INFO ] ─────────────────────────────────────────
+[2026-06-09T23:31:16.426Z] [INFO ] Dream Massage realtime server started
+[2026-06-09T23:31:16.426Z] [INFO ]   Port       : 4000
+[2026-06-09T23:31:16.426Z] [INFO ]   Mode       : development
+[2026-06-09T23:31:16.426Z] [INFO ]   Origin     : http://localhost:3000
+[2026-06-09T23:31:16.426Z] [INFO ]   simulationEnabled : false
+[2026-06-09T23:31:16.426Z] [INFO ]   activeSource      : shelly
+[2026-06-09T23:31:16.426Z] [INFO ]   shellyConfigured  : true
+[2026-06-09T23:31:16.426Z] [INFO ] ─────────────────────────────────────────
+[2026-06-09T23:31:16.426Z] [INFO ] [realtime-job] Starting — interval 1000ms | source: shelly
+[2026-06-09T23:31:17.669Z] [INFO ] [shelly-sync] Chair ID map loaded: F1, F2, F3, F4, F5
+[2026-06-09T23:31:17.670Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+01:31:21 [tsx] change in ./index.ts Restarting...
+c[2026-06-09T23:31:21.803Z] [INFO ] ─────────────────────────────────────────
+[2026-06-09T23:31:21.804Z] [INFO ] Dream Massage realtime server started
+[2026-06-09T23:31:21.804Z] [INFO ]   Port       : 4000
+[2026-06-09T23:31:21.804Z] [INFO ]   Mode       : development
+[2026-06-09T23:31:21.804Z] [INFO ]   Origin     : http://localhost:3000
+[2026-06-09T23:31:21.804Z] [INFO ]   simulationEnabled : false
+[2026-06-09T23:31:21.804Z] [INFO ]   activeSource      : shelly
+[2026-06-09T23:31:21.804Z] [INFO ]   shellyConfigured  : true
+[2026-06-09T23:31:21.804Z] [INFO ]   shellyPollMs      : 5000
+[2026-06-09T23:31:21.805Z] [INFO ] ─────────────────────────────────────────
+[2026-06-09T23:31:21.805Z] [INFO ] [realtime-job] Starting — interval 1000ms | source: shelly
+[2026-06-09T23:31:23.089Z] [INFO ] [shelly-sync] Chair ID map loaded: F1, F2, F3, F4, F5
+[2026-06-09T23:31:23.089Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:31:23.420Z] [INFO ] [state-machine] F2: session 3f2c6898 FINISHED (29319s, 40 MAD)
+[2026-06-09T23:31:23.454Z] [INFO ] [state-machine] F3: session 4236aadc FINISHED (26424s, 40 MAD)
+[2026-06-09T23:31:23.482Z] [INFO ] [state-machine] F5: session 30057536 FINISHED (2811s, 40 MAD)
+[2026-06-09T23:31:26.819Z] [INFO ] [realtime-job] Tick #5 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:31:27.827Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:31:31.873Z] [INFO ] [realtime-job] Tick #10 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:31:32.879Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)

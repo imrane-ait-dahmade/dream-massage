@@ -18,7 +18,10 @@ export function createSocketServer(httpServer: HTTPServer): SocketServer {
 
   io.on('connection', (socket) => {
     logger.info(`[socket] Client connected — id: ${socket.id}`);
-    socket.emit('dashboard:update', dashboardService.getState());
+    // Send current state immediately on connect so the client doesn't wait for next tick
+    dashboardService.getState().then((state) => {
+      socket.emit('dashboard:update', state);
+    });
 
     socket.on('disconnect', (reason) => {
       logger.info(`[socket] Client disconnected — id: ${socket.id} reason: ${reason}`);

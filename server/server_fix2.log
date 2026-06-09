@@ -1,0 +1,19 @@
+
+> dream-massage-server@0.1.0 dev
+> tsx watch index.ts
+
+[2026-06-09T23:31:44.625Z] [INFO ] ─────────────────────────────────────────
+[2026-06-09T23:31:44.626Z] [INFO ] Dream Massage realtime server started
+[2026-06-09T23:31:44.627Z] [INFO ]   Port       : 4000
+[2026-06-09T23:31:44.627Z] [INFO ]   Mode       : development
+[2026-06-09T23:31:44.627Z] [INFO ]   Origin     : http://localhost:3000
+[2026-06-09T23:31:44.627Z] [INFO ]   simulationEnabled : false
+[2026-06-09T23:31:44.627Z] [INFO ]   activeSource      : shelly
+[2026-06-09T23:31:44.639Z] [INFO ]   shellyConfigured  : true
+[2026-06-09T23:31:44.639Z] [INFO ]   shellyPollMs      : 5000
+[2026-06-09T23:31:44.639Z] [INFO ] ─────────────────────────────────────────
+[2026-06-09T23:31:44.640Z] [INFO ] [realtime-job] Starting — interval 1000ms | source: shelly
+[2026-06-09T23:31:45.838Z] [INFO ] [shelly-sync] Chair ID map loaded: F1, F2, F3, F4, F5
+[2026-06-09T23:31:45.838Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:31:49.660Z] [INFO ] [realtime-job] Tick #5 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:31:50.661Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)

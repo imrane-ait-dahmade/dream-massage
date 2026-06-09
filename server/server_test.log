@@ -1,0 +1,1313 @@
+
+> dream-massage-server@0.1.0 dev
+> tsx watch index.ts
+
+[2026-06-09T14:15:00.054Z] [INFO ] ─────────────────────────────────────────
+[2026-06-09T14:15:00.055Z] [INFO ] Dream Massage realtime server started
+[2026-06-09T14:15:00.056Z] [INFO ]   Port     : 4000
+[2026-06-09T14:15:00.056Z] [INFO ]   Mode     : development
+[2026-06-09T14:15:00.056Z] [INFO ]   Origin   : http://localhost:3000
+[2026-06-09T14:15:00.056Z] [INFO ] ─────────────────────────────────────────
+[2026-06-09T14:15:00.065Z] [INFO ] [mock-job] Starting (interval: 1000ms)
+[2026-06-09T14:15:05.109Z] [INFO ] [realtime-job] Broadcast #5 — 0 active chairs
+[2026-06-09T14:15:10.133Z] [INFO ] [realtime-job] Broadcast #10 — 0 active chairs
+[2026-06-09T14:15:15.169Z] [INFO ] [realtime-job] Broadcast #15 — 0 active chairs
+[2026-06-09T14:15:20.214Z] [INFO ] [realtime-job] Broadcast #20 — 0 active chairs
+[2026-06-09T14:15:25.242Z] [INFO ] [realtime-job] Broadcast #25 — 0 active chairs
+[2026-06-09T14:15:30.276Z] [INFO ] [realtime-job] Broadcast #30 — 0 active chairs
+[2026-06-09T14:15:35.310Z] [INFO ] [realtime-job] Broadcast #35 — 0 active chairs
+[2026-06-09T14:15:40.329Z] [INFO ] [realtime-job] Broadcast #40 — 0 active chairs
+[2026-06-09T14:15:45.356Z] [INFO ] [realtime-job] Broadcast #45 — 0 active chairs
+[2026-06-09T14:15:50.394Z] [INFO ] [realtime-job] Broadcast #50 — 0 active chairs
+[2026-06-09T14:15:55.436Z] [INFO ] [realtime-job] Broadcast #55 — 0 active chairs
+[2026-06-09T14:16:00.472Z] [INFO ] [realtime-job] Broadcast #60 — 0 active chairs
+[2026-06-09T14:16:05.504Z] [INFO ] [realtime-job] Broadcast #65 — 0 active chairs
+[2026-06-09T14:16:10.530Z] [INFO ] [realtime-job] Broadcast #70 — 0 active chairs
+[2026-06-09T14:16:15.570Z] [INFO ] [realtime-job] Broadcast #75 — 0 active chairs
+[2026-06-09T14:16:20.612Z] [INFO ] [realtime-job] Broadcast #80 — 0 active chairs
+[2026-06-09T14:16:25.643Z] [INFO ] [realtime-job] Broadcast #85 — 0 active chairs
+[2026-06-09T14:16:30.696Z] [INFO ] [realtime-job] Broadcast #90 — 0 active chairs
+[2026-06-09T14:16:35.730Z] [INFO ] [realtime-job] Broadcast #95 — 0 active chairs
+[2026-06-09T14:16:40.767Z] [INFO ] [realtime-job] Broadcast #100 — 0 active chairs
+[2026-06-09T14:16:45.822Z] [INFO ] [realtime-job] Broadcast #105 — 0 active chairs
+[2026-06-09T14:16:50.877Z] [INFO ] [realtime-job] Broadcast #110 — 0 active chairs
+[2026-06-09T14:16:55.923Z] [INFO ] [realtime-job] Broadcast #115 — 0 active chairs
+[2026-06-09T14:17:00.956Z] [INFO ] [realtime-job] Broadcast #120 — 0 active chairs
+[2026-06-09T14:17:06.007Z] [INFO ] [realtime-job] Broadcast #125 — 0 active chairs
+[2026-06-09T14:17:11.053Z] [INFO ] [realtime-job] Broadcast #130 — 0 active chairs
+[2026-06-09T14:17:16.092Z] [INFO ] [realtime-job] Broadcast #135 — 0 active chairs
+[2026-06-09T14:17:21.136Z] [INFO ] [realtime-job] Broadcast #140 — 0 active chairs
+[2026-06-09T14:17:26.186Z] [INFO ] [realtime-job] Broadcast #145 — 0 active chairs
+[2026-06-09T14:17:31.237Z] [INFO ] [realtime-job] Broadcast #150 — 0 active chairs
+[2026-06-09T14:17:36.279Z] [INFO ] [realtime-job] Broadcast #155 — 0 active chairs
+[2026-06-09T14:17:41.319Z] [INFO ] [realtime-job] Broadcast #160 — 0 active chairs
+[2026-06-09T14:17:46.359Z] [INFO ] [realtime-job] Broadcast #165 — 0 active chairs
+[2026-06-09T14:17:51.390Z] [INFO ] [realtime-job] Broadcast #170 — 0 active chairs
+[2026-06-09T14:17:56.435Z] [INFO ] [realtime-job] Broadcast #175 — 0 active chairs
+[2026-06-09T14:18:01.458Z] [INFO ] [realtime-job] Broadcast #180 — 0 active chairs
+[2026-06-09T14:18:06.510Z] [INFO ] [realtime-job] Broadcast #185 — 0 active chairs
+[2026-06-09T14:18:11.549Z] [INFO ] [realtime-job] Broadcast #190 — 0 active chairs
+[2026-06-09T14:18:16.597Z] [INFO ] [realtime-job] Broadcast #195 — 0 active chairs
+[2026-06-09T14:18:21.649Z] [INFO ] [realtime-job] Broadcast #200 — 0 active chairs
+[2026-06-09T14:18:26.697Z] [INFO ] [realtime-job] Broadcast #205 — 0 active chairs
+[2026-06-09T14:18:31.734Z] [INFO ] [realtime-job] Broadcast #210 — 0 active chairs
+[2026-06-09T14:18:36.779Z] [INFO ] [realtime-job] Broadcast #215 — 0 active chairs
+[2026-06-09T14:18:41.826Z] [INFO ] [realtime-job] Broadcast #220 — 0 active chairs
+[2026-06-09T14:18:46.874Z] [INFO ] [realtime-job] Broadcast #225 — 0 active chairs
+[2026-06-09T14:18:51.905Z] [INFO ] [realtime-job] Broadcast #230 — 0 active chairs
+[2026-06-09T14:18:56.945Z] [INFO ] [realtime-job] Broadcast #235 — 0 active chairs
+[2026-06-09T14:19:01.969Z] [INFO ] [realtime-job] Broadcast #240 — 0 active chairs
+[2026-06-09T14:19:07.005Z] [INFO ] [realtime-job] Broadcast #245 — 0 active chairs
+[2026-06-09T14:19:12.039Z] [INFO ] [realtime-job] Broadcast #250 — 0 active chairs
+[2026-06-09T14:19:17.076Z] [INFO ] [realtime-job] Broadcast #255 — 0 active chairs
+[2026-06-09T14:19:22.116Z] [INFO ] [realtime-job] Broadcast #260 — 0 active chairs
+[2026-06-09T14:19:27.134Z] [INFO ] [realtime-job] Broadcast #265 — 0 active chairs
+[2026-06-09T14:19:32.176Z] [INFO ] [realtime-job] Broadcast #270 — 0 active chairs
+[2026-06-09T14:19:37.210Z] [INFO ] [realtime-job] Broadcast #275 — 0 active chairs
+[2026-06-09T14:19:42.241Z] [INFO ] [realtime-job] Broadcast #280 — 0 active chairs
+[2026-06-09T14:19:47.283Z] [INFO ] [realtime-job] Broadcast #285 — 0 active chairs
+[2026-06-09T14:19:52.316Z] [INFO ] [realtime-job] Broadcast #290 — 0 active chairs
+[2026-06-09T14:19:57.348Z] [INFO ] [realtime-job] Broadcast #295 — 0 active chairs
+[2026-06-09T14:20:02.386Z] [INFO ] [realtime-job] Broadcast #300 — 0 active chairs
+[2026-06-09T14:20:07.450Z] [INFO ] [realtime-job] Broadcast #305 — 0 active chairs
+[2026-06-09T14:20:12.475Z] [INFO ] [realtime-job] Broadcast #310 — 0 active chairs
+[2026-06-09T14:20:17.530Z] [INFO ] [realtime-job] Broadcast #315 — 0 active chairs
+[2026-06-09T14:20:22.571Z] [INFO ] [realtime-job] Broadcast #320 — 0 active chairs
+[2026-06-09T14:20:27.610Z] [INFO ] [realtime-job] Broadcast #325 — 0 active chairs
+[2026-06-09T14:20:32.673Z] [INFO ] [realtime-job] Broadcast #330 — 0 active chairs
+[2026-06-09T14:20:37.717Z] [INFO ] [realtime-job] Broadcast #335 — 0 active chairs
+[2026-06-09T14:20:42.773Z] [INFO ] [realtime-job] Broadcast #340 — 0 active chairs
+[2026-06-09T14:20:47.812Z] [INFO ] [realtime-job] Broadcast #345 — 0 active chairs
+[2026-06-09T14:20:52.862Z] [INFO ] [realtime-job] Broadcast #350 — 0 active chairs
+[2026-06-09T14:20:57.918Z] [INFO ] [realtime-job] Broadcast #355 — 0 active chairs
+[2026-06-09T14:21:02.969Z] [INFO ] [realtime-job] Broadcast #360 — 0 active chairs
+[2026-06-09T14:21:08.019Z] [INFO ] [realtime-job] Broadcast #365 — 0 active chairs
+[2026-06-09T14:21:13.066Z] [INFO ] [realtime-job] Broadcast #370 — 0 active chairs
+[2026-06-09T14:21:18.113Z] [INFO ] [realtime-job] Broadcast #375 — 0 active chairs
+[2026-06-09T14:21:23.169Z] [INFO ] [realtime-job] Broadcast #380 — 0 active chairs
+[2026-06-09T14:21:28.208Z] [INFO ] [realtime-job] Broadcast #385 — 0 active chairs
+[2026-06-09T14:21:33.260Z] [INFO ] [realtime-job] Broadcast #390 — 0 active chairs
+[2026-06-09T14:21:38.300Z] [INFO ] [realtime-job] Broadcast #395 — 0 active chairs
+[2026-06-09T14:21:43.351Z] [INFO ] [realtime-job] Broadcast #400 — 0 active chairs
+[2026-06-09T14:21:48.398Z] [INFO ] [realtime-job] Broadcast #405 — 0 active chairs
+[2026-06-09T14:21:53.452Z] [INFO ] [realtime-job] Broadcast #410 — 0 active chairs
+[2026-06-09T14:21:58.498Z] [INFO ] [realtime-job] Broadcast #415 — 0 active chairs
+[2026-06-09T14:22:03.532Z] [INFO ] [realtime-job] Broadcast #420 — 0 active chairs
+[2026-06-09T14:22:08.570Z] [INFO ] [realtime-job] Broadcast #425 — 0 active chairs
+[2026-06-09T14:22:13.617Z] [INFO ] [realtime-job] Broadcast #430 — 0 active chairs
+[2026-06-09T14:22:18.674Z] [INFO ] [realtime-job] Broadcast #435 — 0 active chairs
+[2026-06-09T14:22:23.732Z] [INFO ] [realtime-job] Broadcast #440 — 0 active chairs
+[2026-06-09T14:22:28.780Z] [INFO ] [realtime-job] Broadcast #445 — 0 active chairs
+[2026-06-09T14:22:33.835Z] [INFO ] [realtime-job] Broadcast #450 — 0 active chairs
+[2026-06-09T14:22:38.887Z] [INFO ] [realtime-job] Broadcast #455 — 0 active chairs
+[2026-06-09T14:22:43.935Z] [INFO ] [realtime-job] Broadcast #460 — 0 active chairs
+[2026-06-09T14:22:48.988Z] [INFO ] [realtime-job] Broadcast #465 — 0 active chairs
+[2026-06-09T14:22:54.034Z] [INFO ] [realtime-job] Broadcast #470 — 0 active chairs
+[2026-06-09T14:22:59.079Z] [INFO ] [realtime-job] Broadcast #475 — 0 active chairs
+[2026-06-09T14:23:04.115Z] [INFO ] [realtime-job] Broadcast #480 — 0 active chairs
+[2026-06-09T14:23:09.148Z] [INFO ] [realtime-job] Broadcast #485 — 0 active chairs
+[2026-06-09T14:23:14.188Z] [INFO ] [realtime-job] Broadcast #490 — 0 active chairs
+[2026-06-09T14:23:19.259Z] [INFO ] [realtime-job] Broadcast #495 — 0 active chairs
+[2026-06-09T14:23:24.312Z] [INFO ] [realtime-job] Broadcast #500 — 0 active chairs
+[2026-06-09T14:23:29.356Z] [INFO ] [realtime-job] Broadcast #505 — 0 active chairs
+[2026-06-09T14:23:34.392Z] [INFO ] [realtime-job] Broadcast #510 — 0 active chairs
+[2026-06-09T14:23:39.441Z] [INFO ] [realtime-job] Broadcast #515 — 0 active chairs
+[2026-06-09T14:23:44.484Z] [INFO ] [realtime-job] Broadcast #520 — 0 active chairs
+[2026-06-09T14:23:49.528Z] [INFO ] [realtime-job] Broadcast #525 — 0 active chairs
+[2026-06-09T14:23:54.591Z] [INFO ] [realtime-job] Broadcast #530 — 0 active chairs
+[2026-06-09T14:23:59.630Z] [INFO ] [realtime-job] Broadcast #535 — 0 active chairs
+[2026-06-09T14:24:04.682Z] [INFO ] [realtime-job] Broadcast #540 — 0 active chairs
+[2026-06-09T14:24:09.743Z] [INFO ] [realtime-job] Broadcast #545 — 0 active chairs
+[2026-06-09T14:24:14.795Z] [INFO ] [realtime-job] Broadcast #550 — 0 active chairs
+[2026-06-09T14:24:19.850Z] [INFO ] [realtime-job] Broadcast #555 — 0 active chairs
+[2026-06-09T14:24:24.908Z] [INFO ] [realtime-job] Broadcast #560 — 0 active chairs
+[2026-06-09T14:24:29.950Z] [INFO ] [realtime-job] Broadcast #565 — 0 active chairs
+[2026-06-09T14:24:35.008Z] [INFO ] [realtime-job] Broadcast #570 — 0 active chairs
+[2026-06-09T14:24:40.057Z] [INFO ] [realtime-job] Broadcast #575 — 0 active chairs
+[2026-06-09T14:24:45.104Z] [INFO ] [realtime-job] Broadcast #580 — 0 active chairs
+[2026-06-09T14:24:50.158Z] [INFO ] [realtime-job] Broadcast #585 — 0 active chairs
+[2026-06-09T14:24:55.197Z] [INFO ] [realtime-job] Broadcast #590 — 0 active chairs
+[2026-06-09T14:25:00.239Z] [INFO ] [realtime-job] Broadcast #595 — 0 active chairs
+[2026-06-09T14:25:05.279Z] [INFO ] [realtime-job] Broadcast #600 — 0 active chairs
+[2026-06-09T14:25:10.325Z] [INFO ] [realtime-job] Broadcast #605 — 0 active chairs
+[2026-06-09T14:25:15.369Z] [INFO ] [realtime-job] Broadcast #610 — 0 active chairs
+[2026-06-09T14:25:20.415Z] [INFO ] [realtime-job] Broadcast #615 — 0 active chairs
+[2026-06-09T14:25:25.473Z] [INFO ] [realtime-job] Broadcast #620 — 0 active chairs
+[2026-06-09T14:25:30.520Z] [INFO ] [realtime-job] Broadcast #625 — 0 active chairs
+[2026-06-09T14:25:35.576Z] [INFO ] [realtime-job] Broadcast #630 — 0 active chairs
+[2026-06-09T14:25:40.622Z] [INFO ] [realtime-job] Broadcast #635 — 0 active chairs
+[2026-06-09T14:25:45.675Z] [INFO ] [realtime-job] Broadcast #640 — 0 active chairs
+[2026-06-09T14:25:50.696Z] [INFO ] [realtime-job] Broadcast #645 — 0 active chairs
+[2026-06-09T14:25:55.740Z] [INFO ] [realtime-job] Broadcast #650 — 0 active chairs
+[2026-06-09T14:26:00.780Z] [INFO ] [realtime-job] Broadcast #655 — 0 active chairs
+[2026-06-09T14:26:05.802Z] [INFO ] [realtime-job] Broadcast #660 — 0 active chairs
+[2026-06-09T14:26:10.816Z] [INFO ] [realtime-job] Broadcast #665 — 0 active chairs
+[2026-06-09T14:26:15.854Z] [INFO ] [realtime-job] Broadcast #670 — 0 active chairs
+[2026-06-09T14:26:20.889Z] [INFO ] [realtime-job] Broadcast #675 — 0 active chairs
+[2026-06-09T14:26:25.921Z] [INFO ] [realtime-job] Broadcast #680 — 0 active chairs
+[2026-06-09T14:26:30.973Z] [INFO ] [realtime-job] Broadcast #685 — 0 active chairs
+[2026-06-09T14:26:36.025Z] [INFO ] [realtime-job] Broadcast #690 — 0 active chairs
+[2026-06-09T14:26:41.056Z] [INFO ] [realtime-job] Broadcast #695 — 0 active chairs
+[2026-06-09T14:26:46.080Z] [INFO ] [realtime-job] Broadcast #700 — 0 active chairs
+[2026-06-09T14:26:51.103Z] [INFO ] [realtime-job] Broadcast #705 — 0 active chairs
+[2026-06-09T14:26:56.108Z] [INFO ] [realtime-job] Broadcast #710 — 0 active chairs
+[2026-06-09T14:27:01.134Z] [INFO ] [realtime-job] Broadcast #715 — 0 active chairs
+[2026-06-09T14:27:06.155Z] [INFO ] [realtime-job] Broadcast #720 — 0 active chairs
+[2026-06-09T14:27:11.207Z] [INFO ] [realtime-job] Broadcast #725 — 0 active chairs
+[2026-06-09T14:27:16.254Z] [INFO ] [realtime-job] Broadcast #730 — 0 active chairs
+[2026-06-09T14:27:21.295Z] [INFO ] [realtime-job] Broadcast #735 — 0 active chairs
+[2026-06-09T14:27:26.326Z] [INFO ] [realtime-job] Broadcast #740 — 0 active chairs
+[2026-06-09T14:27:31.355Z] [INFO ] [realtime-job] Broadcast #745 — 0 active chairs
+[2026-06-09T14:27:36.397Z] [INFO ] [realtime-job] Broadcast #750 — 0 active chairs
+[2026-06-09T14:27:41.454Z] [INFO ] [realtime-job] Broadcast #755 — 0 active chairs
+[2026-06-09T14:27:46.498Z] [INFO ] [realtime-job] Broadcast #760 — 0 active chairs
+[2026-06-09T14:27:51.545Z] [INFO ] [realtime-job] Broadcast #765 — 0 active chairs
+[2026-06-09T14:27:56.579Z] [INFO ] [realtime-job] Broadcast #770 — 0 active chairs
+[2026-06-09T14:28:01.616Z] [INFO ] [realtime-job] Broadcast #775 — 0 active chairs
+[2026-06-09T14:28:06.671Z] [INFO ] [realtime-job] Broadcast #780 — 0 active chairs
+[2026-06-09T14:28:11.721Z] [INFO ] [realtime-job] Broadcast #785 — 0 active chairs
+[2026-06-09T14:28:16.770Z] [INFO ] [realtime-job] Broadcast #790 — 0 active chairs
+[2026-06-09T14:28:21.817Z] [INFO ] [realtime-job] Broadcast #795 — 0 active chairs
+[2026-06-09T14:28:26.857Z] [INFO ] [realtime-job] Broadcast #800 — 0 active chairs
+[2026-06-09T14:28:31.910Z] [INFO ] [realtime-job] Broadcast #805 — 0 active chairs
+[2026-06-09T14:28:36.959Z] [INFO ] [realtime-job] Broadcast #810 — 0 active chairs
+[2026-06-09T14:28:42.011Z] [INFO ] [realtime-job] Broadcast #815 — 0 active chairs
+[2026-06-09T14:28:47.065Z] [INFO ] [realtime-job] Broadcast #820 — 0 active chairs
+[2026-06-09T14:28:52.099Z] [INFO ] [realtime-job] Broadcast #825 — 0 active chairs
+[2026-06-09T14:28:57.137Z] [INFO ] [realtime-job] Broadcast #830 — 0 active chairs
+[2026-06-09T14:29:02.187Z] [INFO ] [realtime-job] Broadcast #835 — 0 active chairs
+[2026-06-09T14:29:07.228Z] [INFO ] [realtime-job] Broadcast #840 — 0 active chairs
+[2026-06-09T14:29:12.259Z] [INFO ] [realtime-job] Broadcast #845 — 0 active chairs
+[2026-06-09T14:29:17.305Z] [INFO ] [realtime-job] Broadcast #850 — 0 active chairs
+[2026-06-09T14:29:22.353Z] [INFO ] [realtime-job] Broadcast #855 — 0 active chairs
+[2026-06-09T14:29:27.388Z] [INFO ] [realtime-job] Broadcast #860 — 0 active chairs
+[2026-06-09T14:29:32.432Z] [INFO ] [realtime-job] Broadcast #865 — 0 active chairs
+[2026-06-09T14:29:37.470Z] [INFO ] [realtime-job] Broadcast #870 — 0 active chairs
+[2026-06-09T14:29:42.510Z] [INFO ] [realtime-job] Broadcast #875 — 0 active chairs
+[2026-06-09T14:29:47.554Z] [INFO ] [realtime-job] Broadcast #880 — 0 active chairs
+[2026-06-09T14:29:52.601Z] [INFO ] [realtime-job] Broadcast #885 — 0 active chairs
+[2026-06-09T14:29:57.656Z] [INFO ] [realtime-job] Broadcast #890 — 0 active chairs
+[2026-06-09T14:30:02.703Z] [INFO ] [realtime-job] Broadcast #895 — 0 active chairs
+[2026-06-09T14:30:07.741Z] [INFO ] [realtime-job] Broadcast #900 — 0 active chairs
+[2026-06-09T14:30:12.786Z] [INFO ] [realtime-job] Broadcast #905 — 0 active chairs
+[2026-06-09T14:30:17.829Z] [INFO ] [realtime-job] Broadcast #910 — 0 active chairs
+[2026-06-09T14:30:22.857Z] [INFO ] [realtime-job] Broadcast #915 — 0 active chairs
+[2026-06-09T14:30:27.916Z] [INFO ] [realtime-job] Broadcast #920 — 0 active chairs
+[2026-06-09T14:30:32.967Z] [INFO ] [realtime-job] Broadcast #925 — 0 active chairs
+[2026-06-09T14:30:38.022Z] [INFO ] [realtime-job] Broadcast #930 — 0 active chairs
+[2026-06-09T14:30:43.080Z] [INFO ] [realtime-job] Broadcast #935 — 0 active chairs
+[2026-06-09T14:30:48.130Z] [INFO ] [realtime-job] Broadcast #940 — 0 active chairs
+[2026-06-09T14:30:53.180Z] [INFO ] [realtime-job] Broadcast #945 — 0 active chairs
+[2026-06-09T14:30:58.239Z] [INFO ] [realtime-job] Broadcast #950 — 0 active chairs
+[2026-06-09T14:31:03.270Z] [INFO ] [realtime-job] Broadcast #955 — 0 active chairs
+[2026-06-09T14:31:08.313Z] [INFO ] [realtime-job] Broadcast #960 — 0 active chairs
+[2026-06-09T14:31:13.347Z] [INFO ] [realtime-job] Broadcast #965 — 0 active chairs
+[2026-06-09T14:31:18.377Z] [INFO ] [realtime-job] Broadcast #970 — 0 active chairs
+[2026-06-09T14:31:23.429Z] [INFO ] [realtime-job] Broadcast #975 — 0 active chairs
+[2026-06-09T14:31:28.460Z] [INFO ] [realtime-job] Broadcast #980 — 0 active chairs
+[2026-06-09T14:31:33.516Z] [INFO ] [realtime-job] Broadcast #985 — 0 active chairs
+[2026-06-09T14:31:38.540Z] [INFO ] [realtime-job] Broadcast #990 — 0 active chairs
+[2026-06-09T14:31:43.593Z] [INFO ] [realtime-job] Broadcast #995 — 0 active chairs
+[2026-06-09T14:31:48.631Z] [INFO ] [realtime-job] Broadcast #1000 — 0 active chairs
+[2026-06-09T14:31:53.641Z] [INFO ] [realtime-job] Broadcast #1005 — 0 active chairs
+[2026-06-09T14:31:58.707Z] [INFO ] [realtime-job] Broadcast #1010 — 0 active chairs
+[2026-06-09T14:32:03.745Z] [INFO ] [realtime-job] Broadcast #1015 — 0 active chairs
+[2026-06-09T14:32:08.793Z] [INFO ] [realtime-job] Broadcast #1020 — 0 active chairs
+[2026-06-09T14:32:13.854Z] [INFO ] [realtime-job] Broadcast #1025 — 0 active chairs
+[2026-06-09T14:32:18.900Z] [INFO ] [realtime-job] Broadcast #1030 — 0 active chairs
+[2026-06-09T14:32:23.963Z] [INFO ] [realtime-job] Broadcast #1035 — 0 active chairs
+[2026-06-09T14:32:29.022Z] [INFO ] [realtime-job] Broadcast #1040 — 0 active chairs
+[2026-06-09T14:32:34.065Z] [INFO ] [realtime-job] Broadcast #1045 — 0 active chairs
+[2026-06-09T14:32:39.127Z] [INFO ] [realtime-job] Broadcast #1050 — 0 active chairs
+[2026-06-09T14:32:44.169Z] [INFO ] [realtime-job] Broadcast #1055 — 0 active chairs
+[2026-06-09T14:32:49.222Z] [INFO ] [realtime-job] Broadcast #1060 — 0 active chairs
+[2026-06-09T14:32:54.273Z] [INFO ] [realtime-job] Broadcast #1065 — 0 active chairs
+[2026-06-09T14:32:59.314Z] [INFO ] [realtime-job] Broadcast #1070 — 0 active chairs
+[2026-06-09T14:33:04.363Z] [INFO ] [realtime-job] Broadcast #1075 — 0 active chairs
+[2026-06-09T14:33:09.427Z] [INFO ] [realtime-job] Broadcast #1080 — 0 active chairs
+[2026-06-09T14:33:14.489Z] [INFO ] [realtime-job] Broadcast #1085 — 0 active chairs
+[2026-06-09T14:33:19.548Z] [INFO ] [realtime-job] Broadcast #1090 — 0 active chairs
+[2026-06-09T14:33:24.608Z] [INFO ] [realtime-job] Broadcast #1095 — 0 active chairs
+[2026-06-09T14:33:29.657Z] [INFO ] [realtime-job] Broadcast #1100 — 0 active chairs
+[2026-06-09T14:33:34.710Z] [INFO ] [realtime-job] Broadcast #1105 — 0 active chairs
+[2026-06-09T14:33:39.761Z] [INFO ] [realtime-job] Broadcast #1110 — 0 active chairs
+[2026-06-09T14:33:44.815Z] [INFO ] [realtime-job] Broadcast #1115 — 0 active chairs
+[2026-06-09T14:33:49.850Z] [INFO ] [realtime-job] Broadcast #1120 — 0 active chairs
+[2026-06-09T14:33:54.907Z] [INFO ] [realtime-job] Broadcast #1125 — 0 active chairs
+[2026-06-09T14:33:59.978Z] [INFO ] [realtime-job] Broadcast #1130 — 0 active chairs
+[2026-06-09T14:34:05.028Z] [INFO ] [realtime-job] Broadcast #1135 — 0 active chairs
+[2026-06-09T14:34:10.070Z] [INFO ] [realtime-job] Broadcast #1140 — 0 active chairs
+[2026-06-09T14:34:15.110Z] [INFO ] [realtime-job] Broadcast #1145 — 0 active chairs
+[2026-06-09T14:34:20.152Z] [INFO ] [realtime-job] Broadcast #1150 — 0 active chairs
+[2026-06-09T14:34:25.201Z] [INFO ] [realtime-job] Broadcast #1155 — 0 active chairs
+[2026-06-09T14:34:30.266Z] [INFO ] [realtime-job] Broadcast #1160 — 0 active chairs
+[2026-06-09T14:34:35.302Z] [INFO ] [realtime-job] Broadcast #1165 — 0 active chairs
+[2026-06-09T14:34:40.349Z] [INFO ] [realtime-job] Broadcast #1170 — 0 active chairs
+[2026-06-09T14:34:45.399Z] [INFO ] [realtime-job] Broadcast #1175 — 0 active chairs
+[2026-06-09T14:34:50.440Z] [INFO ] [realtime-job] Broadcast #1180 — 0 active chairs
+[2026-06-09T14:34:55.474Z] [INFO ] [realtime-job] Broadcast #1185 — 0 active chairs
+[2026-06-09T14:35:00.527Z] [INFO ] [realtime-job] Broadcast #1190 — 0 active chairs
+[2026-06-09T14:35:05.571Z] [INFO ] [realtime-job] Broadcast #1195 — 0 active chairs
+[2026-06-09T14:35:10.619Z] [INFO ] [realtime-job] Broadcast #1200 — 0 active chairs
+[2026-06-09T14:35:15.675Z] [INFO ] [realtime-job] Broadcast #1205 — 0 active chairs
+[2026-06-09T14:35:20.723Z] [INFO ] [realtime-job] Broadcast #1210 — 0 active chairs
+[2026-06-09T14:35:25.761Z] [INFO ] [realtime-job] Broadcast #1215 — 0 active chairs
+[2026-06-09T14:35:30.825Z] [INFO ] [realtime-job] Broadcast #1220 — 0 active chairs
+[2026-06-09T14:35:35.874Z] [INFO ] [realtime-job] Broadcast #1225 — 0 active chairs
+[2026-06-09T14:35:40.917Z] [INFO ] [realtime-job] Broadcast #1230 — 0 active chairs
+[2026-06-09T14:35:45.963Z] [INFO ] [realtime-job] Broadcast #1235 — 0 active chairs
+[2026-06-09T14:35:51.001Z] [INFO ] [realtime-job] Broadcast #1240 — 0 active chairs
+[2026-06-09T14:35:56.060Z] [INFO ] [realtime-job] Broadcast #1245 — 0 active chairs
+[2026-06-09T14:36:01.103Z] [INFO ] [realtime-job] Broadcast #1250 — 0 active chairs
+[2026-06-09T14:36:06.146Z] [INFO ] [realtime-job] Broadcast #1255 — 0 active chairs
+[2026-06-09T14:36:11.195Z] [INFO ] [realtime-job] Broadcast #1260 — 0 active chairs
+[2026-06-09T14:36:16.252Z] [INFO ] [realtime-job] Broadcast #1265 — 0 active chairs
+[2026-06-09T14:36:21.301Z] [INFO ] [realtime-job] Broadcast #1270 — 0 active chairs
+[2026-06-09T14:36:26.352Z] [INFO ] [realtime-job] Broadcast #1275 — 0 active chairs
+[2026-06-09T14:36:31.404Z] [INFO ] [realtime-job] Broadcast #1280 — 0 active chairs
+[2026-06-09T14:36:36.450Z] [INFO ] [realtime-job] Broadcast #1285 — 0 active chairs
+[2026-06-09T14:36:41.511Z] [INFO ] [realtime-job] Broadcast #1290 — 0 active chairs
+[2026-06-09T14:36:46.560Z] [INFO ] [realtime-job] Broadcast #1295 — 0 active chairs
+[2026-06-09T14:36:51.593Z] [INFO ] [realtime-job] Broadcast #1300 — 0 active chairs
+[2026-06-09T14:36:56.628Z] [INFO ] [realtime-job] Broadcast #1305 — 0 active chairs
+[2026-06-09T14:37:01.680Z] [INFO ] [realtime-job] Broadcast #1310 — 0 active chairs
+[2026-06-09T14:37:06.732Z] [INFO ] [realtime-job] Broadcast #1315 — 0 active chairs
+[2026-06-09T14:37:11.773Z] [INFO ] [realtime-job] Broadcast #1320 — 0 active chairs
+[2026-06-09T14:37:16.823Z] [INFO ] [realtime-job] Broadcast #1325 — 0 active chairs
+[2026-06-09T14:37:21.873Z] [INFO ] [realtime-job] Broadcast #1330 — 0 active chairs
+[2026-06-09T14:37:26.921Z] [INFO ] [realtime-job] Broadcast #1335 — 0 active chairs
+[2026-06-09T14:37:31.974Z] [INFO ] [realtime-job] Broadcast #1340 — 0 active chairs
+[2026-06-09T14:37:37.038Z] [INFO ] [realtime-job] Broadcast #1345 — 0 active chairs
+[2026-06-09T14:37:42.106Z] [INFO ] [realtime-job] Broadcast #1350 — 0 active chairs
+[2026-06-09T14:37:47.159Z] [INFO ] [realtime-job] Broadcast #1355 — 0 active chairs
+[2026-06-09T14:37:52.216Z] [INFO ] [realtime-job] Broadcast #1360 — 0 active chairs
+[2026-06-09T14:37:57.250Z] [INFO ] [realtime-job] Broadcast #1365 — 0 active chairs
+[2026-06-09T14:38:02.305Z] [INFO ] [realtime-job] Broadcast #1370 — 0 active chairs
+[2026-06-09T14:38:07.363Z] [INFO ] [realtime-job] Broadcast #1375 — 0 active chairs
+[2026-06-09T14:38:12.419Z] [INFO ] [realtime-job] Broadcast #1380 — 0 active chairs
+[2026-06-09T14:38:17.452Z] [INFO ] [realtime-job] Broadcast #1385 — 0 active chairs
+[2026-06-09T14:38:22.503Z] [INFO ] [realtime-job] Broadcast #1390 — 0 active chairs
+[2026-06-09T14:38:27.543Z] [INFO ] [realtime-job] Broadcast #1395 — 0 active chairs
+[2026-06-09T14:38:32.585Z] [INFO ] [realtime-job] Broadcast #1400 — 0 active chairs
+[2026-06-09T14:38:37.639Z] [INFO ] [realtime-job] Broadcast #1405 — 0 active chairs
+[2026-06-09T14:38:42.698Z] [INFO ] [realtime-job] Broadcast #1410 — 0 active chairs
+[2026-06-09T14:38:47.748Z] [INFO ] [realtime-job] Broadcast #1415 — 0 active chairs
+[2026-06-09T14:38:52.799Z] [INFO ] [realtime-job] Broadcast #1420 — 0 active chairs
+[2026-06-09T14:38:57.825Z] [INFO ] [realtime-job] Broadcast #1425 — 0 active chairs
+[2026-06-09T14:39:02.872Z] [INFO ] [realtime-job] Broadcast #1430 — 0 active chairs
+[2026-06-09T14:39:07.938Z] [INFO ] [realtime-job] Broadcast #1435 — 0 active chairs
+[2026-06-09T14:39:12.999Z] [INFO ] [realtime-job] Broadcast #1440 — 0 active chairs
+[2026-06-09T14:39:18.058Z] [INFO ] [realtime-job] Broadcast #1445 — 0 active chairs
+[2026-06-09T14:39:23.105Z] [INFO ] [realtime-job] Broadcast #1450 — 0 active chairs
+[2026-06-09T14:39:28.151Z] [INFO ] [realtime-job] Broadcast #1455 — 0 active chairs
+[2026-06-09T14:39:33.167Z] [INFO ] [realtime-job] Broadcast #1460 — 0 active chairs
+[2026-06-09T14:39:38.228Z] [INFO ] [realtime-job] Broadcast #1465 — 0 active chairs
+[2026-06-09T14:39:43.298Z] [INFO ] [realtime-job] Broadcast #1470 — 0 active chairs
+[2026-06-09T14:39:48.335Z] [INFO ] [realtime-job] Broadcast #1475 — 0 active chairs
+[2026-06-09T14:39:53.354Z] [INFO ] [realtime-job] Broadcast #1480 — 0 active chairs
+[2026-06-09T14:39:58.398Z] [INFO ] [realtime-job] Broadcast #1485 — 0 active chairs
+[2026-06-09T14:40:03.457Z] [INFO ] [realtime-job] Broadcast #1490 — 0 active chairs
+[2026-06-09T14:40:08.491Z] [INFO ] [realtime-job] Broadcast #1495 — 0 active chairs
+[2026-06-09T14:40:13.529Z] [INFO ] [realtime-job] Broadcast #1500 — 0 active chairs
+[2026-06-09T14:40:18.584Z] [INFO ] [realtime-job] Broadcast #1505 — 0 active chairs
+[2026-06-09T14:40:23.631Z] [INFO ] [realtime-job] Broadcast #1510 — 0 active chairs
+[2026-06-09T14:40:28.677Z] [INFO ] [realtime-job] Broadcast #1515 — 0 active chairs
+[2026-06-09T14:40:33.724Z] [INFO ] [realtime-job] Broadcast #1520 — 0 active chairs
+[2026-06-09T14:40:38.788Z] [INFO ] [realtime-job] Broadcast #1525 — 0 active chairs
+[2026-06-09T14:40:43.851Z] [INFO ] [realtime-job] Broadcast #1530 — 0 active chairs
+[2026-06-09T14:40:48.917Z] [INFO ] [realtime-job] Broadcast #1535 — 0 active chairs
+[2026-06-09T14:40:53.980Z] [INFO ] [realtime-job] Broadcast #1540 — 0 active chairs
+[2026-06-09T14:40:59.013Z] [INFO ] [realtime-job] Broadcast #1545 — 0 active chairs
+[2026-06-09T14:41:04.053Z] [INFO ] [realtime-job] Broadcast #1550 — 0 active chairs
+[2026-06-09T14:41:09.099Z] [INFO ] [realtime-job] Broadcast #1555 — 0 active chairs
+[2026-06-09T14:41:14.142Z] [INFO ] [realtime-job] Broadcast #1560 — 0 active chairs
+[2026-06-09T14:41:19.180Z] [INFO ] [realtime-job] Broadcast #1565 — 0 active chairs
+[2026-06-09T14:41:24.224Z] [INFO ] [realtime-job] Broadcast #1570 — 0 active chairs
+[2026-06-09T14:41:29.261Z] [INFO ] [realtime-job] Broadcast #1575 — 0 active chairs
+[2026-06-09T14:41:34.309Z] [INFO ] [realtime-job] Broadcast #1580 — 0 active chairs
+[2026-06-09T14:41:39.363Z] [INFO ] [realtime-job] Broadcast #1585 — 0 active chairs
+[2026-06-09T14:41:44.405Z] [INFO ] [realtime-job] Broadcast #1590 — 0 active chairs
+[2026-06-09T14:41:49.463Z] [INFO ] [realtime-job] Broadcast #1595 — 0 active chairs
+[2026-06-09T14:41:54.532Z] [INFO ] [realtime-job] Broadcast #1600 — 0 active chairs
+[2026-06-09T14:41:59.585Z] [INFO ] [realtime-job] Broadcast #1605 — 0 active chairs
+[2026-06-09T14:42:04.646Z] [INFO ] [realtime-job] Broadcast #1610 — 0 active chairs
+[2026-06-09T14:42:09.698Z] [INFO ] [realtime-job] Broadcast #1615 — 0 active chairs
+[2026-06-09T14:42:14.742Z] [INFO ] [realtime-job] Broadcast #1620 — 0 active chairs
+[2026-06-09T14:42:19.795Z] [INFO ] [realtime-job] Broadcast #1625 — 0 active chairs
+[2026-06-09T14:42:24.856Z] [INFO ] [realtime-job] Broadcast #1630 — 0 active chairs
+[2026-06-09T14:42:29.895Z] [INFO ] [realtime-job] Broadcast #1635 — 0 active chairs
+[2026-06-09T14:42:34.937Z] [INFO ] [realtime-job] Broadcast #1640 — 0 active chairs
+[2026-06-09T14:42:40.004Z] [INFO ] [realtime-job] Broadcast #1645 — 0 active chairs
+[2026-06-09T14:42:45.055Z] [INFO ] [realtime-job] Broadcast #1650 — 0 active chairs
+[2026-06-09T14:42:50.100Z] [INFO ] [realtime-job] Broadcast #1655 — 0 active chairs
+[2026-06-09T14:42:55.161Z] [INFO ] [realtime-job] Broadcast #1660 — 0 active chairs
+[2026-06-09T14:43:00.206Z] [INFO ] [realtime-job] Broadcast #1665 — 0 active chairs
+[2026-06-09T14:43:05.267Z] [INFO ] [realtime-job] Broadcast #1670 — 0 active chairs
+[2026-06-09T14:43:10.321Z] [INFO ] [realtime-job] Broadcast #1675 — 0 active chairs
+[2026-06-09T14:43:15.388Z] [INFO ] [realtime-job] Broadcast #1680 — 0 active chairs
+[2026-06-09T14:43:20.444Z] [INFO ] [realtime-job] Broadcast #1685 — 0 active chairs
+[2026-06-09T14:43:25.507Z] [INFO ] [realtime-job] Broadcast #1690 — 0 active chairs
+[2026-06-09T14:43:30.558Z] [INFO ] [realtime-job] Broadcast #1695 — 0 active chairs
+[2026-06-09T14:43:35.592Z] [INFO ] [realtime-job] Broadcast #1700 — 0 active chairs
+[2026-06-09T14:43:40.633Z] [INFO ] [realtime-job] Broadcast #1705 — 0 active chairs
+[2026-06-09T14:43:45.669Z] [INFO ] [realtime-job] Broadcast #1710 — 0 active chairs
+[2026-06-09T14:43:50.716Z] [INFO ] [realtime-job] Broadcast #1715 — 0 active chairs
+[2026-06-09T14:43:55.763Z] [INFO ] [realtime-job] Broadcast #1720 — 0 active chairs
+[2026-06-09T14:44:00.806Z] [INFO ] [realtime-job] Broadcast #1725 — 0 active chairs
+[2026-06-09T14:44:05.847Z] [INFO ] [realtime-job] Broadcast #1730 — 0 active chairs
+[2026-06-09T14:44:10.907Z] [INFO ] [realtime-job] Broadcast #1735 — 0 active chairs
+SyntaxError: Unexpected number in JSON at position 18 (line 1 column 19)
+    at JSON.parse (<anonymous>)
+    at parse (C:\Users\pc\Desktop\dreamMassage\server\node_modules\body-parser\lib\types\json.js:92:19)
+    at C:\Users\pc\Desktop\dreamMassage\server\node_modules\body-parser\lib\read.js:128:18
+    at AsyncResource.runInAsyncScope (node:async_hooks:214:14)
+    at invokeCallback (C:\Users\pc\Desktop\dreamMassage\server\node_modules\raw-body\index.js:238:16)
+    at done (C:\Users\pc\Desktop\dreamMassage\server\node_modules\raw-body\index.js:227:7)
+    at IncomingMessage.onEnd (C:\Users\pc\Desktop\dreamMassage\server\node_modules\raw-body\index.js:287:7)
+    at IncomingMessage.emit (node:events:508:28)
+    at endReadableNT (node:internal/streams/readable:1701:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:89:21)
+[2026-06-09T14:44:15.951Z] [INFO ] [realtime-job] Broadcast #1740 — 0 active chairs
+[2026-06-09T14:44:20.973Z] [INFO ] [realtime-job] Broadcast #1745 — 0 active chairs
+[2026-06-09T14:44:26.053Z] [INFO ] [realtime-job] Broadcast #1750 — 0 active chairs
+[2026-06-09T14:44:31.109Z] [INFO ] [realtime-job] Broadcast #1755 — 0 active chairs
+[2026-06-09T14:44:36.169Z] [INFO ] [realtime-job] Broadcast #1760 — 0 active chairs
+[2026-06-09T14:44:41.204Z] [INFO ] [realtime-job] Broadcast #1765 — 0 active chairs
+[2026-06-09T14:44:46.244Z] [INFO ] [realtime-job] Broadcast #1770 — 0 active chairs
+[2026-06-09T14:44:51.283Z] [INFO ] [realtime-job] Broadcast #1775 — 0 active chairs
+SyntaxError: Unexpected number in JSON at position 18 (line 1 column 19)
+    at JSON.parse (<anonymous>)
+    at parse (C:\Users\pc\Desktop\dreamMassage\server\node_modules\body-parser\lib\types\json.js:92:19)
+    at C:\Users\pc\Desktop\dreamMassage\server\node_modules\body-parser\lib\read.js:128:18
+    at AsyncResource.runInAsyncScope (node:async_hooks:214:14)
+    at invokeCallback (C:\Users\pc\Desktop\dreamMassage\server\node_modules\raw-body\index.js:238:16)
+    at done (C:\Users\pc\Desktop\dreamMassage\server\node_modules\raw-body\index.js:227:7)
+    at IncomingMessage.onEnd (C:\Users\pc\Desktop\dreamMassage\server\node_modules\raw-body\index.js:287:7)
+    at IncomingMessage.emit (node:events:508:28)
+    at endReadableNT (node:internal/streams/readable:1701:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:89:21)
+[2026-06-09T14:44:56.346Z] [INFO ] [realtime-job] Broadcast #1780 — 0 active chairs
+[2026-06-09T14:45:01.397Z] [INFO ] [realtime-job] Broadcast #1785 — 0 active chairs
+[2026-06-09T14:45:06.447Z] [INFO ] [realtime-job] Broadcast #1790 — 0 active chairs
+[2026-06-09T14:45:11.505Z] [INFO ] [realtime-job] Broadcast #1795 — 0 active chairs
+[2026-06-09T14:45:16.559Z] [INFO ] [realtime-job] Broadcast #1800 — 0 active chairs
+[2026-06-09T14:45:21.615Z] [INFO ] [realtime-job] Broadcast #1805 — 0 active chairs
+[2026-06-09T14:45:26.649Z] [INFO ] [realtime-job] Broadcast #1810 — 0 active chairs
+[2026-06-09T14:45:31.692Z] [INFO ] [realtime-job] Broadcast #1815 — 0 active chairs
+[2026-06-09T14:45:36.727Z] [INFO ] [realtime-job] Broadcast #1820 — 0 active chairs
+[2026-06-09T14:45:41.772Z] [INFO ] [realtime-job] Broadcast #1825 — 0 active chairs
+[2026-06-09T14:45:46.820Z] [INFO ] [realtime-job] Broadcast #1830 — 0 active chairs
+[2026-06-09T14:45:51.877Z] [INFO ] [realtime-job] Broadcast #1835 — 0 active chairs
+[2026-06-09T14:45:56.915Z] [INFO ] [realtime-job] Broadcast #1840 — 0 active chairs
+[2026-06-09T14:46:01.992Z] [INFO ] [realtime-job] Broadcast #1845 — 0 active chairs
+[2026-06-09T14:46:07.035Z] [INFO ] [realtime-job] Broadcast #1850 — 0 active chairs
+[2026-06-09T14:46:12.079Z] [INFO ] [realtime-job] Broadcast #1855 — 0 active chairs
+[2026-06-09T14:46:17.127Z] [INFO ] [realtime-job] Broadcast #1860 — 0 active chairs
+[2026-06-09T14:46:22.182Z] [INFO ] [realtime-job] Broadcast #1865 — 0 active chairs
+[2026-06-09T14:46:27.239Z] [INFO ] [realtime-job] Broadcast #1870 — 0 active chairs
+[2026-06-09T14:46:32.293Z] [INFO ] [realtime-job] Broadcast #1875 — 0 active chairs
+[2026-06-09T14:46:37.355Z] [INFO ] [realtime-job] Broadcast #1880 — 0 active chairs
+[2026-06-09T14:46:42.406Z] [INFO ] [realtime-job] Broadcast #1885 — 0 active chairs
+[2026-06-09T14:46:47.457Z] [INFO ] [realtime-job] Broadcast #1890 — 0 active chairs
+[2026-06-09T14:46:52.495Z] [INFO ] [realtime-job] Broadcast #1895 — 0 active chairs
+[2026-06-09T14:46:57.547Z] [INFO ] [realtime-job] Broadcast #1900 — 0 active chairs
+[2026-06-09T14:47:02.600Z] [INFO ] [realtime-job] Broadcast #1905 — 0 active chairs
+[2026-06-09T14:47:07.651Z] [INFO ] [realtime-job] Broadcast #1910 — 0 active chairs
+[2026-06-09T14:47:12.685Z] [INFO ] [realtime-job] Broadcast #1915 — 0 active chairs
+[2026-06-09T14:47:17.733Z] [INFO ] [realtime-job] Broadcast #1920 — 0 active chairs
+[2026-06-09T14:47:22.783Z] [INFO ] [realtime-job] Broadcast #1925 — 0 active chairs
+[2026-06-09T14:47:27.831Z] [INFO ] [realtime-job] Broadcast #1930 — 0 active chairs
+[2026-06-09T14:47:32.853Z] [INFO ] [realtime-job] Broadcast #1935 — 0 active chairs
+[2026-06-09T14:47:37.922Z] [INFO ] [realtime-job] Broadcast #1940 — 0 active chairs
+[2026-06-09T14:47:42.970Z] [INFO ] [realtime-job] Broadcast #1945 — 0 active chairs
+[2026-06-09T14:47:48.027Z] [INFO ] [realtime-job] Broadcast #1950 — 0 active chairs
+[2026-06-09T14:47:53.097Z] [INFO ] [realtime-job] Broadcast #1955 — 0 active chairs
+[2026-06-09T14:47:58.159Z] [INFO ] [realtime-job] Broadcast #1960 — 0 active chairs
+[2026-06-09T14:48:03.201Z] [INFO ] [realtime-job] Broadcast #1965 — 0 active chairs
+[2026-06-09T14:48:08.248Z] [INFO ] [realtime-job] Broadcast #1970 — 0 active chairs
+SyntaxError: Unexpected number in JSON at position 18 (line 1 column 19)
+    at JSON.parse (<anonymous>)
+    at parse (C:\Users\pc\Desktop\dreamMassage\server\node_modules\body-parser\lib\types\json.js:92:19)
+    at C:\Users\pc\Desktop\dreamMassage\server\node_modules\body-parser\lib\read.js:128:18
+    at AsyncResource.runInAsyncScope (node:async_hooks:214:14)
+    at invokeCallback (C:\Users\pc\Desktop\dreamMassage\server\node_modules\raw-body\index.js:238:16)
+    at done (C:\Users\pc\Desktop\dreamMassage\server\node_modules\raw-body\index.js:227:7)
+    at IncomingMessage.onEnd (C:\Users\pc\Desktop\dreamMassage\server\node_modules\raw-body\index.js:287:7)
+    at IncomingMessage.emit (node:events:508:28)
+    at endReadableNT (node:internal/streams/readable:1701:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:89:21)
+[2026-06-09T14:48:13.287Z] [INFO ] [realtime-job] Broadcast #1975 — 0 active chairs
+[2026-06-09T14:48:18.333Z] [INFO ] [realtime-job] Broadcast #1980 — 0 active chairs
+[2026-06-09T14:48:23.369Z] [INFO ] [realtime-job] Broadcast #1985 — 0 active chairs
+[2026-06-09T14:48:28.430Z] [INFO ] [realtime-job] Broadcast #1990 — 0 active chairs
+[2026-06-09T14:48:33.477Z] [INFO ] [realtime-job] Broadcast #1995 — 0 active chairs
+[2026-06-09T14:48:38.539Z] [INFO ] [realtime-job] Broadcast #2000 — 0 active chairs
+[2026-06-09T14:48:43.586Z] [INFO ] [realtime-job] Broadcast #2005 — 0 active chairs
+[2026-06-09T14:48:48.645Z] [INFO ] [realtime-job] Broadcast #2010 — 0 active chairs
+[2026-06-09T14:48:53.688Z] [INFO ] [realtime-job] Broadcast #2015 — 0 active chairs
+[2026-06-09T14:48:58.754Z] [INFO ] [realtime-job] Broadcast #2020 — 0 active chairs
+[2026-06-09T14:49:03.802Z] [INFO ] [realtime-job] Broadcast #2025 — 0 active chairs
+[2026-06-09T14:49:08.840Z] [INFO ] [realtime-job] Broadcast #2030 — 0 active chairs
+[2026-06-09T14:49:13.897Z] [INFO ] [realtime-job] Broadcast #2035 — 0 active chairs
+[2026-06-09T14:49:18.945Z] [INFO ] [realtime-job] Broadcast #2040 — 0 active chairs
+[2026-06-09T14:49:23.993Z] [INFO ] [realtime-job] Broadcast #2045 — 0 active chairs
+[2026-06-09T14:49:29.035Z] [INFO ] [realtime-job] Broadcast #2050 — 0 active chairs
+[2026-06-09T14:49:34.077Z] [INFO ] [realtime-job] Broadcast #2055 — 0 active chairs
+[2026-06-09T14:49:39.122Z] [INFO ] [realtime-job] Broadcast #2060 — 0 active chairs
+[2026-06-09T14:49:44.159Z] [INFO ] [realtime-job] Broadcast #2065 — 0 active chairs
+[2026-06-09T14:49:49.212Z] [INFO ] [realtime-job] Broadcast #2070 — 0 active chairs
+[2026-06-09T14:49:54.269Z] [INFO ] [realtime-job] Broadcast #2075 — 0 active chairs
+[2026-06-09T14:49:59.338Z] [INFO ] [realtime-job] Broadcast #2080 — 0 active chairs
+[2026-06-09T14:50:04.402Z] [INFO ] [realtime-job] Broadcast #2085 — 0 active chairs
+[2026-06-09T14:50:09.444Z] [INFO ] [realtime-job] Broadcast #2090 — 0 active chairs
+[2026-06-09T14:50:14.506Z] [INFO ] [realtime-job] Broadcast #2095 — 0 active chairs
+[2026-06-09T14:50:19.570Z] [INFO ] [realtime-job] Broadcast #2100 — 0 active chairs
+[2026-06-09T14:50:24.613Z] [INFO ] [realtime-job] Broadcast #2105 — 0 active chairs
+[2026-06-09T14:50:29.667Z] [INFO ] [realtime-job] Broadcast #2110 — 0 active chairs
+[2026-06-09T14:50:34.727Z] [INFO ] [realtime-job] Broadcast #2115 — 0 active chairs
+[2026-06-09T14:50:39.794Z] [INFO ] [realtime-job] Broadcast #2120 — 0 active chairs
+[2026-06-09T14:50:44.848Z] [INFO ] [realtime-job] Broadcast #2125 — 0 active chairs
+[2026-06-09T14:50:49.924Z] [INFO ] [realtime-job] Broadcast #2130 — 0 active chairs
+[2026-06-09T14:50:54.983Z] [INFO ] [realtime-job] Broadcast #2135 — 0 active chairs
+[2026-06-09T14:51:00.027Z] [INFO ] [realtime-job] Broadcast #2140 — 0 active chairs
+[2026-06-09T14:51:05.068Z] [INFO ] [realtime-job] Broadcast #2145 — 0 active chairs
+[2026-06-09T14:51:10.132Z] [INFO ] [realtime-job] Broadcast #2150 — 0 active chairs
+[2026-06-09T14:51:15.197Z] [INFO ] [realtime-job] Broadcast #2155 — 0 active chairs
+[2026-06-09T14:51:20.255Z] [INFO ] [realtime-job] Broadcast #2160 — 0 active chairs
+[2026-06-09T14:51:25.303Z] [INFO ] [realtime-job] Broadcast #2165 — 0 active chairs
+[2026-06-09T14:51:30.360Z] [INFO ] [realtime-job] Broadcast #2170 — 0 active chairs
+[2026-06-09T14:51:35.417Z] [INFO ] [realtime-job] Broadcast #2175 — 0 active chairs
+[2026-06-09T14:51:40.461Z] [INFO ] [realtime-job] Broadcast #2180 — 0 active chairs
+[2026-06-09T14:51:45.513Z] [INFO ] [realtime-job] Broadcast #2185 — 0 active chairs
+[2026-06-09T14:51:50.570Z] [INFO ] [realtime-job] Broadcast #2190 — 0 active chairs
+[2026-06-09T14:51:55.608Z] [INFO ] [realtime-job] Broadcast #2195 — 0 active chairs
+[2026-06-09T14:52:00.669Z] [INFO ] [realtime-job] Broadcast #2200 — 0 active chairs
+[2026-06-09T14:52:05.724Z] [INFO ] [realtime-job] Broadcast #2205 — 0 active chairs
+[2026-06-09T14:52:10.781Z] [INFO ] [realtime-job] Broadcast #2210 — 0 active chairs
+[2026-06-09T14:52:15.836Z] [INFO ] [realtime-job] Broadcast #2215 — 0 active chairs
+[2026-06-09T14:52:20.887Z] [INFO ] [realtime-job] Broadcast #2220 — 0 active chairs
+[2026-06-09T14:52:25.947Z] [INFO ] [realtime-job] Broadcast #2225 — 0 active chairs
+[2026-06-09T14:52:31.008Z] [INFO ] [realtime-job] Broadcast #2230 — 0 active chairs
+[2026-06-09T14:52:36.073Z] [INFO ] [realtime-job] Broadcast #2235 — 0 active chairs
+[2026-06-09T14:52:41.135Z] [INFO ] [realtime-job] Broadcast #2240 — 0 active chairs
+[2026-06-09T14:52:46.198Z] [INFO ] [realtime-job] Broadcast #2245 — 0 active chairs
+[2026-06-09T14:52:51.252Z] [INFO ] [realtime-job] Broadcast #2250 — 0 active chairs
+[2026-06-09T14:52:56.296Z] [INFO ] [realtime-job] Broadcast #2255 — 0 active chairs
+[2026-06-09T14:53:01.345Z] [INFO ] [realtime-job] Broadcast #2260 — 0 active chairs
+[2026-06-09T14:53:06.406Z] [INFO ] [realtime-job] Broadcast #2265 — 0 active chairs
+[2026-06-09T14:53:11.461Z] [INFO ] [realtime-job] Broadcast #2270 — 0 active chairs
+[2026-06-09T14:53:16.506Z] [INFO ] [realtime-job] Broadcast #2275 — 0 active chairs
+[2026-06-09T14:53:21.539Z] [INFO ] [realtime-job] Broadcast #2280 — 0 active chairs
+[2026-06-09T14:53:26.589Z] [INFO ] [realtime-job] Broadcast #2285 — 0 active chairs
+[2026-06-09T14:53:31.644Z] [INFO ] [realtime-job] Broadcast #2290 — 0 active chairs
+[2026-06-09T14:53:36.689Z] [INFO ] [realtime-job] Broadcast #2295 — 0 active chairs
+[2026-06-09T14:53:41.729Z] [INFO ] [realtime-job] Broadcast #2300 — 0 active chairs
+[2026-06-09T14:53:46.794Z] [INFO ] [realtime-job] Broadcast #2305 — 0 active chairs
+[2026-06-09T14:53:51.833Z] [INFO ] [realtime-job] Broadcast #2310 — 0 active chairs
+[2026-06-09T14:53:56.892Z] [INFO ] [realtime-job] Broadcast #2315 — 0 active chairs
+[2026-06-09T14:54:01.945Z] [INFO ] [realtime-job] Broadcast #2320 — 0 active chairs
+[2026-06-09T14:54:06.984Z] [INFO ] [realtime-job] Broadcast #2325 — 0 active chairs
+[2026-06-09T14:54:12.043Z] [INFO ] [realtime-job] Broadcast #2330 — 0 active chairs
+[2026-06-09T14:54:17.094Z] [INFO ] [realtime-job] Broadcast #2335 — 0 active chairs
+[2026-06-09T14:54:22.144Z] [INFO ] [realtime-job] Broadcast #2340 — 0 active chairs
+[2026-06-09T14:54:27.204Z] [INFO ] [realtime-job] Broadcast #2345 — 0 active chairs
+[2026-06-09T14:54:32.271Z] [INFO ] [realtime-job] Broadcast #2350 — 0 active chairs
+[2026-06-09T14:54:37.318Z] [INFO ] [realtime-job] Broadcast #2355 — 0 active chairs
+[2026-06-09T14:54:42.371Z] [INFO ] [realtime-job] Broadcast #2360 — 0 active chairs
+[2026-06-09T14:54:47.415Z] [INFO ] [realtime-job] Broadcast #2365 — 0 active chairs
+[2026-06-09T14:54:52.479Z] [INFO ] [realtime-job] Broadcast #2370 — 0 active chairs
+[2026-06-09T14:54:57.529Z] [INFO ] [realtime-job] Broadcast #2375 — 0 active chairs
+[2026-06-09T14:55:02.589Z] [INFO ] [realtime-job] Broadcast #2380 — 0 active chairs
+[2026-06-09T14:55:07.638Z] [INFO ] [realtime-job] Broadcast #2385 — 0 active chairs
+[2026-06-09T14:55:12.692Z] [INFO ] [realtime-job] Broadcast #2390 — 0 active chairs
+[2026-06-09T14:55:17.738Z] [INFO ] [realtime-job] Broadcast #2395 — 0 active chairs
+[2026-06-09T14:55:22.790Z] [INFO ] [realtime-job] Broadcast #2400 — 0 active chairs
+[2026-06-09T14:55:27.829Z] [INFO ] [realtime-job] Broadcast #2405 — 0 active chairs
+[2026-06-09T14:55:32.919Z] [INFO ] [realtime-job] Broadcast #2410 — 0 active chairs
+[2026-06-09T14:55:38.006Z] [INFO ] [realtime-job] Broadcast #2415 — 0 active chairs
+[2026-06-09T14:55:43.034Z] [INFO ] [realtime-job] Broadcast #2420 — 0 active chairs
+[2026-06-09T14:55:48.082Z] [INFO ] [realtime-job] Broadcast #2425 — 0 active chairs
+[2026-06-09T14:55:53.136Z] [INFO ] [realtime-job] Broadcast #2430 — 0 active chairs
+[2026-06-09T14:55:58.183Z] [INFO ] [realtime-job] Broadcast #2435 — 0 active chairs
+[2026-06-09T14:56:03.248Z] [INFO ] [realtime-job] Broadcast #2440 — 0 active chairs
+[2026-06-09T14:56:08.315Z] [INFO ] [realtime-job] Broadcast #2445 — 0 active chairs
+[2026-06-09T14:56:13.346Z] [INFO ] [realtime-job] Broadcast #2450 — 0 active chairs
+[2026-06-09T14:56:18.409Z] [INFO ] [realtime-job] Broadcast #2455 — 0 active chairs
+[2026-06-09T14:56:23.476Z] [INFO ] [realtime-job] Broadcast #2460 — 0 active chairs
+[2026-06-09T14:56:28.536Z] [INFO ] [realtime-job] Broadcast #2465 — 0 active chairs
+[2026-06-09T14:56:33.580Z] [INFO ] [realtime-job] Broadcast #2470 — 0 active chairs
+[2026-06-09T14:56:38.625Z] [INFO ] [realtime-job] Broadcast #2475 — 0 active chairs
+[2026-06-09T14:56:43.658Z] [INFO ] [realtime-job] Broadcast #2480 — 0 active chairs
+[2026-06-09T14:56:48.698Z] [INFO ] [realtime-job] Broadcast #2485 — 0 active chairs
+[2026-06-09T14:56:53.747Z] [INFO ] [realtime-job] Broadcast #2490 — 0 active chairs
+[2026-06-09T14:56:58.800Z] [INFO ] [realtime-job] Broadcast #2495 — 0 active chairs
+[2026-06-09T14:57:03.826Z] [INFO ] [realtime-job] Broadcast #2500 — 0 active chairs
+[2026-06-09T14:57:08.886Z] [INFO ] [realtime-job] Broadcast #2505 — 0 active chairs
+[2026-06-09T14:57:13.927Z] [INFO ] [realtime-job] Broadcast #2510 — 0 active chairs
+[2026-06-09T14:57:18.953Z] [INFO ] [realtime-job] Broadcast #2515 — 0 active chairs
+[2026-06-09T14:57:23.993Z] [INFO ] [realtime-job] Broadcast #2520 — 0 active chairs
+[2026-06-09T14:57:29.042Z] [INFO ] [realtime-job] Broadcast #2525 — 0 active chairs
+[2026-06-09T14:57:34.086Z] [INFO ] [realtime-job] Broadcast #2530 — 0 active chairs
+[2026-06-09T14:57:39.147Z] [INFO ] [realtime-job] Broadcast #2535 — 0 active chairs
+[2026-06-09T14:57:44.186Z] [INFO ] [realtime-job] Broadcast #2540 — 0 active chairs
+[2026-06-09T14:57:49.240Z] [INFO ] [realtime-job] Broadcast #2545 — 0 active chairs
+[2026-06-09T14:57:54.295Z] [INFO ] [realtime-job] Broadcast #2550 — 0 active chairs
+[2026-06-09T14:57:59.353Z] [INFO ] [realtime-job] Broadcast #2555 — 0 active chairs
+[2026-06-09T14:58:04.396Z] [INFO ] [realtime-job] Broadcast #2560 — 0 active chairs
+[2026-06-09T14:58:09.439Z] [INFO ] [realtime-job] Broadcast #2565 — 0 active chairs
+[2026-06-09T14:58:14.475Z] [INFO ] [realtime-job] Broadcast #2570 — 0 active chairs
+[2026-06-09T14:58:19.491Z] [INFO ] [realtime-job] Broadcast #2575 — 0 active chairs
+[2026-06-09T14:58:24.545Z] [INFO ] [realtime-job] Broadcast #2580 — 0 active chairs
+[2026-06-09T14:58:29.594Z] [INFO ] [realtime-job] Broadcast #2585 — 0 active chairs
+[2026-06-09T14:58:34.654Z] [INFO ] [realtime-job] Broadcast #2590 — 0 active chairs
+[2026-06-09T14:58:39.685Z] [INFO ] [realtime-job] Broadcast #2595 — 0 active chairs
+[2026-06-09T14:58:44.728Z] [INFO ] [realtime-job] Broadcast #2600 — 0 active chairs
+[2026-06-09T14:58:49.788Z] [INFO ] [realtime-job] Broadcast #2605 — 0 active chairs
+[2026-06-09T14:58:54.854Z] [INFO ] [realtime-job] Broadcast #2610 — 0 active chairs
+[2026-06-09T14:58:59.897Z] [INFO ] [realtime-job] Broadcast #2615 — 0 active chairs
+[2026-06-09T14:59:04.923Z] [INFO ] [realtime-job] Broadcast #2620 — 0 active chairs
+[2026-06-09T14:59:09.972Z] [INFO ] [realtime-job] Broadcast #2625 — 0 active chairs
+[2026-06-09T14:59:15.024Z] [INFO ] [realtime-job] Broadcast #2630 — 0 active chairs
+[2026-06-09T14:59:20.063Z] [INFO ] [realtime-job] Broadcast #2635 — 0 active chairs
+[2026-06-09T14:59:25.123Z] [INFO ] [realtime-job] Broadcast #2640 — 0 active chairs
+[2026-06-09T14:59:30.154Z] [INFO ] [realtime-job] Broadcast #2645 — 0 active chairs
+[2026-06-09T14:59:35.185Z] [INFO ] [realtime-job] Broadcast #2650 — 0 active chairs
+[2026-06-09T15:00:04.573Z] [INFO ] [realtime-job] Broadcast #2655 — 0 active chairs
+[2026-06-09T15:08:43.402Z] [INFO ] [realtime-job] Broadcast #2660 — 0 active chairs
+[2026-06-09T15:08:48.449Z] [INFO ] [realtime-job] Broadcast #2665 — 0 active chairs
+[2026-06-09T15:08:53.502Z] [INFO ] [realtime-job] Broadcast #2670 — 0 active chairs
+[2026-06-09T15:08:58.571Z] [INFO ] [realtime-job] Broadcast #2675 — 0 active chairs
+[2026-06-09T15:09:03.625Z] [INFO ] [realtime-job] Broadcast #2680 — 0 active chairs
+[2026-06-09T15:09:08.652Z] [INFO ] [realtime-job] Broadcast #2685 — 0 active chairs
+[2026-06-09T15:09:13.716Z] [INFO ] [realtime-job] Broadcast #2690 — 0 active chairs
+[2026-06-09T15:09:18.767Z] [INFO ] [realtime-job] Broadcast #2695 — 0 active chairs
+[2026-06-09T15:09:23.806Z] [INFO ] [realtime-job] Broadcast #2700 — 0 active chairs
+[2026-06-09T15:09:28.860Z] [INFO ] [realtime-job] Broadcast #2705 — 0 active chairs
+[2026-06-09T15:09:33.887Z] [INFO ] [realtime-job] Broadcast #2710 — 0 active chairs
+[2026-06-09T15:09:38.937Z] [INFO ] [realtime-job] Broadcast #2715 — 0 active chairs
+[2026-06-09T15:09:43.962Z] [INFO ] [realtime-job] Broadcast #2720 — 0 active chairs
+[2026-06-09T15:09:48.985Z] [INFO ] [realtime-job] Broadcast #2725 — 0 active chairs
+[2026-06-09T15:09:54.018Z] [INFO ] [realtime-job] Broadcast #2730 — 0 active chairs
+[2026-06-09T15:09:59.044Z] [INFO ] [realtime-job] Broadcast #2735 — 0 active chairs
+[2026-06-09T15:10:04.067Z] [INFO ] [realtime-job] Broadcast #2740 — 0 active chairs
+[2026-06-09T15:10:09.102Z] [INFO ] [realtime-job] Broadcast #2745 — 0 active chairs
+[2026-06-09T15:10:14.125Z] [INFO ] [realtime-job] Broadcast #2750 — 0 active chairs
+[2026-06-09T15:10:19.158Z] [INFO ] [realtime-job] Broadcast #2755 — 0 active chairs
+[2026-06-09T15:10:24.195Z] [INFO ] [realtime-job] Broadcast #2760 — 0 active chairs
+[2026-06-09T15:10:29.217Z] [INFO ] [realtime-job] Broadcast #2765 — 0 active chairs
+[2026-06-09T15:10:34.271Z] [INFO ] [realtime-job] Broadcast #2770 — 0 active chairs
+[2026-06-09T15:10:39.302Z] [INFO ] [realtime-job] Broadcast #2775 — 0 active chairs
+[2026-06-09T15:10:44.342Z] [INFO ] [realtime-job] Broadcast #2780 — 0 active chairs
+[2026-06-09T15:10:49.364Z] [INFO ] [realtime-job] Broadcast #2785 — 0 active chairs
+[2026-06-09T15:10:54.421Z] [INFO ] [realtime-job] Broadcast #2790 — 0 active chairs
+[2026-06-09T15:10:59.464Z] [INFO ] [realtime-job] Broadcast #2795 — 0 active chairs
+[2026-06-09T15:11:04.493Z] [INFO ] [realtime-job] Broadcast #2800 — 0 active chairs
+[2026-06-09T15:11:09.528Z] [INFO ] [realtime-job] Broadcast #2805 — 0 active chairs
+[2026-06-09T15:11:14.582Z] [INFO ] [realtime-job] Broadcast #2810 — 0 active chairs
+[2026-06-09T15:11:19.623Z] [INFO ] [realtime-job] Broadcast #2815 — 0 active chairs
+[2026-06-09T15:11:24.672Z] [INFO ] [realtime-job] Broadcast #2820 — 0 active chairs
+[2026-06-09T15:11:29.714Z] [INFO ] [realtime-job] Broadcast #2825 — 0 active chairs
+[2026-06-09T15:11:34.764Z] [INFO ] [realtime-job] Broadcast #2830 — 0 active chairs
+[2026-06-09T15:11:39.779Z] [INFO ] [realtime-job] Broadcast #2835 — 0 active chairs
+[2026-06-09T15:11:44.825Z] [INFO ] [realtime-job] Broadcast #2840 — 0 active chairs
+[2026-06-09T15:11:49.854Z] [INFO ] [realtime-job] Broadcast #2845 — 0 active chairs
+[2026-06-09T15:11:54.881Z] [INFO ] [realtime-job] Broadcast #2850 — 0 active chairs
+[2026-06-09T15:11:59.907Z] [INFO ] [realtime-job] Broadcast #2855 — 0 active chairs
+[2026-06-09T15:12:04.959Z] [INFO ] [realtime-job] Broadcast #2860 — 0 active chairs
+[2026-06-09T15:12:09.992Z] [INFO ] [realtime-job] Broadcast #2865 — 0 active chairs
+[2026-06-09T15:12:15.015Z] [INFO ] [realtime-job] Broadcast #2870 — 0 active chairs
+[2026-06-09T15:12:20.039Z] [INFO ] [realtime-job] Broadcast #2875 — 0 active chairs
+[2026-06-09T15:12:25.078Z] [INFO ] [realtime-job] Broadcast #2880 — 0 active chairs
+[2026-06-09T15:12:30.107Z] [INFO ] [realtime-job] Broadcast #2885 — 0 active chairs
+[2026-06-09T15:12:35.136Z] [INFO ] [realtime-job] Broadcast #2890 — 0 active chairs
+[2026-06-09T15:12:40.179Z] [INFO ] [realtime-job] Broadcast #2895 — 0 active chairs
+[2026-06-09T15:12:45.226Z] [INFO ] [realtime-job] Broadcast #2900 — 0 active chairs
+[2026-06-09T15:12:50.250Z] [INFO ] [realtime-job] Broadcast #2905 — 0 active chairs
+[2026-06-09T15:12:55.308Z] [INFO ] [realtime-job] Broadcast #2910 — 0 active chairs
+[2026-06-09T15:13:00.332Z] [INFO ] [realtime-job] Broadcast #2915 — 0 active chairs
+[2026-06-09T15:13:05.374Z] [INFO ] [realtime-job] Broadcast #2920 — 0 active chairs
+[2026-06-09T15:13:10.427Z] [INFO ] [realtime-job] Broadcast #2925 — 0 active chairs
+[2026-06-09T15:13:15.463Z] [INFO ] [realtime-job] Broadcast #2930 — 0 active chairs
+[2026-06-09T15:13:20.513Z] [INFO ] [realtime-job] Broadcast #2935 — 0 active chairs
+[2026-06-09T15:13:25.556Z] [INFO ] [realtime-job] Broadcast #2940 — 0 active chairs
+[2026-06-09T15:13:30.596Z] [INFO ] [realtime-job] Broadcast #2945 — 0 active chairs
+[2026-06-09T15:13:35.618Z] [INFO ] [realtime-job] Broadcast #2950 — 0 active chairs
+[2026-06-09T15:13:40.641Z] [INFO ] [realtime-job] Broadcast #2955 — 0 active chairs
+[2026-06-09T15:13:45.658Z] [INFO ] [realtime-job] Broadcast #2960 — 0 active chairs
+[2026-06-09T15:13:50.709Z] [INFO ] [realtime-job] Broadcast #2965 — 0 active chairs
+[2026-06-09T15:13:55.757Z] [INFO ] [realtime-job] Broadcast #2970 — 0 active chairs
+[2026-06-09T15:14:00.819Z] [INFO ] [realtime-job] Broadcast #2975 — 0 active chairs
+[2026-06-09T15:14:05.878Z] [INFO ] [realtime-job] Broadcast #2980 — 0 active chairs
+[2026-06-09T15:14:10.940Z] [INFO ] [realtime-job] Broadcast #2985 — 0 active chairs
+[2026-06-09T15:14:15.990Z] [INFO ] [realtime-job] Broadcast #2990 — 0 active chairs
+[2026-06-09T15:14:21.033Z] [INFO ] [realtime-job] Broadcast #2995 — 0 active chairs
+[2026-06-09T15:14:26.084Z] [INFO ] [realtime-job] Broadcast #3000 — 0 active chairs
+[2026-06-09T15:14:31.149Z] [INFO ] [realtime-job] Broadcast #3005 — 0 active chairs
+[2026-06-09T15:14:36.201Z] [INFO ] [realtime-job] Broadcast #3010 — 0 active chairs
+[2026-06-09T15:14:41.256Z] [INFO ] [realtime-job] Broadcast #3015 — 0 active chairs
+[2026-06-09T15:14:46.300Z] [INFO ] [realtime-job] Broadcast #3020 — 0 active chairs
+[2026-06-09T15:14:51.359Z] [INFO ] [realtime-job] Broadcast #3025 — 0 active chairs
+[2026-06-09T15:14:56.420Z] [INFO ] [realtime-job] Broadcast #3030 — 0 active chairs
+[2026-06-09T15:15:01.461Z] [INFO ] [realtime-job] Broadcast #3035 — 0 active chairs
+[2026-06-09T15:15:06.507Z] [INFO ] [realtime-job] Broadcast #3040 — 0 active chairs
+[2026-06-09T15:15:11.547Z] [INFO ] [realtime-job] Broadcast #3045 — 0 active chairs
+[2026-06-09T15:15:16.605Z] [INFO ] [realtime-job] Broadcast #3050 — 0 active chairs
+[2026-06-09T15:15:21.669Z] [INFO ] [realtime-job] Broadcast #3055 — 0 active chairs
+[2026-06-09T15:15:26.718Z] [INFO ] [realtime-job] Broadcast #3060 — 0 active chairs
+[2026-06-09T15:15:31.783Z] [INFO ] [realtime-job] Broadcast #3065 — 0 active chairs
+[2026-06-09T15:15:36.842Z] [INFO ] [realtime-job] Broadcast #3070 — 0 active chairs
+[2026-06-09T15:15:41.880Z] [INFO ] [realtime-job] Broadcast #3075 — 0 active chairs
+[2026-06-09T15:15:46.935Z] [INFO ] [realtime-job] Broadcast #3080 — 0 active chairs
+[2026-06-09T15:15:51.998Z] [INFO ] [realtime-job] Broadcast #3085 — 0 active chairs
+[2026-06-09T15:15:57.058Z] [INFO ] [realtime-job] Broadcast #3090 — 0 active chairs
+[2026-06-09T15:16:02.108Z] [INFO ] [realtime-job] Broadcast #3095 — 0 active chairs
+[2026-06-09T15:16:07.153Z] [INFO ] [realtime-job] Broadcast #3100 — 0 active chairs
+[2026-06-09T15:16:12.208Z] [INFO ] [realtime-job] Broadcast #3105 — 0 active chairs
+[2026-06-09T15:16:17.271Z] [INFO ] [realtime-job] Broadcast #3110 — 0 active chairs
+[2026-06-09T15:16:22.331Z] [INFO ] [realtime-job] Broadcast #3115 — 0 active chairs
+[2026-06-09T15:16:27.389Z] [INFO ] [realtime-job] Broadcast #3120 — 0 active chairs
+[2026-06-09T15:16:32.451Z] [INFO ] [realtime-job] Broadcast #3125 — 0 active chairs
+[2026-06-09T15:16:37.509Z] [INFO ] [realtime-job] Broadcast #3130 — 0 active chairs
+[2026-06-09T15:16:42.578Z] [INFO ] [realtime-job] Broadcast #3135 — 0 active chairs
+[2026-06-09T15:16:47.636Z] [INFO ] [realtime-job] Broadcast #3140 — 0 active chairs
+[2026-06-09T15:16:52.695Z] [INFO ] [realtime-job] Broadcast #3145 — 0 active chairs
+[2026-06-09T15:16:57.732Z] [INFO ] [realtime-job] Broadcast #3150 — 0 active chairs
+17:17:01 [tsx] change in ./config\env.ts Restarting...
+c[2026-06-09T15:17:03.148Z] [INFO ] ─────────────────────────────────────────
+[2026-06-09T15:17:03.150Z] [INFO ] Dream Massage realtime server started
+[2026-06-09T15:17:03.150Z] [INFO ]   Port     : 4001
+[2026-06-09T15:17:03.150Z] [INFO ]   Mode     : development
+[2026-06-09T15:17:03.150Z] [INFO ]   Origin   : http://localhost:3000
+[2026-06-09T15:17:03.150Z] [INFO ] ─────────────────────────────────────────
+[2026-06-09T15:17:03.150Z] [INFO ] [mock-job] Starting (interval: 1000ms)
+[2026-06-09T15:17:08.215Z] [INFO ] [realtime-job] Broadcast #5 — 0 active chairs
+[2026-06-09T15:17:13.270Z] [INFO ] [realtime-job] Broadcast #10 — 0 active chairs
+[2026-06-09T15:17:18.315Z] [INFO ] [realtime-job] Broadcast #15 — 0 active chairs
+[2026-06-09T15:17:23.375Z] [INFO ] [realtime-job] Broadcast #20 — 0 active chairs
+[2026-06-09T15:17:28.429Z] [INFO ] [realtime-job] Broadcast #25 — 0 active chairs
+[2026-06-09T15:17:33.515Z] [INFO ] [realtime-job] Broadcast #30 — 0 active chairs
+[2026-06-09T15:17:38.547Z] [INFO ] [realtime-job] Broadcast #35 — 0 active chairs
+[2026-06-09T15:17:43.597Z] [INFO ] [realtime-job] Broadcast #40 — 0 active chairs
+[2026-06-09T15:17:48.654Z] [INFO ] [realtime-job] Broadcast #45 — 0 active chairs
+[2026-06-09T15:17:53.717Z] [INFO ] [realtime-job] Broadcast #50 — 0 active chairs
+[2026-06-09T15:17:58.761Z] [INFO ] [realtime-job] Broadcast #55 — 0 active chairs
+[2026-06-09T15:18:03.810Z] [INFO ] [realtime-job] Broadcast #60 — 0 active chairs
+[2026-06-09T15:18:08.856Z] [INFO ] [realtime-job] Broadcast #65 — 0 active chairs
+[2026-06-09T15:18:13.912Z] [INFO ] [realtime-job] Broadcast #70 — 0 active chairs
+[2026-06-09T15:18:18.972Z] [INFO ] [realtime-job] Broadcast #75 — 0 active chairs
+[2026-06-09T15:18:24.030Z] [INFO ] [realtime-job] Broadcast #80 — 0 active chairs
+[2026-06-09T15:18:29.085Z] [INFO ] [realtime-job] Broadcast #85 — 0 active chairs
+[2026-06-09T15:18:34.133Z] [INFO ] [realtime-job] Broadcast #90 — 0 active chairs
+[2026-06-09T15:18:39.178Z] [INFO ] [realtime-job] Broadcast #95 — 0 active chairs
+[2026-06-09T15:18:44.228Z] [INFO ] [realtime-job] Broadcast #100 — 0 active chairs
+[2026-06-09T15:18:49.244Z] [INFO ] [realtime-job] Broadcast #105 — 0 active chairs
+[2026-06-09T15:18:54.297Z] [INFO ] [realtime-job] Broadcast #110 — 0 active chairs
+[2026-06-09T15:18:59.333Z] [INFO ] [realtime-job] Broadcast #115 — 0 active chairs
+[2026-06-09T15:19:04.379Z] [INFO ] [realtime-job] Broadcast #120 — 0 active chairs
+[2026-06-09T15:19:09.404Z] [INFO ] [realtime-job] Broadcast #125 — 0 active chairs
+[2026-06-09T15:19:14.441Z] [INFO ] [realtime-job] Broadcast #130 — 0 active chairs
+17:19:17 [tsx] change in ./jobs\mock-realtime.job.ts Restarting...
+c[2026-06-09T15:19:19.328Z] [INFO ] ─────────────────────────────────────────
+[2026-06-09T15:19:19.330Z] [INFO ] Dream Massage realtime server started
+[2026-06-09T15:19:19.330Z] [INFO ]   Port     : 4001
+[2026-06-09T15:19:19.330Z] [INFO ]   Mode     : development
+[2026-06-09T15:19:19.330Z] [INFO ]   Origin   : http://localhost:3000
+[2026-06-09T15:19:19.330Z] [INFO ] ─────────────────────────────────────────
+[2026-06-09T15:19:19.330Z] [ERROR] [server] Uncaught exception: (0 , import_mock_realtime.startMockRealtimeJob) is not a function
+17:19:39 [tsx] change in ./index.ts Rerunning...
+c[2026-06-09T15:19:40.832Z] [INFO ] ─────────────────────────────────────────
+[2026-06-09T15:19:40.834Z] [INFO ] Dream Massage realtime server started
+[2026-06-09T15:19:40.834Z] [INFO ]   Port       : 4001
+[2026-06-09T15:19:40.834Z] [INFO ]   Mode       : development
+[2026-06-09T15:19:40.834Z] [INFO ]   Origin     : http://localhost:3000
+[2026-06-09T15:19:40.835Z] [INFO ]   Simulation : ON (fast-mode)
+[2026-06-09T15:19:40.835Z] [INFO ] ─────────────────────────────────────────
+[2026-06-09T15:19:40.835Z] [INFO ] [realtime-job] Starting — interval 1000ms, simulation ON, fast-mode ON
+[2026-06-09T15:19:42.213Z] [INFO ] [simulation] Loaded chair IDs: F1, F2, F3, F4, F5
+[2026-06-09T15:19:42.294Z] [INFO ] [state-machine] F2: IDLE → MAYBE_ACTIVE (12.0W)
+[2026-06-09T15:19:42.309Z] [INFO ] [state-machine] F3: IDLE → MAYBE_ACTIVE (11.9W)
+[2026-06-09T15:19:43.947Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.8W)
+[2026-06-09T15:19:45.954Z] [INFO ] [realtime-job] Tick #5 — 0 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:19:47.988Z] [WARN ] [state-machine] F2: session 3f2c6898 started — NO_OPEN_SHIFT
+[2026-06-09T15:19:48.020Z] [WARN ] [state-machine] F3: session 1e71f476 started — NO_OPEN_SHIFT
+[2026-06-09T15:19:49.037Z] [WARN ] [state-machine] F5: session 99eac6a8 started — NO_OPEN_SHIFT
+[2026-06-09T15:19:51.113Z] [INFO ] [realtime-job] Tick #10 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:19:55.099Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.1W ≤ 5W)
+[2026-06-09T15:19:56.090Z] [INFO ] [realtime-job] Tick #15 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:20:01.142Z] [INFO ] [realtime-job] Tick #20 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:20:05.243Z] [INFO ] [state-machine] F5: session 99eac6a8 FINISHED (11s, 20 MAD)
+[2026-06-09T15:20:06.182Z] [INFO ] [realtime-job] Tick #25 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+17:20:10 [tsx] change in ./modules\chairs\chair-state.service.ts Restarting...
+c[2026-06-09T15:20:10.973Z] [INFO ] ─────────────────────────────────────────
+[2026-06-09T15:20:10.975Z] [INFO ] Dream Massage realtime server started
+[2026-06-09T15:20:10.975Z] [INFO ]   Port       : 4001
+[2026-06-09T15:20:10.975Z] [INFO ]   Mode       : development
+[2026-06-09T15:20:10.975Z] [INFO ]   Origin     : http://localhost:3000
+[2026-06-09T15:20:10.975Z] [INFO ]   Simulation : ON (fast-mode)
+[2026-06-09T15:20:10.975Z] [INFO ] ─────────────────────────────────────────
+[2026-06-09T15:20:10.976Z] [INFO ] [realtime-job] Starting — interval 1000ms, simulation ON, fast-mode ON
+[2026-06-09T15:20:12.367Z] [INFO ] [simulation] Loaded chair IDs: F1, F2, F3, F4, F5
+[2026-06-09T15:20:14.090Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (12.0W)
+[2026-06-09T15:20:16.104Z] [INFO ] [realtime-job] Tick #5 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:20:19.193Z] [WARN ] [state-machine] F5: session a11c1e9d started — NO_OPEN_SHIFT
+[2026-06-09T15:20:21.197Z] [INFO ] [realtime-job] Tick #10 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:20:25.222Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.2W ≤ 5W)
+[2026-06-09T15:20:26.218Z] [INFO ] [realtime-job] Tick #15 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:20:31.281Z] [INFO ] [realtime-job] Tick #20 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:20:35.365Z] [INFO ] [state-machine] F5: session a11c1e9d FINISHED (11s, 20 MAD)
+[2026-06-09T15:20:36.328Z] [INFO ] [realtime-job] Tick #25 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:20:41.377Z] [INFO ] [state-machine] F3: ACTIVE → MAYBE_FINISHED (3.0W ≤ 5W)
+[2026-06-09T15:20:41.404Z] [INFO ] [realtime-job] Tick #30 — 1 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:20:44.398Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.7W)
+[2026-06-09T15:20:45.398Z] [INFO ] [state-machine] F3: MAYBE_FINISHED → ACTIVE (recovered 12.3W)
+[2026-06-09T15:20:46.422Z] [INFO ] [realtime-job] Tick #35 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:20:49.465Z] [WARN ] [state-machine] F5: session 42f0f688 started — NO_OPEN_SHIFT
+[2026-06-09T15:20:51.485Z] [INFO ] [realtime-job] Tick #40 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:20:55.539Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.0W ≤ 5W)
+[2026-06-09T15:20:56.543Z] [INFO ] [realtime-job] Tick #45 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:21:01.616Z] [INFO ] [realtime-job] Tick #50 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:21:05.647Z] [INFO ] [state-machine] F5: session 42f0f688 FINISHED (11s, 20 MAD)
+[2026-06-09T15:21:06.630Z] [INFO ] [realtime-job] Tick #55 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:21:11.691Z] [INFO ] [realtime-job] Tick #60 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:21:14.731Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.8W)
+[2026-06-09T15:21:16.761Z] [INFO ] [realtime-job] Tick #65 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:21:19.800Z] [WARN ] [state-machine] F5: session e5dd9f3e started — NO_OPEN_SHIFT
+[2026-06-09T15:21:21.822Z] [INFO ] [realtime-job] Tick #70 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:21:25.869Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.0W ≤ 5W)
+[2026-06-09T15:21:26.876Z] [INFO ] [realtime-job] Tick #75 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:21:31.929Z] [INFO ] [realtime-job] Tick #80 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:21:35.981Z] [INFO ] [state-machine] F5: session e5dd9f3e FINISHED (11s, 20 MAD)
+[2026-06-09T15:21:36.979Z] [INFO ] [realtime-job] Tick #85 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:21:42.015Z] [INFO ] [state-machine] F3: ACTIVE → MAYBE_FINISHED (3.2W ≤ 5W)
+[2026-06-09T15:21:42.037Z] [INFO ] [realtime-job] Tick #90 — 1 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:21:45.063Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.7W)
+[2026-06-09T15:21:46.046Z] [INFO ] [state-machine] F3: MAYBE_FINISHED → ACTIVE (recovered 12.3W)
+[2026-06-09T15:21:47.081Z] [INFO ] [realtime-job] Tick #95 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:21:50.103Z] [WARN ] [state-machine] F5: session 9e508bf5 started — NO_OPEN_SHIFT
+[2026-06-09T15:21:52.107Z] [INFO ] [realtime-job] Tick #100 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:21:56.146Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.1W ≤ 5W)
+[2026-06-09T15:21:57.142Z] [INFO ] [realtime-job] Tick #105 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:22:02.206Z] [INFO ] [realtime-job] Tick #110 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:22:06.229Z] [INFO ] [state-machine] F5: session 9e508bf5 FINISHED (11s, 20 MAD)
+[2026-06-09T15:22:07.240Z] [INFO ] [realtime-job] Tick #115 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:22:12.291Z] [INFO ] [realtime-job] Tick #120 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:22:15.332Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.5W)
+[2026-06-09T15:22:17.352Z] [INFO ] [realtime-job] Tick #125 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:22:20.394Z] [WARN ] [state-machine] F5: session 3cbcfeb2 started — NO_OPEN_SHIFT
+[2026-06-09T15:22:22.427Z] [INFO ] [realtime-job] Tick #130 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:22:26.449Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.0W ≤ 5W)
+[2026-06-09T15:22:27.459Z] [INFO ] [realtime-job] Tick #135 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:22:32.526Z] [INFO ] [realtime-job] Tick #140 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:22:36.590Z] [INFO ] [state-machine] F5: session 3cbcfeb2 FINISHED (11s, 20 MAD)
+[2026-06-09T15:22:37.561Z] [INFO ] [realtime-job] Tick #145 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:22:42.614Z] [INFO ] [state-machine] F3: ACTIVE → MAYBE_FINISHED (3.2W ≤ 5W)
+[2026-06-09T15:22:42.639Z] [INFO ] [realtime-job] Tick #150 — 1 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:22:45.656Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.5W)
+[2026-06-09T15:22:46.654Z] [INFO ] [state-machine] F3: MAYBE_FINISHED → ACTIVE (recovered 11.9W)
+[2026-06-09T15:22:47.685Z] [INFO ] [realtime-job] Tick #155 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:22:50.712Z] [WARN ] [state-machine] F5: session 9f90d1df started — NO_OPEN_SHIFT
+[2026-06-09T15:22:52.713Z] [INFO ] [realtime-job] Tick #160 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:22:56.741Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.1W ≤ 5W)
+[2026-06-09T15:22:57.749Z] [INFO ] [realtime-job] Tick #165 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:23:02.811Z] [INFO ] [realtime-job] Tick #170 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:23:06.885Z] [INFO ] [state-machine] F5: session 9f90d1df FINISHED (11s, 20 MAD)
+[2026-06-09T15:23:07.863Z] [INFO ] [realtime-job] Tick #175 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:23:12.887Z] [INFO ] [realtime-job] Tick #180 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:23:15.914Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.7W)
+[2026-06-09T15:23:17.938Z] [INFO ] [realtime-job] Tick #185 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:23:20.992Z] [WARN ] [state-machine] F5: session 13af577f started — NO_OPEN_SHIFT
+[2026-06-09T15:23:23.005Z] [INFO ] [realtime-job] Tick #190 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:23:27.046Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.1W ≤ 5W)
+[2026-06-09T15:23:28.051Z] [INFO ] [realtime-job] Tick #195 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:23:33.106Z] [INFO ] [realtime-job] Tick #200 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:23:37.161Z] [INFO ] [state-machine] F5: session 13af577f FINISHED (11s, 20 MAD)
+[2026-06-09T15:23:38.163Z] [INFO ] [realtime-job] Tick #205 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:23:43.193Z] [INFO ] [state-machine] F3: ACTIVE → MAYBE_FINISHED (3.2W ≤ 5W)
+[2026-06-09T15:23:43.213Z] [INFO ] [realtime-job] Tick #210 — 1 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:23:46.243Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.9W)
+[2026-06-09T15:23:47.250Z] [INFO ] [state-machine] F3: MAYBE_FINISHED → ACTIVE (recovered 11.7W)
+[2026-06-09T15:23:48.251Z] [INFO ] [realtime-job] Tick #215 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:23:51.277Z] [WARN ] [state-machine] F5: session b77af060 started — NO_OPEN_SHIFT
+[2026-06-09T15:23:53.305Z] [INFO ] [realtime-job] Tick #220 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:23:57.350Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.2W ≤ 5W)
+[2026-06-09T15:23:58.357Z] [INFO ] [realtime-job] Tick #225 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:24:03.417Z] [INFO ] [realtime-job] Tick #230 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:24:07.463Z] [INFO ] [state-machine] F5: session b77af060 FINISHED (11s, 20 MAD)
+[2026-06-09T15:24:08.472Z] [INFO ] [realtime-job] Tick #235 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:24:13.509Z] [INFO ] [realtime-job] Tick #240 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:24:16.535Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (12.1W)
+[2026-06-09T15:24:18.571Z] [INFO ] [realtime-job] Tick #245 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:24:21.592Z] [WARN ] [state-machine] F5: session c53879f9 started — NO_OPEN_SHIFT
+[2026-06-09T15:24:23.603Z] [INFO ] [realtime-job] Tick #250 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:24:27.642Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.1W ≤ 5W)
+[2026-06-09T15:24:28.660Z] [INFO ] [realtime-job] Tick #255 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:24:33.728Z] [INFO ] [realtime-job] Tick #260 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:24:37.765Z] [INFO ] [state-machine] F5: session c53879f9 FINISHED (11s, 20 MAD)
+[2026-06-09T15:24:38.769Z] [INFO ] [realtime-job] Tick #265 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:24:43.808Z] [INFO ] [state-machine] F3: ACTIVE → MAYBE_FINISHED (3.1W ≤ 5W)
+[2026-06-09T15:24:43.833Z] [INFO ] [realtime-job] Tick #270 — 1 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:24:46.843Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.6W)
+[2026-06-09T15:24:47.848Z] [INFO ] [state-machine] F3: MAYBE_FINISHED → ACTIVE (recovered 12.3W)
+[2026-06-09T15:24:48.880Z] [INFO ] [realtime-job] Tick #275 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:24:51.908Z] [WARN ] [state-machine] F5: session edcbe7c0 started — NO_OPEN_SHIFT
+[2026-06-09T15:24:53.928Z] [INFO ] [realtime-job] Tick #280 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:24:57.967Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.2W ≤ 5W)
+[2026-06-09T15:24:58.976Z] [INFO ] [realtime-job] Tick #285 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:25:04.011Z] [INFO ] [realtime-job] Tick #290 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:25:08.056Z] [INFO ] [state-machine] F5: session edcbe7c0 FINISHED (11s, 20 MAD)
+[2026-06-09T15:25:09.060Z] [INFO ] [realtime-job] Tick #295 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:25:14.122Z] [INFO ] [realtime-job] Tick #300 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:25:17.133Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.5W)
+[2026-06-09T15:25:19.162Z] [INFO ] [realtime-job] Tick #305 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:25:22.213Z] [WARN ] [state-machine] F5: session 630a5b45 started — NO_OPEN_SHIFT
+[2026-06-09T15:25:24.234Z] [INFO ] [realtime-job] Tick #310 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:25:28.263Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.1W ≤ 5W)
+[2026-06-09T15:25:29.267Z] [INFO ] [realtime-job] Tick #315 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:25:34.322Z] [INFO ] [realtime-job] Tick #320 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:25:38.393Z] [INFO ] [state-machine] F5: session 630a5b45 FINISHED (11s, 20 MAD)
+[2026-06-09T15:25:39.386Z] [INFO ] [realtime-job] Tick #325 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:25:44.436Z] [INFO ] [state-machine] F3: ACTIVE → MAYBE_FINISHED (3.2W ≤ 5W)
+[2026-06-09T15:25:44.452Z] [INFO ] [realtime-job] Tick #330 — 1 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:25:47.484Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.9W)
+[2026-06-09T15:25:48.481Z] [INFO ] [state-machine] F3: MAYBE_FINISHED → ACTIVE (recovered 12.0W)
+[2026-06-09T15:25:49.510Z] [INFO ] [realtime-job] Tick #335 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:25:52.547Z] [WARN ] [state-machine] F5: session ac6a6984 started — NO_OPEN_SHIFT
+[2026-06-09T15:25:54.571Z] [INFO ] [realtime-job] Tick #340 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:25:58.629Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.1W ≤ 5W)
+[2026-06-09T15:25:59.630Z] [INFO ] [realtime-job] Tick #345 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:26:04.658Z] [INFO ] [realtime-job] Tick #350 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:26:08.705Z] [INFO ] [state-machine] F5: session ac6a6984 FINISHED (11s, 20 MAD)
+[2026-06-09T15:26:09.710Z] [INFO ] [realtime-job] Tick #355 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:26:14.771Z] [INFO ] [realtime-job] Tick #360 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:26:17.800Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.4W)
+[2026-06-09T15:26:19.812Z] [INFO ] [realtime-job] Tick #365 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:26:22.851Z] [WARN ] [state-machine] F5: session ef8395cd started — NO_OPEN_SHIFT
+[2026-06-09T15:26:24.889Z] [INFO ] [realtime-job] Tick #370 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:26:28.932Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.2W ≤ 5W)
+[2026-06-09T15:26:29.938Z] [INFO ] [realtime-job] Tick #375 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:26:34.993Z] [INFO ] [realtime-job] Tick #380 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:26:39.054Z] [INFO ] [state-machine] F5: session ef8395cd FINISHED (11s, 20 MAD)
+[2026-06-09T15:26:40.071Z] [INFO ] [realtime-job] Tick #385 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:26:45.099Z] [INFO ] [state-machine] F3: ACTIVE → MAYBE_FINISHED (3.4W ≤ 5W)
+[2026-06-09T15:26:45.123Z] [INFO ] [realtime-job] Tick #390 — 1 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:26:48.140Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.6W)
+[2026-06-09T15:26:49.131Z] [INFO ] [state-machine] F3: MAYBE_FINISHED → ACTIVE (recovered 12.0W)
+[2026-06-09T15:26:50.157Z] [INFO ] [realtime-job] Tick #395 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:26:53.199Z] [WARN ] [state-machine] F5: session ffcbf8a1 started — NO_OPEN_SHIFT
+[2026-06-09T15:26:55.202Z] [INFO ] [realtime-job] Tick #400 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:26:59.250Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.0W ≤ 5W)
+[2026-06-09T15:27:00.270Z] [INFO ] [realtime-job] Tick #405 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:27:05.289Z] [INFO ] [realtime-job] Tick #410 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:27:09.341Z] [INFO ] [state-machine] F5: session ffcbf8a1 FINISHED (11s, 20 MAD)
+[2026-06-09T15:27:10.332Z] [INFO ] [realtime-job] Tick #415 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:27:15.346Z] [INFO ] [realtime-job] Tick #420 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:27:18.347Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.9W)
+[2026-06-09T15:27:20.376Z] [INFO ] [realtime-job] Tick #425 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:27:23.412Z] [WARN ] [state-machine] F5: session f9cdfdda started — NO_OPEN_SHIFT
+[2026-06-09T15:27:25.439Z] [INFO ] [realtime-job] Tick #430 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:27:29.456Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.0W ≤ 5W)
+[2026-06-09T15:27:30.456Z] [INFO ] [realtime-job] Tick #435 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:27:35.521Z] [INFO ] [realtime-job] Tick #440 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:27:39.567Z] [INFO ] [state-machine] F5: session f9cdfdda FINISHED (11s, 20 MAD)
+[2026-06-09T15:27:40.567Z] [INFO ] [realtime-job] Tick #445 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:27:45.589Z] [INFO ] [state-machine] F3: ACTIVE → MAYBE_FINISHED (3.4W ≤ 5W)
+[2026-06-09T15:27:45.611Z] [INFO ] [realtime-job] Tick #450 — 1 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:27:48.631Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.6W)
+[2026-06-09T15:27:49.623Z] [INFO ] [state-machine] F3: MAYBE_FINISHED → ACTIVE (recovered 11.8W)
+[2026-06-09T15:27:50.650Z] [INFO ] [realtime-job] Tick #455 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:27:53.686Z] [WARN ] [state-machine] F5: session 55bfdcf7 started — NO_OPEN_SHIFT
+[2026-06-09T15:27:55.696Z] [INFO ] [realtime-job] Tick #460 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:27:59.743Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.3W ≤ 5W)
+[2026-06-09T15:28:00.749Z] [INFO ] [realtime-job] Tick #465 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:28:05.816Z] [INFO ] [realtime-job] Tick #470 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:28:09.857Z] [INFO ] [state-machine] F5: session 55bfdcf7 FINISHED (11s, 20 MAD)
+[2026-06-09T15:28:10.866Z] [INFO ] [realtime-job] Tick #475 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:28:15.901Z] [INFO ] [realtime-job] Tick #480 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:28:18.927Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.7W)
+[2026-06-09T15:28:20.949Z] [INFO ] [realtime-job] Tick #485 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:28:23.970Z] [WARN ] [state-machine] F5: session c1405bc4 started — NO_OPEN_SHIFT
+[2026-06-09T15:28:25.970Z] [INFO ] [realtime-job] Tick #490 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:28:30.017Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.1W ≤ 5W)
+[2026-06-09T15:28:31.037Z] [INFO ] [realtime-job] Tick #495 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:28:36.076Z] [INFO ] [realtime-job] Tick #500 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:28:40.113Z] [INFO ] [state-machine] F5: session c1405bc4 FINISHED (11s, 20 MAD)
+[2026-06-09T15:28:41.121Z] [INFO ] [realtime-job] Tick #505 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:28:46.178Z] [INFO ] [state-machine] F3: ACTIVE → MAYBE_FINISHED (3.2W ≤ 5W)
+[2026-06-09T15:28:46.200Z] [INFO ] [realtime-job] Tick #510 — 1 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:28:49.208Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.7W)
+[2026-06-09T15:28:50.180Z] [INFO ] [state-machine] F3: MAYBE_FINISHED → ACTIVE (recovered 12.3W)
+[2026-06-09T15:28:51.206Z] [INFO ] [realtime-job] Tick #515 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:28:54.262Z] [WARN ] [state-machine] F5: session bcab7111 started — NO_OPEN_SHIFT
+[2026-06-09T15:28:56.266Z] [INFO ] [realtime-job] Tick #520 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:29:00.290Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.1W ≤ 5W)
+[2026-06-09T15:29:01.301Z] [INFO ] [realtime-job] Tick #525 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:29:06.378Z] [INFO ] [realtime-job] Tick #530 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:29:10.415Z] [INFO ] [state-machine] F5: session bcab7111 FINISHED (11s, 20 MAD)
+[2026-06-09T15:29:11.422Z] [INFO ] [realtime-job] Tick #535 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:29:16.517Z] [INFO ] [realtime-job] Tick #540 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:29:19.513Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (12.2W)
+[2026-06-09T15:29:21.554Z] [INFO ] [realtime-job] Tick #545 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:29:24.600Z] [WARN ] [state-machine] F5: session fbd931c4 started — NO_OPEN_SHIFT
+[2026-06-09T15:29:26.602Z] [INFO ] [realtime-job] Tick #550 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:29:30.660Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.1W ≤ 5W)
+[2026-06-09T15:29:31.669Z] [INFO ] [realtime-job] Tick #555 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:29:36.725Z] [INFO ] [realtime-job] Tick #560 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:29:40.784Z] [INFO ] [state-machine] F5: session fbd931c4 FINISHED (11s, 20 MAD)
+[2026-06-09T15:29:41.797Z] [INFO ] [realtime-job] Tick #565 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:29:46.822Z] [INFO ] [state-machine] F3: ACTIVE → MAYBE_FINISHED (3.1W ≤ 5W)
+[2026-06-09T15:29:46.855Z] [INFO ] [realtime-job] Tick #570 — 1 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:29:49.840Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (12.1W)
+[2026-06-09T15:29:50.837Z] [INFO ] [state-machine] F3: MAYBE_FINISHED → ACTIVE (recovered 12.0W)
+[2026-06-09T15:29:51.846Z] [INFO ] [realtime-job] Tick #575 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:29:54.865Z] [WARN ] [state-machine] F5: session c34c08b4 started — NO_OPEN_SHIFT
+[2026-06-09T15:29:56.883Z] [INFO ] [realtime-job] Tick #580 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:30:00.906Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.2W ≤ 5W)
+[2026-06-09T15:30:01.918Z] [INFO ] [realtime-job] Tick #585 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:30:06.985Z] [INFO ] [realtime-job] Tick #590 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:30:11.024Z] [INFO ] [state-machine] F5: session c34c08b4 FINISHED (11s, 20 MAD)
+[2026-06-09T15:30:12.030Z] [INFO ] [realtime-job] Tick #595 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:30:17.090Z] [INFO ] [realtime-job] Tick #600 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:30:20.114Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (12.1W)
+[2026-06-09T15:30:22.135Z] [INFO ] [realtime-job] Tick #605 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:30:25.155Z] [WARN ] [state-machine] F5: session 0d12d6d8 started — NO_OPEN_SHIFT
+[2026-06-09T15:30:27.179Z] [INFO ] [realtime-job] Tick #610 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:30:31.216Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.2W ≤ 5W)
+[2026-06-09T15:30:32.218Z] [INFO ] [realtime-job] Tick #615 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:30:37.283Z] [INFO ] [realtime-job] Tick #620 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:30:41.342Z] [INFO ] [state-machine] F5: session 0d12d6d8 FINISHED (11s, 20 MAD)
+[2026-06-09T15:30:42.341Z] [INFO ] [realtime-job] Tick #625 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:30:47.383Z] [INFO ] [state-machine] F3: ACTIVE → MAYBE_FINISHED (3.2W ≤ 5W)
+[2026-06-09T15:30:47.406Z] [INFO ] [realtime-job] Tick #630 — 1 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:30:50.424Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.7W)
+[2026-06-09T15:30:51.415Z] [INFO ] [state-machine] F3: MAYBE_FINISHED → ACTIVE (recovered 12.4W)
+[2026-06-09T15:30:52.436Z] [INFO ] [realtime-job] Tick #635 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:30:55.477Z] [WARN ] [state-machine] F5: session f208bc40 started — NO_OPEN_SHIFT
+[2026-06-09T15:30:57.493Z] [INFO ] [realtime-job] Tick #640 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:31:01.531Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.1W ≤ 5W)
+[2026-06-09T15:31:02.551Z] [INFO ] [realtime-job] Tick #645 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:31:07.601Z] [INFO ] [realtime-job] Tick #650 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:31:11.638Z] [INFO ] [state-machine] F5: session f208bc40 FINISHED (11s, 20 MAD)
+[2026-06-09T15:31:12.643Z] [INFO ] [realtime-job] Tick #655 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:31:17.691Z] [INFO ] [realtime-job] Tick #660 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:31:20.713Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.7W)
+[2026-06-09T15:31:22.723Z] [INFO ] [realtime-job] Tick #665 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:31:25.787Z] [WARN ] [state-machine] F5: session e5855da1 started — NO_OPEN_SHIFT
+[2026-06-09T15:31:27.798Z] [INFO ] [realtime-job] Tick #670 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:31:31.852Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.0W ≤ 5W)
+[2026-06-09T15:31:32.845Z] [INFO ] [realtime-job] Tick #675 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:31:37.899Z] [INFO ] [realtime-job] Tick #680 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:31:41.956Z] [INFO ] [state-machine] F5: session e5855da1 FINISHED (11s, 20 MAD)
+[2026-06-09T15:31:42.961Z] [INFO ] [realtime-job] Tick #685 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:31:48.008Z] [INFO ] [state-machine] F3: ACTIVE → MAYBE_FINISHED (3.1W ≤ 5W)
+[2026-06-09T15:31:48.027Z] [INFO ] [realtime-job] Tick #690 — 1 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:31:51.034Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.7W)
+[2026-06-09T15:31:52.042Z] [INFO ] [state-machine] F3: MAYBE_FINISHED → ACTIVE (recovered 12.0W)
+[2026-06-09T15:31:53.072Z] [INFO ] [realtime-job] Tick #695 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:31:56.104Z] [WARN ] [state-machine] F5: session 66486336 started — NO_OPEN_SHIFT
+[2026-06-09T15:31:58.142Z] [INFO ] [realtime-job] Tick #700 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:32:02.169Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.2W ≤ 5W)
+[2026-06-09T15:32:03.179Z] [INFO ] [realtime-job] Tick #705 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:32:08.231Z] [INFO ] [realtime-job] Tick #710 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:32:12.308Z] [INFO ] [state-machine] F5: session 66486336 FINISHED (11s, 20 MAD)
+[2026-06-09T15:32:13.275Z] [INFO ] [realtime-job] Tick #715 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:32:18.336Z] [INFO ] [realtime-job] Tick #720 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:32:21.343Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (12.1W)
+[2026-06-09T15:32:23.347Z] [INFO ] [realtime-job] Tick #725 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:32:26.386Z] [WARN ] [state-machine] F5: session 03286dbe started — NO_OPEN_SHIFT
+[2026-06-09T15:32:28.400Z] [INFO ] [realtime-job] Tick #730 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:32:32.439Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.0W ≤ 5W)
+[2026-06-09T15:32:33.439Z] [INFO ] [realtime-job] Tick #735 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:32:38.498Z] [INFO ] [realtime-job] Tick #740 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:32:42.529Z] [INFO ] [state-machine] F5: session 03286dbe FINISHED (11s, 20 MAD)
+[2026-06-09T15:32:43.534Z] [INFO ] [realtime-job] Tick #745 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:32:48.561Z] [INFO ] [state-machine] F3: ACTIVE → MAYBE_FINISHED (3.1W ≤ 5W)
+[2026-06-09T15:32:48.579Z] [INFO ] [realtime-job] Tick #750 — 1 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:32:51.622Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (12.0W)
+[2026-06-09T15:32:52.611Z] [INFO ] [state-machine] F3: MAYBE_FINISHED → ACTIVE (recovered 12.1W)
+[2026-06-09T15:32:53.638Z] [INFO ] [realtime-job] Tick #755 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:32:56.659Z] [WARN ] [state-machine] F5: session 54526696 started — NO_OPEN_SHIFT
+[2026-06-09T15:32:58.676Z] [INFO ] [realtime-job] Tick #760 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:33:02.732Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.1W ≤ 5W)
+[2026-06-09T15:33:03.741Z] [INFO ] [realtime-job] Tick #765 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:33:08.788Z] [INFO ] [realtime-job] Tick #770 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:33:12.840Z] [INFO ] [state-machine] F5: session 54526696 FINISHED (11s, 20 MAD)
+[2026-06-09T15:33:13.845Z] [INFO ] [realtime-job] Tick #775 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:33:18.904Z] [INFO ] [realtime-job] Tick #780 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:33:21.927Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (12.1W)
+[2026-06-09T15:33:23.937Z] [INFO ] [realtime-job] Tick #785 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:33:26.994Z] [WARN ] [state-machine] F5: session ea22b9e2 started — NO_OPEN_SHIFT
+[2026-06-09T15:33:29.014Z] [INFO ] [realtime-job] Tick #790 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:33:33.040Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (2.9W ≤ 5W)
+[2026-06-09T15:33:34.068Z] [INFO ] [realtime-job] Tick #795 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:33:39.122Z] [INFO ] [realtime-job] Tick #800 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:33:43.167Z] [INFO ] [state-machine] F5: session ea22b9e2 FINISHED (11s, 20 MAD)
+[2026-06-09T15:33:44.168Z] [INFO ] [realtime-job] Tick #805 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:33:49.224Z] [INFO ] [state-machine] F3: ACTIVE → MAYBE_FINISHED (3.0W ≤ 5W)
+[2026-06-09T15:33:49.245Z] [INFO ] [realtime-job] Tick #810 — 1 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:33:52.254Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.8W)
+[2026-06-09T15:33:53.257Z] [INFO ] [state-machine] F3: MAYBE_FINISHED → ACTIVE (recovered 12.1W)
+[2026-06-09T15:33:54.271Z] [INFO ] [realtime-job] Tick #815 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:33:57.299Z] [WARN ] [state-machine] F5: session 17150d8e started — NO_OPEN_SHIFT
+[2026-06-09T15:33:59.315Z] [INFO ] [realtime-job] Tick #820 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:34:03.363Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.1W ≤ 5W)
+[2026-06-09T15:34:04.355Z] [INFO ] [realtime-job] Tick #825 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:34:09.404Z] [INFO ] [realtime-job] Tick #830 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:34:13.425Z] [INFO ] [state-machine] F5: session 17150d8e FINISHED (11s, 20 MAD)
+[2026-06-09T15:34:14.436Z] [INFO ] [realtime-job] Tick #835 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:34:19.480Z] [INFO ] [realtime-job] Tick #840 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:34:22.527Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.7W)
+[2026-06-09T15:34:24.546Z] [INFO ] [realtime-job] Tick #845 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:34:27.588Z] [WARN ] [state-machine] F5: session dc5d92a0 started — NO_OPEN_SHIFT
+[2026-06-09T15:34:29.612Z] [INFO ] [realtime-job] Tick #850 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:34:33.649Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.0W ≤ 5W)
+[2026-06-09T15:34:34.647Z] [INFO ] [realtime-job] Tick #855 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:34:39.706Z] [INFO ] [realtime-job] Tick #860 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:34:43.764Z] [INFO ] [state-machine] F5: session dc5d92a0 FINISHED (11s, 20 MAD)
+[2026-06-09T15:34:44.766Z] [INFO ] [realtime-job] Tick #865 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:34:49.783Z] [INFO ] [state-machine] F3: ACTIVE → MAYBE_FINISHED (3.3W ≤ 5W)
+[2026-06-09T15:34:49.803Z] [INFO ] [realtime-job] Tick #870 — 1 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:34:52.829Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.5W)
+[2026-06-09T15:34:53.831Z] [INFO ] [state-machine] F3: MAYBE_FINISHED → ACTIVE (recovered 12.0W)
+[2026-06-09T15:34:54.855Z] [INFO ] [realtime-job] Tick #875 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:34:57.888Z] [WARN ] [state-machine] F5: session a4123d02 started — NO_OPEN_SHIFT
+[2026-06-09T15:34:59.904Z] [INFO ] [realtime-job] Tick #880 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:35:03.954Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.1W ≤ 5W)
+[2026-06-09T15:35:04.966Z] [INFO ] [realtime-job] Tick #885 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:35:10.017Z] [INFO ] [realtime-job] Tick #890 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:35:14.056Z] [INFO ] [state-machine] F5: session a4123d02 FINISHED (11s, 20 MAD)
+[2026-06-09T15:35:15.052Z] [INFO ] [realtime-job] Tick #895 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:35:20.072Z] [INFO ] [realtime-job] Tick #900 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:35:23.099Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (12.0W)
+[2026-06-09T15:35:25.118Z] [INFO ] [realtime-job] Tick #905 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:35:28.146Z] [WARN ] [state-machine] F5: session 84f58947 started — NO_OPEN_SHIFT
+[2026-06-09T15:35:30.177Z] [INFO ] [realtime-job] Tick #910 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:35:34.208Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.0W ≤ 5W)
+[2026-06-09T15:35:35.223Z] [INFO ] [realtime-job] Tick #915 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:35:40.261Z] [INFO ] [realtime-job] Tick #920 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:35:44.323Z] [INFO ] [state-machine] F5: session 84f58947 FINISHED (11s, 20 MAD)
+[2026-06-09T15:35:45.307Z] [INFO ] [realtime-job] Tick #925 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:35:50.341Z] [INFO ] [state-machine] F3: ACTIVE → MAYBE_FINISHED (3.2W ≤ 5W)
+[2026-06-09T15:35:50.362Z] [INFO ] [realtime-job] Tick #930 — 1 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:35:53.382Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.9W)
+[2026-06-09T15:35:54.382Z] [INFO ] [state-machine] F3: MAYBE_FINISHED → ACTIVE (recovered 11.8W)
+[2026-06-09T15:35:55.399Z] [INFO ] [realtime-job] Tick #935 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:35:58.439Z] [WARN ] [state-machine] F5: session 38fa4cd0 started — NO_OPEN_SHIFT
+[2026-06-09T15:36:00.462Z] [INFO ] [realtime-job] Tick #940 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:36:04.514Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.3W ≤ 5W)
+[2026-06-09T15:36:05.530Z] [INFO ] [realtime-job] Tick #945 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:36:10.592Z] [INFO ] [realtime-job] Tick #950 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:36:14.641Z] [INFO ] [state-machine] F5: session 38fa4cd0 FINISHED (11s, 20 MAD)
+[2026-06-09T15:36:15.626Z] [INFO ] [realtime-job] Tick #955 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:36:20.696Z] [INFO ] [realtime-job] Tick #960 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:36:23.722Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (12.0W)
+[2026-06-09T15:36:25.762Z] [INFO ] [realtime-job] Tick #965 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:36:28.803Z] [WARN ] [state-machine] F5: session 2552dfad started — NO_OPEN_SHIFT
+[2026-06-09T15:36:30.828Z] [INFO ] [realtime-job] Tick #970 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:36:34.870Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.0W ≤ 5W)
+[2026-06-09T15:36:35.865Z] [INFO ] [realtime-job] Tick #975 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:36:40.929Z] [INFO ] [realtime-job] Tick #980 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:36:44.981Z] [INFO ] [state-machine] F5: session 2552dfad FINISHED (11s, 20 MAD)
+[2026-06-09T15:36:45.970Z] [INFO ] [realtime-job] Tick #985 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:36:50.992Z] [INFO ] [state-machine] F3: ACTIVE → MAYBE_FINISHED (3.1W ≤ 5W)
+[2026-06-09T15:36:51.015Z] [INFO ] [realtime-job] Tick #990 — 1 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:36:54.023Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.7W)
+[2026-06-09T15:36:55.020Z] [INFO ] [state-machine] F3: MAYBE_FINISHED → ACTIVE (recovered 11.7W)
+[2026-06-09T15:36:56.040Z] [INFO ] [realtime-job] Tick #995 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:36:59.070Z] [WARN ] [state-machine] F5: session 758fd0e9 started — NO_OPEN_SHIFT
+[2026-06-09T15:37:01.094Z] [INFO ] [realtime-job] Tick #1000 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:37:05.141Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.2W ≤ 5W)
+[2026-06-09T15:37:06.130Z] [INFO ] [realtime-job] Tick #1005 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:37:11.205Z] [INFO ] [realtime-job] Tick #1010 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:37:15.221Z] [INFO ] [state-machine] F5: session 758fd0e9 FINISHED (11s, 20 MAD)
+[2026-06-09T15:37:16.229Z] [INFO ] [realtime-job] Tick #1015 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:37:21.297Z] [INFO ] [realtime-job] Tick #1020 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:37:24.307Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.9W)
+[2026-06-09T15:37:26.333Z] [INFO ] [realtime-job] Tick #1025 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:37:29.376Z] [WARN ] [state-machine] F5: session 59230609 started — NO_OPEN_SHIFT
+[2026-06-09T15:37:31.408Z] [INFO ] [realtime-job] Tick #1030 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:37:35.445Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.2W ≤ 5W)
+[2026-06-09T15:37:36.463Z] [INFO ] [realtime-job] Tick #1035 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:37:41.499Z] [INFO ] [realtime-job] Tick #1040 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:37:45.532Z] [INFO ] [state-machine] F5: session 59230609 FINISHED (11s, 20 MAD)
+[2026-06-09T15:37:46.533Z] [INFO ] [realtime-job] Tick #1045 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:37:51.580Z] [INFO ] [state-machine] F3: ACTIVE → MAYBE_FINISHED (3.1W ≤ 5W)
+[2026-06-09T15:37:51.601Z] [INFO ] [realtime-job] Tick #1050 — 1 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:37:54.621Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.5W)
+[2026-06-09T15:37:55.628Z] [INFO ] [state-machine] F3: MAYBE_FINISHED → ACTIVE (recovered 12.1W)
+[2026-06-09T15:37:56.633Z] [INFO ] [realtime-job] Tick #1055 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:37:59.688Z] [WARN ] [state-machine] F5: session 0a9536ce started — NO_OPEN_SHIFT
+[2026-06-09T15:38:01.717Z] [INFO ] [realtime-job] Tick #1060 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:38:05.753Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.0W ≤ 5W)
+[2026-06-09T15:38:06.758Z] [INFO ] [realtime-job] Tick #1065 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:38:11.786Z] [INFO ] [realtime-job] Tick #1070 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:38:15.842Z] [INFO ] [state-machine] F5: session 0a9536ce FINISHED (11s, 20 MAD)
+[2026-06-09T15:38:16.842Z] [INFO ] [realtime-job] Tick #1075 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:38:21.893Z] [INFO ] [realtime-job] Tick #1080 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:38:24.917Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.7W)
+[2026-06-09T15:38:26.959Z] [INFO ] [realtime-job] Tick #1085 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:38:29.998Z] [WARN ] [state-machine] F5: session 9087622e started — NO_OPEN_SHIFT
+[2026-06-09T15:38:32.013Z] [INFO ] [realtime-job] Tick #1090 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:38:36.050Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.1W ≤ 5W)
+[2026-06-09T15:38:37.063Z] [INFO ] [realtime-job] Tick #1095 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:38:42.102Z] [INFO ] [realtime-job] Tick #1100 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:38:46.141Z] [INFO ] [state-machine] F5: session 9087622e FINISHED (11s, 20 MAD)
+[2026-06-09T15:38:47.129Z] [INFO ] [realtime-job] Tick #1105 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:38:52.170Z] [INFO ] [state-machine] F3: ACTIVE → MAYBE_FINISHED (3.1W ≤ 5W)
+[2026-06-09T15:38:52.191Z] [INFO ] [realtime-job] Tick #1110 — 1 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:38:55.220Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.5W)
+[2026-06-09T15:38:56.215Z] [INFO ] [state-machine] F3: MAYBE_FINISHED → ACTIVE (recovered 11.7W)
+[2026-06-09T15:38:57.247Z] [INFO ] [realtime-job] Tick #1115 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:39:00.271Z] [WARN ] [state-machine] F5: session c56957c1 started — NO_OPEN_SHIFT
+[2026-06-09T15:39:02.280Z] [INFO ] [realtime-job] Tick #1120 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:39:06.347Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.1W ≤ 5W)
+[2026-06-09T15:39:07.333Z] [INFO ] [realtime-job] Tick #1125 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:39:12.405Z] [INFO ] [realtime-job] Tick #1130 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:39:16.431Z] [INFO ] [state-machine] F5: session c56957c1 FINISHED (11s, 20 MAD)
+[2026-06-09T15:39:17.449Z] [INFO ] [realtime-job] Tick #1135 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:39:22.499Z] [INFO ] [realtime-job] Tick #1140 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:39:25.508Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.5W)
+[2026-06-09T15:39:27.527Z] [INFO ] [realtime-job] Tick #1145 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:39:30.567Z] [WARN ] [state-machine] F5: session 6eb3aef4 started — NO_OPEN_SHIFT
+[2026-06-09T15:39:32.583Z] [INFO ] [realtime-job] Tick #1150 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:39:36.610Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (2.9W ≤ 5W)
+[2026-06-09T15:39:37.604Z] [INFO ] [realtime-job] Tick #1155 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:39:42.665Z] [INFO ] [realtime-job] Tick #1160 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:39:46.717Z] [INFO ] [state-machine] F5: session 6eb3aef4 FINISHED (11s, 20 MAD)
+[2026-06-09T15:39:47.722Z] [INFO ] [realtime-job] Tick #1165 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:39:52.746Z] [INFO ] [state-machine] F3: ACTIVE → MAYBE_FINISHED (3.2W ≤ 5W)
+[2026-06-09T15:39:52.766Z] [INFO ] [realtime-job] Tick #1170 — 1 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:39:55.783Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.7W)
+[2026-06-09T15:39:56.780Z] [INFO ] [state-machine] F3: MAYBE_FINISHED → ACTIVE (recovered 11.6W)
+[2026-06-09T15:39:57.803Z] [INFO ] [realtime-job] Tick #1175 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:40:00.845Z] [WARN ] [state-machine] F5: session 7dd90dfb started — NO_OPEN_SHIFT
+[2026-06-09T15:40:02.864Z] [INFO ] [realtime-job] Tick #1180 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:40:06.919Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.0W ≤ 5W)
+[2026-06-09T15:40:07.926Z] [INFO ] [realtime-job] Tick #1185 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:40:12.987Z] [INFO ] [realtime-job] Tick #1190 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:40:17.033Z] [INFO ] [state-machine] F5: session 7dd90dfb FINISHED (11s, 20 MAD)
+[2026-06-09T15:40:18.045Z] [INFO ] [realtime-job] Tick #1195 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:40:23.084Z] [INFO ] [realtime-job] Tick #1200 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:40:26.106Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.7W)
+[2026-06-09T15:40:28.138Z] [INFO ] [realtime-job] Tick #1205 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:40:31.162Z] [WARN ] [state-machine] F5: session de69c0a7 started — NO_OPEN_SHIFT
+[2026-06-09T15:40:33.172Z] [INFO ] [realtime-job] Tick #1210 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:40:37.204Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.1W ≤ 5W)
+[2026-06-09T15:40:38.217Z] [INFO ] [realtime-job] Tick #1215 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:40:43.263Z] [INFO ] [realtime-job] Tick #1220 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:40:47.323Z] [INFO ] [state-machine] F5: session de69c0a7 FINISHED (11s, 20 MAD)
+[2026-06-09T15:40:48.342Z] [INFO ] [realtime-job] Tick #1225 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:40:53.385Z] [INFO ] [state-machine] F3: ACTIVE → MAYBE_FINISHED (3.4W ≤ 5W)
+[2026-06-09T15:40:53.424Z] [INFO ] [realtime-job] Tick #1230 — 1 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:40:56.365Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.8W)
+[2026-06-09T15:40:57.378Z] [INFO ] [state-machine] F3: MAYBE_FINISHED → ACTIVE (recovered 11.9W)
+[2026-06-09T15:40:58.409Z] [INFO ] [realtime-job] Tick #1235 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:41:01.455Z] [WARN ] [state-machine] F5: session 1da0ac12 started — NO_OPEN_SHIFT
+[2026-06-09T15:41:03.490Z] [INFO ] [realtime-job] Tick #1240 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:41:07.497Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.2W ≤ 5W)
+[2026-06-09T15:41:08.513Z] [INFO ] [realtime-job] Tick #1245 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:41:13.589Z] [INFO ] [realtime-job] Tick #1250 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:41:17.633Z] [INFO ] [state-machine] F5: session 1da0ac12 FINISHED (11s, 20 MAD)
+[2026-06-09T15:41:18.637Z] [INFO ] [realtime-job] Tick #1255 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:41:23.679Z] [INFO ] [realtime-job] Tick #1260 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:41:26.725Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (12.0W)
+[2026-06-09T15:41:28.750Z] [INFO ] [realtime-job] Tick #1265 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:41:31.794Z] [WARN ] [state-machine] F5: session 28f6e956 started — NO_OPEN_SHIFT
+[2026-06-09T15:41:33.819Z] [INFO ] [realtime-job] Tick #1270 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:41:37.843Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.2W ≤ 5W)
+[2026-06-09T15:41:38.865Z] [INFO ] [realtime-job] Tick #1275 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:41:43.911Z] [INFO ] [realtime-job] Tick #1280 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:41:47.979Z] [INFO ] [state-machine] F5: session 28f6e956 FINISHED (11s, 20 MAD)
+[2026-06-09T15:41:48.969Z] [INFO ] [realtime-job] Tick #1285 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:41:54.014Z] [INFO ] [state-machine] F3: ACTIVE → MAYBE_FINISHED (3.1W ≤ 5W)
+[2026-06-09T15:41:54.032Z] [INFO ] [realtime-job] Tick #1290 — 1 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:41:57.050Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (12.0W)
+[2026-06-09T15:41:58.055Z] [INFO ] [state-machine] F3: MAYBE_FINISHED → ACTIVE (recovered 11.8W)
+[2026-06-09T15:41:59.071Z] [INFO ] [realtime-job] Tick #1295 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:42:02.114Z] [WARN ] [state-machine] F5: session 0d318fc8 started — NO_OPEN_SHIFT
+[2026-06-09T15:42:04.125Z] [INFO ] [realtime-job] Tick #1300 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:42:08.171Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.1W ≤ 5W)
+[2026-06-09T15:42:09.164Z] [INFO ] [realtime-job] Tick #1305 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:42:14.224Z] [INFO ] [realtime-job] Tick #1310 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:42:18.278Z] [INFO ] [state-machine] F5: session 0d318fc8 FINISHED (11s, 20 MAD)
+[2026-06-09T15:42:19.288Z] [INFO ] [realtime-job] Tick #1315 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:42:24.322Z] [INFO ] [realtime-job] Tick #1320 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:42:27.341Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.6W)
+[2026-06-09T15:42:29.362Z] [INFO ] [realtime-job] Tick #1325 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:42:32.386Z] [WARN ] [state-machine] F5: session b4b681de started — NO_OPEN_SHIFT
+[2026-06-09T15:42:34.415Z] [INFO ] [realtime-job] Tick #1330 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:42:38.428Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.3W ≤ 5W)
+[2026-06-09T15:42:39.411Z] [INFO ] [realtime-job] Tick #1335 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:42:44.498Z] [INFO ] [realtime-job] Tick #1340 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:42:48.562Z] [INFO ] [state-machine] F5: session b4b681de FINISHED (11s, 20 MAD)
+[2026-06-09T15:42:49.553Z] [INFO ] [realtime-job] Tick #1345 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:42:54.624Z] [INFO ] [state-machine] F3: ACTIVE → MAYBE_FINISHED (3.0W ≤ 5W)
+[2026-06-09T15:42:54.653Z] [INFO ] [realtime-job] Tick #1350 — 1 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:42:57.650Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (12.2W)
+[2026-06-09T15:42:58.649Z] [INFO ] [state-machine] F3: MAYBE_FINISHED → ACTIVE (recovered 12.3W)
+[2026-06-09T15:42:59.674Z] [INFO ] [realtime-job] Tick #1355 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:43:02.727Z] [WARN ] [state-machine] F5: session e196db76 started — NO_OPEN_SHIFT
+[2026-06-09T15:43:04.734Z] [INFO ] [realtime-job] Tick #1360 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:43:08.778Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.2W ≤ 5W)
+[2026-06-09T15:43:09.778Z] [INFO ] [realtime-job] Tick #1365 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:43:14.794Z] [INFO ] [realtime-job] Tick #1370 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:43:18.856Z] [INFO ] [state-machine] F5: session e196db76 FINISHED (11s, 20 MAD)
+[2026-06-09T15:43:19.860Z] [INFO ] [realtime-job] Tick #1375 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:43:24.918Z] [INFO ] [realtime-job] Tick #1380 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:43:27.954Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.5W)
+[2026-06-09T15:43:29.982Z] [INFO ] [realtime-job] Tick #1385 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:43:33.027Z] [WARN ] [state-machine] F5: session 1fef7478 started — NO_OPEN_SHIFT
+[2026-06-09T15:43:35.030Z] [INFO ] [realtime-job] Tick #1390 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:43:39.062Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.1W ≤ 5W)
+[2026-06-09T15:43:40.081Z] [INFO ] [realtime-job] Tick #1395 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:43:45.140Z] [INFO ] [realtime-job] Tick #1400 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:43:49.188Z] [INFO ] [state-machine] F5: session 1fef7478 FINISHED (11s, 20 MAD)
+[2026-06-09T15:43:50.182Z] [INFO ] [realtime-job] Tick #1405 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:43:55.209Z] [INFO ] [state-machine] F3: ACTIVE → MAYBE_FINISHED (3.0W ≤ 5W)
+[2026-06-09T15:43:55.227Z] [INFO ] [realtime-job] Tick #1410 — 1 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:43:58.267Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.9W)
+[2026-06-09T15:43:59.254Z] [INFO ] [state-machine] F3: MAYBE_FINISHED → ACTIVE (recovered 12.4W)
+[2026-06-09T15:44:00.269Z] [INFO ] [realtime-job] Tick #1415 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:44:03.297Z] [WARN ] [state-machine] F5: session aaa9efc5 started — NO_OPEN_SHIFT
+[2026-06-09T15:44:05.326Z] [INFO ] [realtime-job] Tick #1420 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:44:09.359Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.3W ≤ 5W)
+[2026-06-09T15:44:10.360Z] [INFO ] [realtime-job] Tick #1425 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:44:15.428Z] [INFO ] [realtime-job] Tick #1430 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:44:19.479Z] [INFO ] [state-machine] F5: session aaa9efc5 FINISHED (11s, 20 MAD)
+[2026-06-09T15:44:20.498Z] [INFO ] [realtime-job] Tick #1435 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:44:25.560Z] [INFO ] [realtime-job] Tick #1440 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:44:28.574Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.6W)
+[2026-06-09T15:44:30.615Z] [INFO ] [realtime-job] Tick #1445 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:44:33.646Z] [WARN ] [state-machine] F5: session 71ef3b6c started — NO_OPEN_SHIFT
+[2026-06-09T15:44:35.664Z] [INFO ] [realtime-job] Tick #1450 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:44:39.713Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.2W ≤ 5W)
+[2026-06-09T15:44:40.721Z] [INFO ] [realtime-job] Tick #1455 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:44:45.772Z] [INFO ] [realtime-job] Tick #1460 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:44:49.831Z] [INFO ] [state-machine] F5: session 71ef3b6c FINISHED (11s, 20 MAD)
+[2026-06-09T15:44:50.817Z] [INFO ] [realtime-job] Tick #1465 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:44:55.865Z] [INFO ] [state-machine] F3: ACTIVE → MAYBE_FINISHED (3.1W ≤ 5W)
+[2026-06-09T15:44:55.891Z] [INFO ] [realtime-job] Tick #1470 — 1 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:44:58.916Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.6W)
+[2026-06-09T15:44:59.947Z] [INFO ] [state-machine] F3: MAYBE_FINISHED → ACTIVE (recovered 12.0W)
+[2026-06-09T15:45:00.944Z] [INFO ] [realtime-job] Tick #1475 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:45:03.974Z] [WARN ] [state-machine] F5: session 30e0e30d started — NO_OPEN_SHIFT
+[2026-06-09T15:45:05.976Z] [INFO ] [realtime-job] Tick #1480 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:45:10.024Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.2W ≤ 5W)
+[2026-06-09T15:45:11.034Z] [INFO ] [realtime-job] Tick #1485 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:45:16.079Z] [INFO ] [realtime-job] Tick #1490 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:45:20.121Z] [INFO ] [state-machine] F5: session 30e0e30d FINISHED (11s, 20 MAD)
+[2026-06-09T15:45:21.120Z] [INFO ] [realtime-job] Tick #1495 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:45:26.174Z] [INFO ] [realtime-job] Tick #1500 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:45:29.199Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (11.8W)
+[2026-06-09T15:45:31.235Z] [INFO ] [realtime-job] Tick #1505 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:45:34.256Z] [WARN ] [state-machine] F5: session ac0ba0ac started — NO_OPEN_SHIFT
+[2026-06-09T15:45:36.298Z] [INFO ] [realtime-job] Tick #1510 — 3 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:45:40.333Z] [INFO ] [state-machine] F5: ACTIVE → MAYBE_FINISHED (3.3W ≤ 5W)
+[2026-06-09T15:45:41.319Z] [INFO ] [realtime-job] Tick #1515 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:45:46.355Z] [INFO ] [realtime-job] Tick #1520 — 2 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:45:50.404Z] [INFO ] [state-machine] F5: session ac0ba0ac FINISHED (11s, 20 MAD)
+[2026-06-09T15:45:51.413Z] [INFO ] [realtime-job] Tick #1525 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:45:56.440Z] [INFO ] [state-machine] F3: ACTIVE → MAYBE_FINISHED (3.4W ≤ 5W)
+[2026-06-09T15:45:56.461Z] [INFO ] [realtime-job] Tick #1530 — 1 ACTIVE, 1 MAYBE_FINISHED, 5 total chairs
+[2026-06-09T15:45:59.485Z] [INFO ] [state-machine] F5: IDLE → MAYBE_ACTIVE (12.0W)
+[2026-06-09T15:46:00.453Z] [INFO ] [state-machine] F3: MAYBE_FINISHED → ACTIVE (recovered 12.3W)
+[2026-06-09T15:46:01.474Z] [INFO ] [realtime-job] Tick #1535 — 2 ACTIVE, 0 MAYBE_FINISHED, 5 total chairs

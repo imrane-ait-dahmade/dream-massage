@@ -12,6 +12,29 @@ const envSchema = z.object({
   FRONTEND_ORIGIN: z.string().default('http://localhost:3000'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  // Simulation flags — development/testing only, never set in production
+  SIMULATION_ENABLED: z
+    .string()
+    .default('false')
+    .transform((v) => v === 'true'),
+  SIMULATION_FAST_MODE: z
+    .string()
+    .default('false')
+    .transform((v) => v === 'true'),
+  // How often to poll Shelly Cloud (ms). Dashboard still broadcasts every SYNC_INTERVAL_MS.
+  // Shelly Cloud rate-limits aggressive polling; 5000ms is a safe default.
+  SHELLY_POLL_INTERVAL_MS: z
+    .string()
+    .default('5000')
+    .transform((v) => parseInt(v, 10)),
+  // Shelly Cloud — optional; server starts without them but Shelly endpoints return 400
+  SHELLY_AUTH_KEY: z.string().optional(),
+  SHELLY_SERVER_URL: z.string().optional(),
+  SHELLY_DEVICE_F1: z.string().optional(),
+  SHELLY_DEVICE_F2: z.string().optional(),
+  SHELLY_DEVICE_F3: z.string().optional(),
+  SHELLY_DEVICE_F4: z.string().optional(),
+  SHELLY_DEVICE_F5: z.string().optional(),
 });
 
 const result = envSchema.safeParse(process.env);
