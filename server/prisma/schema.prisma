@@ -1,0 +1,395 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Connection URL is configured in prisma.config.ts (Prisma v7).
+  // Do NOT add a url field here — Prisma v7 rejects it.
+}
+
+// ── Models ────────────────────────────────────────────────────────────────────
+
+model User {
+  id           String    @id @default(uuid())
+  name         String    @db.VarChar(100)
+  email        String    @unique @db.VarChar(150)
+  passwordHash String    @map("password_hash") @db.VarChar(255)
+  role         UserRole  @default(OWNER)
+  isActive     Boolean   @default(true) @map("is_active")
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  createdDetectionConfigs ChairDetectionConfig[] @relation("DetectionConfigCreatedBy")
+  createdPricingPlans     PricingPlan[]          @relation("PricingPlanCreatedBy")
+  createdPricingRules     PricingRule[]          @relation("PricingRuleCreatedBy")
+  settingsAuditLogs       SettingsAuditLog[]     @relation("SettingsAuditLogUser")
+  updatedSettings         AppSetting[]           @relation("AppSettingUpdatedBy")
+  openedShifts            Shift[]                @relation("ShiftOpenedBy")
+  closedShifts            Shift[]                @relation("ShiftClosedBy")
+  correctedSessions       ChairSession[]         @relation("SessionCorrectedBy")
+
+  @@map("users")
+}
+
+// Physical staff member assigned to shifts. No login, no app access.
+model StaffMember {
+  id        String   @id @default(uuid())
+  name      String   @db.VarChar(100)
+  phone     String?  @db.VarChar(30)
+  isActive  Boolean  @default(true) @map("is_active")
+  notes     String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  shifts Shift[]
+
+  @@index([isActive])
+  @@map("staff_members")
+}
+
+// Work period opened by an admin before the staff member starts.
+// Sessions during an OPEN shift are automatically linked to it.
+// See RAW_SQL_CONSTRAINTS.md for unique_open_shift partial index.
+model Shift {
+  id             String      @id @default(uuid())
+  staffMemberId  String      @map("staff_member_id")
+  openedByUserId String      @map("opened_by_user_id")
+  closedByUserId String?     @map("closed_by_user_id")
+  startedAt      DateTime    @map("started_at")
+  endedAt        DateTime?   @map("ended_at")
+  status         ShiftStatus @default(OPEN)
+  expectedCash   Decimal?    @map("expected_cash") @db.Decimal(10, 2)
+  declaredCash   Decimal?    @map("declared_cash") @db.Decimal(10, 2)
+  differenceCash Decimal?    @map("difference_cash") @db.Decimal(10, 2)
+  notes          String?     @db.Text
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  staffMember StaffMember    @relation(fields: [staffMemberId], references: [id])
+  openedBy    User           @relation("ShiftOpenedBy", fields: [openedByUserId], references: [id])
+  closedBy    User?          @relation("ShiftClosedBy", fields: [closedByUserId], references: [id])
+  sessions    ChairSession[]
+
+  @@index([status])
+  @@index([startedAt])
+  @@index([staffMemberId])
+  @@map("shifts")
+}
+
+// One of the 5 physical chairs connected to Shelly Cloud.
+// currentSessionId is a denormalized String pointer, not a FK — overwritten on
+// every poll. Live state block (status through isEnabled) is overwritten on each poll.
+model Chair {
+  id             String  @id @default(uuid())
+  name           String  @unique @db.VarChar(10)
+  displayName    String? @map("display_name") @db.VarChar(100)
+  shellyDeviceId String  @unique @map("shelly_device_id") @db.VarChar(100)
+  shellyChannel  Int     @default(0) @map("shelly_channel")
+
+  // ── Live state (overwritten on every Shelly poll) ──
+  status            ChairStatus @default(IDLE)
+  isOnline          Boolean     @default(false) @map("is_online")
+  currentPowerWatts Float?      @map("current_power_watts")
+  relayIsOn         Boolean?    @map("relay_is_on")
+  lastSyncedAt      DateTime?   @map("last_synced_at")
+  currentSessionId  String?     @map("current_session_id")
+  isEnabled         Boolean     @default(true) @map("is_enabled")
+
+  // ── State machine timing (persisted so backend restart resumes mid-window) ──
+  maybeActiveSince    DateTime?    @map("maybe_active_since")
+  maybeFinishedSince  DateTime?    @map("maybe_finished_since")
+  stateChangedAt      DateTime?    @map("state_changed_at")
+  statusBeforeOffline ChairStatus? @map("status_before_offline")
+  offlineSince        DateTime?    @map("offline_since")
+  lastOnlineAt        DateTime?    @map("last_online_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  detectionConfigs ChairDetectionConfig[]
+  sessions         ChairSession[]
+  deviceLogs       DeviceLog[]
+  chairEvents      ChairEvent[]
+
+  @@index([status])
+  @@index([isOnline])
+  @@index([lastSyncedAt])
+  @@map("chairs")
+}
+
+// Power-threshold config for one chair. Versioned so that changing thresholds
+// never retroactively alters past sessions.
+// See RAW_SQL_CONSTRAINTS.md for unique_active_detection_config_per_chair.
+model ChairDetectionConfig {
+  id                     String    @id @default(uuid())
+  chairId                String    @map("chair_id")
+  startThresholdWatts    Float     @default(7) @map("start_threshold_watts")
+  stopThresholdWatts     Float     @default(5) @map("stop_threshold_watts")
+  startConfirmSeconds    Int       @default(30) @map("start_confirm_seconds")
+  stopConfirmSeconds     Int       @default(180) @map("stop_confirm_seconds")
+  activationDelaySeconds Int       @default(30) @map("activation_delay_seconds")
+  baselinePowerWatts     Float?    @default(2.1) @map("baseline_power_watts")
+  isActive               Boolean   @default(true) @map("is_active")
+  version                Int       @default(1)
+  validFrom              DateTime  @default(now()) @map("valid_from")
+  validTo                DateTime? @map("valid_to")
+  createdByUserId        String?   @map("created_by_user_id")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+
+  chair     Chair @relation(fields: [chairId], references: [id])
+  createdBy User? @relation("DetectionConfigCreatedBy", fields: [createdByUserId], references: [id])
+
+  @@index([chairId, isActive])
+  @@index([chairId])
+  @@map("chair_detection_configs")
+}
+
+// Duration-to-price mapping. isActive soft-retires plans without losing history.
+model PricingPlan {
+  id              String   @id @default(uuid())
+  name            String   @db.VarChar(100)
+  durationSeconds Int      @map("duration_seconds")
+  priceAmount     Decimal  @map("price_amount") @db.Decimal(10, 2)
+  currency        String   @default("MAD") @db.VarChar(10)
+  isActive        Boolean  @default(true) @map("is_active")
+  sortOrder       Int      @default(0) @map("sort_order")
+  createdByUserId String?  @map("created_by_user_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  createdBy        User?          @relation("PricingPlanCreatedBy", fields: [createdByUserId], references: [id])
+  minimumPlanRules PricingRule[]  @relation("MinimumPlan")
+  sessions         ChairSession[]
+
+  @@index([isActive])
+  @@map("pricing_plans")
+}
+
+// Global billing ruleset. Only one rule may be active at a time.
+// See RAW_SQL_CONSTRAINTS.md for unique_active_pricing_rule partial index.
+model PricingRule {
+  id               String         @id @default(uuid())
+  roundingMode     RoundingMode   @default(NEXT_PLAN) @map("rounding_mode")
+  graceSeconds     Int            @default(120) @map("grace_seconds")
+  minimumPlanId    String?        @map("minimum_plan_id")
+  overtimePolicy   OvertimePolicy @default(NEXT_PLAN) @map("overtime_policy")
+  extraMinutePrice Decimal?       @map("extra_minute_price") @db.Decimal(10, 2)
+  isActive         Boolean        @default(true) @map("is_active")
+  createdByUserId  String?        @map("created_by_user_id")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  minimumPlan PricingPlan? @relation("MinimumPlan", fields: [minimumPlanId], references: [id])
+  createdBy   User?        @relation("PricingRuleCreatedBy", fields: [createdByUserId], references: [id])
+
+  @@index([isActive])
+  @@map("pricing_rules")
+}
+
+// Single massage session, from power-on detection to power-off confirmation.
+// Six timestamps capture the full debounce lifecycle for audit purposes.
+// correctedAmount never overwrites expectedAmount — both are kept for audit.
+// effectiveAmount = correctedAmount ?? expectedAmount (computed in service layer).
+// See RAW_SQL_CONSTRAINTS.md for unique_active_session_per_chair partial index.
+model ChairSession {
+  id      String  @id @default(uuid())
+  chairId String  @map("chair_id")
+  shiftId String? @map("shift_id")
+
+  status SessionStatus @default(ACTIVE)
+
+  // ── Start timestamps ──
+  detectedStartAt  DateTime? @map("detected_start_at")
+  confirmedStartAt DateTime? @map("confirmed_start_at")
+  startedAt        DateTime  @map("started_at")
+
+  // ── End timestamps ──
+  lowPowerDetectedAt DateTime? @map("low_power_detected_at")
+  confirmedEndAt     DateTime? @map("confirmed_end_at")
+  endedAt            DateTime? @map("ended_at")
+
+  durationSeconds Int? @map("duration_seconds")
+
+  // ── Power stats ──
+  startPowerWatts Float? @map("start_power_watts")
+  endPowerWatts   Float? @map("end_power_watts")
+  minPowerWatts   Float? @map("min_power_watts")
+  maxPowerWatts   Float? @map("max_power_watts")
+  avgPowerWatts   Float? @map("avg_power_watts")
+
+  // ── Detection provenance ──
+  detectionConfigId String? @map("detection_config_id")
+  detectionSnapshot Json?   @map("detection_snapshot")
+
+  // ── Pricing ──
+  matchedPlanId   String?       @map("matched_plan_id")
+  expectedAmount  Decimal?      @map("expected_amount") @db.Decimal(10, 2)
+  pricingSnapshot Json?         @map("pricing_snapshot")
+  billingStatus   BillingStatus @default(PENDING) @map("billing_status")
+
+  // ── Correction audit ──
+  correctedAmount   Decimal?  @map("corrected_amount") @db.Decimal(10, 2)
+  correctedByUserId String?   @map("corrected_by_user_id")
+  correctedAt       DateTime? @map("corrected_at")
+  correctionReason  String?   @map("correction_reason") @db.Text
+
+  anomalyType String? @map("anomaly_type") @db.VarChar(100)
+  notes       String? @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  chair       Chair        @relation(fields: [chairId], references: [id])
+  shift       Shift?       @relation(fields: [shiftId], references: [id])
+  matchedPlan PricingPlan? @relation(fields: [matchedPlanId], references: [id])
+  correctedBy User?        @relation("SessionCorrectedBy", fields: [correctedByUserId], references: [id])
+  chairEvents ChairEvent[]
+
+  @@index([chairId])
+  @@index([shiftId])
+  @@index([status])
+  @@index([startedAt])
+  @@index([endedAt])
+  @@index([matchedPlanId])
+  @@index([chairId, status])
+  @@index([chairId, startedAt])
+  @@map("chair_sessions")
+}
+
+// State-transition and pre-session events at the chair level.
+model ChairEvent {
+  id         String       @id @default(uuid())
+  chairId    String       @map("chair_id")
+  sessionId  String?      @map("session_id")
+  eventType  String       @map("event_type") @db.VarChar(50)
+  fromStatus ChairStatus? @map("from_status")
+  toStatus   ChairStatus? @map("to_status")
+  powerWatts Float?       @map("power_watts")
+  message    String?      @db.Text
+  metadata   Json?
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  chair   Chair         @relation(fields: [chairId], references: [id])
+  session ChairSession? @relation(fields: [sessionId], references: [id])
+
+  @@index([chairId])
+  @@index([sessionId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@index([chairId, createdAt])
+  @@map("chair_events")
+}
+
+// Operational events at the device level (offline, poll errors, relay commands).
+// chairId is nullable so system-wide events with no specific chair can be logged.
+model DeviceLog {
+  id         String      @id @default(uuid())
+  chairId    String?     @map("chair_id")
+  eventType  String      @map("event_type") @db.VarChar(50)
+  message    String?     @db.Text
+  powerWatts Float?      @map("power_watts")
+  rawData    Json?       @map("raw_data")
+  severity   LogSeverity @default(INFO)
+  createdAt  DateTime    @default(now()) @map("created_at")
+
+  chair Chair? @relation(fields: [chairId], references: [id])
+
+  @@index([chairId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@map("device_logs")
+}
+
+// Runtime key-value settings configurable by the owner without a code deploy.
+model AppSetting {
+  id              String   @id @default(uuid())
+  key             String   @unique @db.VarChar(100)
+  value           String   @db.Text
+  type            String   @default("string") @db.VarChar(20)
+  description     String?  @db.Text
+  updatedByUserId String?  @map("updated_by_user_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  updatedBy User? @relation("AppSettingUpdatedBy", fields: [updatedByUserId], references: [id])
+
+  @@map("app_settings")
+}
+
+// Immutable audit trail for privileged config changes.
+model SettingsAuditLog {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  entityType String   @map("entity_type") @db.VarChar(100)
+  entityId   String?  @map("entity_id")
+  action     String   @db.VarChar(50)
+  oldValue   Json?    @map("old_value")
+  newValue   Json?    @map("new_value")
+  reason     String?  @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User? @relation("SettingsAuditLogUser", fields: [userId], references: [id])
+
+  @@index([entityType])
+  @@index([createdAt])
+  @@map("settings_audit_logs")
+}
+
+// ── Enums ─────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  OWNER
+  ADMIN
+}
+
+enum ChairStatus {
+  IDLE
+  MAYBE_ACTIVE
+  ACTIVE
+  MAYBE_FINISHED
+  OFFLINE
+  ERROR
+  MAINTENANCE
+}
+
+enum SessionStatus {
+  ACTIVE
+  COMPLETED
+  UNCERTAIN
+  CANCELLED
+  ERROR
+}
+
+enum BillingStatus {
+  PENDING
+  CALCULATED
+  CORRECTED
+  DISPUTED
+}
+
+enum RoundingMode {
+  NEAREST_PLAN
+  NEXT_PLAN
+  EXACT_MINUTES
+}
+
+enum OvertimePolicy {
+  NEXT_PLAN
+  EXTRA_MINUTE
+  ANOMALY
+}
+
+enum ShiftStatus {
+  OPEN
+  CLOSED
+  REVIEWED
+}
+
+enum LogSeverity {
+  INFO
+  WARNING
+  ERROR
+}

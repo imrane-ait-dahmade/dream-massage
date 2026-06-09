@@ -1,5 +1,22 @@
-// Time utility helpers: formatting durations, converting timestamps,
-// working with Africa/Casablanca timezone (APP_TIMEZONE env var).
-// TODO: implement in Session 1
+import { env } from '../config/env';
 
-export {};
+export function nowISO(): string {
+  return new Date().toISOString();
+}
+
+export function elapsedSeconds(since: Date): number {
+  return Math.floor((Date.now() - since.getTime()) / 1000);
+}
+
+export function formatDuration(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0) return `${h}h ${m}m ${s}s`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
+export function getTimezone(): string {
+  return env.APP_TIMEZONE;
+}

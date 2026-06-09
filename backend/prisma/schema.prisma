@@ -243,8 +243,8 @@ model ChairSession {
   detectionSnapshot Json?   @map("detection_snapshot") // frozen copy of ChairDetectionConfig at open
 
   // ── Pricing ──
-  matchedPlanId    String?       @map("matched_plan_id")
-  expectedAmount   Decimal?      @map("expected_amount") @db.Decimal(10, 2)
+  matchedPlanId     String?       @map("matched_plan_id")
+  expectedAmount    Decimal?      @map("expected_amount") @db.Decimal(10, 2)
   // correctedAmount is written only when billingStatus = CORRECTED.
   // expectedAmount is intentionally never overwritten so the original
   // auto-calculated value remains auditable alongside the correction.
@@ -253,7 +253,7 @@ model ChairSession {
   correctedByUserId String?       @map("corrected_by_user_id")
   correctedAt       DateTime?     @map("corrected_at")
   pricingSnapshot   Json?         @map("pricing_snapshot") // frozen copy of PricingRule + PricingPlan at billing
-  billingStatus    BillingStatus @default(PENDING) @map("billing_status")
+  billingStatus     BillingStatus @default(PENDING) @map("billing_status")
 
   // ── Anomaly / manual correction ──
   anomalyType      String? @map("anomaly_type") @db.VarChar(100)
@@ -452,19 +452,19 @@ model StaffMember {
 // ── Partial unique index (raw SQL only) ──────────────────────────────────────
 // Only one OPEN shift is allowed at a time; enforced by unique_open_shift index.
 model Shift {
-  id               String      @id @default(uuid())
-  staffMemberId    String      @map("staff_member_id")
-  openedByUserId   String      @map("opened_by_user_id")
-  closedByUserId   String?     @map("closed_by_user_id")
-  startedAt        DateTime    @map("started_at")
-  endedAt          DateTime?   @map("ended_at")
-  status           ShiftStatus @default(OPEN)
-  expectedCash     Decimal?    @map("expected_cash") @db.Decimal(10, 2)
-  declaredCash     Decimal?    @map("declared_cash") @db.Decimal(10, 2)
-  differenceCash   Decimal?    @map("difference_cash") @db.Decimal(10, 2)
-  notes            String?     @db.Text
-  createdAt        DateTime    @default(now()) @map("created_at")
-  updatedAt        DateTime    @updatedAt @map("updated_at")
+  id             String      @id @default(uuid())
+  staffMemberId  String      @map("staff_member_id")
+  openedByUserId String      @map("opened_by_user_id")
+  closedByUserId String?     @map("closed_by_user_id")
+  startedAt      DateTime    @map("started_at")
+  endedAt        DateTime?   @map("ended_at")
+  status         ShiftStatus @default(OPEN)
+  expectedCash   Decimal?    @map("expected_cash") @db.Decimal(10, 2)
+  declaredCash   Decimal?    @map("declared_cash") @db.Decimal(10, 2)
+  differenceCash Decimal?    @map("difference_cash") @db.Decimal(10, 2)
+  notes          String?     @db.Text
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
 
   staffMember      StaffMember       @relation(fields: [staffMemberId], references: [id])
   openedBy         User              @relation("ShiftOpenedBy", fields: [openedByUserId], references: [id])
