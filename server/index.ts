@@ -16,15 +16,13 @@ import {
 } from './jobs/mock-realtime.job';
 import { processSimulationTick } from './jobs/fake-power-simulation.job';
 import { shellyService, isShellyConfigured, getMissingFields } from './modules/shelly/shelly.service';
+import { corsOriginFn } from './config/cors';
+import chairRouter from './modules/chairs/chair.controller';
+import settingsRouter from './modules/settings/settings.controller';
 
 const app = express();
 
-app.use(
-  cors({
-    origin: [env.FRONTEND_ORIGIN, 'http://localhost:3000'],
-    credentials: true,
-  }),
-);
+app.use(cors({ origin: corsOriginFn, credentials: true }));
 app.use(express.json());
 
 // ── Health ─────────────────────────────────────────────────────────────────────
@@ -163,6 +161,14 @@ if (env.NODE_ENV !== 'production') {
   });
 }
 
+// ── Chairs ─────────────────────────────────────────────────────────────────────
+
+app.use('/api/chairs', chairRouter);
+
+// ── Settings ───────────────────────────────────────────────────────────────────
+
+app.use('/api/settings', settingsRouter);
+
 // ── 404 ────────────────────────────────────────────────────────────────────────
 
 app.use((_req, res) => {
@@ -179,7 +185,7 @@ httpServer.listen(env.PORT, () => {
   logger.info('Dream Massage realtime server started');
   logger.info(`  Port       : ${env.PORT}`);
   logger.info(`  Mode       : ${env.NODE_ENV}`);
-  logger.info(`  Origin     : ${env.FRONTEND_ORIGIN}`);
+  logger.info(`  CORS       : ${env.FRONTEND_ORIGIN} + any localhost:* in dev`);
   const activeSource = getActiveSource();
   logger.info(`  simulationEnabled : ${env.SIMULATION_ENABLED}${env.SIMULATION_FAST_MODE ? ' (fast-mode)' : ''}`);
   logger.info(`  activeSource      : ${activeSource}`);

@@ -1,6 +1,6 @@
 import { Server as HTTPServer } from 'http';
 import { Server as SocketServer } from 'socket.io';
-import { env } from './config/env';
+import { corsOriginFn } from './config/cors';
 import { dashboardService } from './modules/dashboard/dashboard.service';
 import { logger } from './utils/logger';
 
@@ -9,7 +9,7 @@ let io: SocketServer | null = null;
 export function createSocketServer(httpServer: HTTPServer): SocketServer {
   io = new SocketServer(httpServer, {
     cors: {
-      origin: [env.FRONTEND_ORIGIN, 'http://localhost:3000'],
+      origin: corsOriginFn,
       methods: ['GET', 'POST'],
       credentials: true,
     },

@@ -40,6 +40,19 @@ const FALLBACK_CONFIG: DetectionConfig = {
   baselinePowerWatts: 2.1,
 };
 
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+function mergeAnomalyTypes(existing: string | null, added: string | null): string | null {
+  if (!existing && !added) return null;
+  if (!existing) return added;
+  if (!added) return existing;
+  const parts = existing.split(',');
+  for (const part of added.split(',')) {
+    if (!parts.includes(part)) parts.push(part);
+  }
+  return parts.join(',');
+}
+
 // ── Service ────────────────────────────────────────────────────────────────────
 
 export class ChairStateService {
@@ -357,12 +370,16 @@ export class ChairStateService {
 
     const pricing = await pricingService.calculateSessionPrice(durationSeconds);
 
+    // Merge anomalyType from session start (e.g. NO_OPEN_SHIFT) with pricing anomaly
+    const mergedAnomalyType = mergeAnomalyTypes(session.anomalyType, pricing.anomalyType);
+
     await prisma.$transaction(async (tx) => {
       await tx.chairSession.update({
         where: { id: session.id },
         data: {
           status: 'COMPLETED',
-          billingStatus: pricing.matchedPlanId ? 'CALCULATED' : 'PENDING',
+          billingStatus: pricing.billingStatus,
+          anomalyType: mergedAnomalyType,
           lowPowerDetectedAt: maybeFinishedSince,
           confirmedEndAt: now,
           endedAt: maybeFinishedSince,
@@ -400,14 +417,16 @@ export class ChairStateService {
           sessionId: session.id,
           eventType: 'SESSION_FINISHED',
           toStatus: 'IDLE',
-          message: `${durationSeconds}s → ${pricing.expectedAmount} MAD`,
+          message: `${durationSeconds}s → ${pricing.expectedAmount} MAD${mergedAnomalyType ? ` [${mergedAnomalyType}]` : ''}`,
           createdAt: now,
         },
       });
     });
 
     logger.info(
-      `[state-machine] ${chair.name}: session ${session.id.slice(-8)} FINISHED (${durationSeconds}s, ${pricing.expectedAmount} MAD)`,
+      `[state-machine] ${chair.name}: session ${session.id.slice(-8)} FINISHED` +
+      ` (${durationSeconds}s, ${pricing.expectedAmount} MAD, ${pricing.billingStatus}` +
+      `${mergedAnomalyType ? `, anomaly=${mergedAnomalyType}` : ''})`,
     );
   }
 

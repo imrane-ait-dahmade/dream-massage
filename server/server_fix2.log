@@ -17,3 +17,1147 @@
 [2026-06-09T23:31:45.838Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
 [2026-06-09T23:31:49.660Z] [INFO ] [realtime-job] Tick #5 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
 [2026-06-09T23:31:50.661Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:31:54.712Z] [INFO ] [realtime-job] Tick #10 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:31:55.719Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:31:59.767Z] [INFO ] [realtime-job] Tick #15 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:32:00.769Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:32:04.798Z] [INFO ] [realtime-job] Tick #20 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:32:05.794Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:32:09.821Z] [INFO ] [realtime-job] Tick #25 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:32:10.830Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:32:14.858Z] [INFO ] [realtime-job] Tick #30 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:32:15.859Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:32:19.901Z] [INFO ] [realtime-job] Tick #35 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:32:20.901Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:32:24.932Z] [INFO ] [realtime-job] Tick #40 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:32:25.931Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:32:29.951Z] [INFO ] [realtime-job] Tick #45 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:32:30.948Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:32:34.995Z] [INFO ] [realtime-job] Tick #50 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:32:35.993Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:32:40.039Z] [INFO ] [realtime-job] Tick #55 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:32:41.047Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:32:45.069Z] [INFO ] [realtime-job] Tick #60 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:32:46.067Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:32:50.092Z] [INFO ] [realtime-job] Tick #65 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:32:51.097Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:32:55.124Z] [INFO ] [realtime-job] Tick #70 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:32:56.123Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:33:00.144Z] [INFO ] [realtime-job] Tick #75 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:33:01.148Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:33:05.178Z] [INFO ] [realtime-job] Tick #80 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:33:06.184Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:33:10.227Z] [INFO ] [realtime-job] Tick #85 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:33:11.223Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:33:15.243Z] [INFO ] [realtime-job] Tick #90 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:33:16.238Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:33:20.271Z] [INFO ] [realtime-job] Tick #95 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:33:21.269Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:33:25.306Z] [INFO ] [realtime-job] Tick #100 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:33:26.304Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:33:30.340Z] [INFO ] [realtime-job] Tick #105 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:33:31.345Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:33:35.368Z] [INFO ] [realtime-job] Tick #110 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:33:36.373Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:33:40.395Z] [INFO ] [realtime-job] Tick #115 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:33:41.402Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:33:45.434Z] [INFO ] [realtime-job] Tick #120 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:33:46.434Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:33:50.464Z] [INFO ] [realtime-job] Tick #125 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:33:51.464Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:33:55.486Z] [INFO ] [realtime-job] Tick #130 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:33:56.492Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:34:00.523Z] [INFO ] [realtime-job] Tick #135 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:34:01.522Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:34:05.546Z] [INFO ] [realtime-job] Tick #140 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:34:06.548Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:34:10.573Z] [INFO ] [realtime-job] Tick #145 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:34:11.570Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:34:15.597Z] [INFO ] [realtime-job] Tick #150 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:34:16.601Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:34:20.625Z] [INFO ] [realtime-job] Tick #155 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:34:21.623Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:34:25.657Z] [INFO ] [realtime-job] Tick #160 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:34:26.656Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:34:30.693Z] [INFO ] [realtime-job] Tick #165 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:34:31.691Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:34:35.723Z] [INFO ] [realtime-job] Tick #170 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:34:36.727Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:34:40.758Z] [INFO ] [realtime-job] Tick #175 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:34:41.758Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:34:45.790Z] [INFO ] [realtime-job] Tick #180 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:34:46.789Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:34:50.826Z] [INFO ] [realtime-job] Tick #185 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:34:51.828Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:34:55.865Z] [INFO ] [realtime-job] Tick #190 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:34:56.868Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:35:00.899Z] [INFO ] [realtime-job] Tick #195 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:35:01.897Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:35:05.930Z] [INFO ] [realtime-job] Tick #200 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:35:06.926Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:35:10.951Z] [INFO ] [realtime-job] Tick #205 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:35:11.956Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:35:15.981Z] [INFO ] [realtime-job] Tick #210 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:35:16.978Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:35:21.008Z] [INFO ] [realtime-job] Tick #215 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:35:22.003Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:35:26.023Z] [INFO ] [realtime-job] Tick #220 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:35:27.025Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:35:31.050Z] [INFO ] [realtime-job] Tick #225 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:35:32.058Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:35:36.103Z] [INFO ] [realtime-job] Tick #230 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:35:37.101Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:35:41.150Z] [INFO ] [realtime-job] Tick #235 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:35:42.150Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:35:46.196Z] [INFO ] [realtime-job] Tick #240 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:35:47.197Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:35:51.238Z] [INFO ] [realtime-job] Tick #245 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:35:52.241Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:35:56.266Z] [INFO ] [realtime-job] Tick #250 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:35:57.275Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:36:01.307Z] [INFO ] [realtime-job] Tick #255 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:36:02.314Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:36:06.358Z] [INFO ] [realtime-job] Tick #260 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:36:07.363Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:36:11.412Z] [INFO ] [realtime-job] Tick #265 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:36:12.414Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:36:16.454Z] [INFO ] [realtime-job] Tick #270 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:36:17.462Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:36:21.503Z] [INFO ] [realtime-job] Tick #275 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:36:22.505Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:36:26.542Z] [INFO ] [realtime-job] Tick #280 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:36:27.549Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:36:31.590Z] [INFO ] [realtime-job] Tick #285 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:36:32.592Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:36:36.626Z] [INFO ] [realtime-job] Tick #290 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:36:37.636Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:36:41.672Z] [INFO ] [realtime-job] Tick #295 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:36:42.681Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:36:46.711Z] [INFO ] [realtime-job] Tick #300 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:36:47.719Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:36:51.741Z] [INFO ] [realtime-job] Tick #305 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:36:52.751Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:36:56.782Z] [INFO ] [realtime-job] Tick #310 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:36:57.779Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:37:01.820Z] [INFO ] [realtime-job] Tick #315 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:37:02.820Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:37:06.853Z] [INFO ] [realtime-job] Tick #320 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:37:07.862Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:37:11.895Z] [INFO ] [realtime-job] Tick #325 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:37:12.902Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:37:16.951Z] [INFO ] [realtime-job] Tick #330 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:37:17.952Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:37:21.992Z] [INFO ] [realtime-job] Tick #335 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:37:23.001Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:37:27.021Z] [INFO ] [realtime-job] Tick #340 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:37:28.027Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:37:32.066Z] [INFO ] [realtime-job] Tick #345 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:37:33.071Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:37:37.115Z] [INFO ] [realtime-job] Tick #350 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:37:38.118Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:37:42.160Z] [INFO ] [realtime-job] Tick #355 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:37:43.170Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:37:47.206Z] [INFO ] [realtime-job] Tick #360 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:37:48.209Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:37:52.258Z] [INFO ] [realtime-job] Tick #365 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:37:53.262Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:37:57.307Z] [INFO ] [realtime-job] Tick #370 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:37:58.317Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:38:02.358Z] [INFO ] [realtime-job] Tick #375 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:38:03.360Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:38:07.402Z] [INFO ] [realtime-job] Tick #380 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:38:08.399Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:38:12.434Z] [INFO ] [realtime-job] Tick #385 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:38:13.438Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:38:17.484Z] [INFO ] [realtime-job] Tick #390 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:38:18.486Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:38:22.524Z] [INFO ] [realtime-job] Tick #395 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:38:23.524Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:38:27.571Z] [INFO ] [realtime-job] Tick #400 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:38:28.567Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:38:32.613Z] [INFO ] [realtime-job] Tick #405 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:38:33.611Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:38:37.639Z] [INFO ] [realtime-job] Tick #410 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:38:38.642Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:38:42.683Z] [INFO ] [realtime-job] Tick #415 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:38:43.694Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:38:47.724Z] [INFO ] [realtime-job] Tick #420 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:38:48.730Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:38:52.760Z] [INFO ] [realtime-job] Tick #425 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:38:53.762Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:38:57.786Z] [INFO ] [realtime-job] Tick #430 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:38:58.785Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:39:02.826Z] [INFO ] [realtime-job] Tick #435 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:39:03.830Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:39:07.879Z] [INFO ] [realtime-job] Tick #440 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:39:08.879Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:39:12.901Z] [INFO ] [realtime-job] Tick #445 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:39:13.904Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:39:17.935Z] [INFO ] [realtime-job] Tick #450 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:39:18.937Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:39:22.965Z] [INFO ] [realtime-job] Tick #455 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:39:23.972Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:39:28.004Z] [INFO ] [realtime-job] Tick #460 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:39:29.012Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:39:33.060Z] [INFO ] [realtime-job] Tick #465 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:39:34.064Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:39:38.096Z] [INFO ] [realtime-job] Tick #470 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:39:39.095Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:39:43.133Z] [INFO ] [realtime-job] Tick #475 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:39:44.140Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:39:48.170Z] [INFO ] [realtime-job] Tick #480 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:39:49.176Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:39:53.205Z] [INFO ] [realtime-job] Tick #485 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:39:54.203Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:39:54.322Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:39:58.233Z] [INFO ] [realtime-job] Tick #490 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:39:59.239Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:40:03.273Z] [INFO ] [realtime-job] Tick #495 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:40:04.275Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:40:08.314Z] [INFO ] [realtime-job] Tick #500 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:40:09.316Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:40:09.501Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:40:13.345Z] [INFO ] [realtime-job] Tick #505 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:40:14.351Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:40:18.379Z] [INFO ] [realtime-job] Tick #510 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:40:19.382Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:40:23.424Z] [INFO ] [realtime-job] Tick #515 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:40:24.429Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:40:28.460Z] [INFO ] [realtime-job] Tick #520 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:40:29.465Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:40:33.500Z] [INFO ] [realtime-job] Tick #525 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:40:34.494Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:40:38.535Z] [INFO ] [realtime-job] Tick #530 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:40:39.533Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:40:43.578Z] [INFO ] [realtime-job] Tick #535 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:40:44.558Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:40:48.619Z] [INFO ] [realtime-job] Tick #540 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:40:49.613Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:40:49.746Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:40:53.661Z] [INFO ] [realtime-job] Tick #545 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:40:54.659Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:40:58.724Z] [INFO ] [realtime-job] Tick #550 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:40:59.703Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:41:03.756Z] [INFO ] [realtime-job] Tick #555 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:41:04.751Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:41:08.826Z] [INFO ] [realtime-job] Tick #560 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:41:09.785Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:41:13.822Z] [INFO ] [realtime-job] Tick #565 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:41:14.816Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:41:15.290Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:41:18.863Z] [INFO ] [realtime-job] Tick #570 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:41:19.870Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:41:23.904Z] [INFO ] [realtime-job] Tick #575 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:41:24.914Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:41:28.952Z] [INFO ] [realtime-job] Tick #580 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:41:29.953Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:41:33.989Z] [INFO ] [realtime-job] Tick #585 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:41:34.997Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:41:39.049Z] [INFO ] [realtime-job] Tick #590 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:41:40.053Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:41:44.107Z] [INFO ] [realtime-job] Tick #595 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:41:45.117Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:41:45.254Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:41:49.166Z] [INFO ] [realtime-job] Tick #600 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:41:50.155Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:41:54.201Z] [INFO ] [realtime-job] Tick #605 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:41:55.205Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:41:59.258Z] [INFO ] [realtime-job] Tick #610 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:42:00.261Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:42:04.305Z] [INFO ] [realtime-job] Tick #615 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:42:05.310Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:42:05.360Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:42:09.341Z] [INFO ] [realtime-job] Tick #620 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:42:10.347Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:42:14.385Z] [INFO ] [realtime-job] Tick #625 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:42:15.392Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:42:15.433Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:42:19.448Z] [INFO ] [realtime-job] Tick #630 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:42:20.448Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:42:24.499Z] [INFO ] [realtime-job] Tick #635 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:42:25.506Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:42:29.554Z] [INFO ] [realtime-job] Tick #640 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:42:30.565Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:42:34.612Z] [INFO ] [realtime-job] Tick #645 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:42:35.611Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:42:39.661Z] [INFO ] [realtime-job] Tick #650 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:42:40.662Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:42:44.721Z] [INFO ] [realtime-job] Tick #655 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:42:45.727Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:42:49.761Z] [INFO ] [realtime-job] Tick #660 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:42:50.756Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:42:50.810Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:42:54.806Z] [INFO ] [realtime-job] Tick #665 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:42:55.809Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:42:59.859Z] [INFO ] [realtime-job] Tick #670 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:43:00.863Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:43:04.899Z] [INFO ] [realtime-job] Tick #675 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:43:05.900Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:43:09.940Z] [INFO ] [realtime-job] Tick #680 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:43:10.945Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:43:10.997Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:43:14.993Z] [INFO ] [realtime-job] Tick #685 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:43:15.988Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:43:20.027Z] [INFO ] [realtime-job] Tick #690 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:43:21.031Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:43:25.075Z] [INFO ] [realtime-job] Tick #695 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:43:26.074Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:43:30.121Z] [INFO ] [realtime-job] Tick #700 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:43:31.125Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:43:31.177Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:43:35.160Z] [INFO ] [realtime-job] Tick #705 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:43:36.161Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:43:40.193Z] [INFO ] [realtime-job] Tick #710 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:43:41.200Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:43:41.253Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:43:45.222Z] [INFO ] [realtime-job] Tick #715 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:43:46.213Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:43:50.254Z] [INFO ] [realtime-job] Tick #720 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:43:51.258Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:43:55.314Z] [INFO ] [realtime-job] Tick #725 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:43:56.320Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:44:00.351Z] [INFO ] [realtime-job] Tick #730 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:44:01.349Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:44:05.387Z] [INFO ] [realtime-job] Tick #735 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:44:06.387Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:44:10.426Z] [INFO ] [realtime-job] Tick #740 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:44:11.429Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:44:15.467Z] [INFO ] [realtime-job] Tick #745 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:44:16.462Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:44:20.502Z] [INFO ] [realtime-job] Tick #750 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:44:21.504Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:44:25.538Z] [INFO ] [realtime-job] Tick #755 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:44:26.542Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:44:30.585Z] [INFO ] [realtime-job] Tick #760 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:44:31.590Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:44:35.629Z] [INFO ] [realtime-job] Tick #765 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:44:36.627Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:44:40.657Z] [INFO ] [realtime-job] Tick #770 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:44:41.662Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:44:45.721Z] [INFO ] [realtime-job] Tick #775 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:44:46.725Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:44:50.776Z] [INFO ] [realtime-job] Tick #780 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:44:51.776Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:44:55.820Z] [INFO ] [realtime-job] Tick #785 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:44:56.827Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:45:00.884Z] [INFO ] [realtime-job] Tick #790 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:45:01.888Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:45:05.932Z] [INFO ] [realtime-job] Tick #795 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:45:06.925Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:45:10.977Z] [INFO ] [realtime-job] Tick #800 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:45:11.982Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:45:16.036Z] [INFO ] [realtime-job] Tick #805 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:45:17.041Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:45:17.228Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:45:21.088Z] [INFO ] [realtime-job] Tick #810 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:45:22.091Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:45:26.127Z] [INFO ] [realtime-job] Tick #815 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:45:27.125Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:45:31.175Z] [INFO ] [realtime-job] Tick #820 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:45:32.165Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:45:36.224Z] [INFO ] [realtime-job] Tick #825 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:45:37.226Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:45:41.286Z] [INFO ] [realtime-job] Tick #830 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:45:42.289Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:45:46.325Z] [INFO ] [realtime-job] Tick #835 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:45:47.332Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:45:51.352Z] [INFO ] [realtime-job] Tick #840 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:45:52.355Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:45:56.399Z] [INFO ] [realtime-job] Tick #845 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:45:57.392Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:46:01.453Z] [INFO ] [realtime-job] Tick #850 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:46:02.460Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:46:06.525Z] [INFO ] [realtime-job] Tick #855 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:46:07.523Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:46:11.579Z] [INFO ] [realtime-job] Tick #860 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:46:12.582Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:46:16.640Z] [INFO ] [realtime-job] Tick #865 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:46:17.643Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:46:21.682Z] [INFO ] [realtime-job] Tick #870 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:46:22.685Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:46:26.738Z] [INFO ] [realtime-job] Tick #875 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:46:27.739Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:46:31.781Z] [INFO ] [realtime-job] Tick #880 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:46:32.782Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:46:36.811Z] [INFO ] [realtime-job] Tick #885 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:46:37.809Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:46:41.866Z] [INFO ] [realtime-job] Tick #890 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:46:42.862Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:46:43.015Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:46:46.917Z] [INFO ] [realtime-job] Tick #895 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:46:47.924Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:46:51.972Z] [INFO ] [realtime-job] Tick #900 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:46:52.978Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:46:57.011Z] [INFO ] [realtime-job] Tick #905 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:46:58.013Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:47:02.051Z] [INFO ] [realtime-job] Tick #910 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:47:03.043Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:47:07.085Z] [INFO ] [realtime-job] Tick #915 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:47:08.081Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:47:12.136Z] [INFO ] [realtime-job] Tick #920 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:47:13.145Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:47:17.189Z] [INFO ] [realtime-job] Tick #925 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:47:18.199Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:47:22.252Z] [INFO ] [realtime-job] Tick #930 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:47:23.255Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:47:27.302Z] [INFO ] [realtime-job] Tick #935 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:47:28.306Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:47:32.350Z] [INFO ] [realtime-job] Tick #940 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:47:33.350Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:47:37.394Z] [INFO ] [realtime-job] Tick #945 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:47:38.396Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:47:42.443Z] [INFO ] [realtime-job] Tick #950 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:47:43.443Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:47:47.475Z] [INFO ] [realtime-job] Tick #955 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:47:48.479Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:47:52.520Z] [INFO ] [realtime-job] Tick #960 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:47:53.514Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:47:57.561Z] [INFO ] [realtime-job] Tick #965 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:47:58.565Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:48:02.610Z] [INFO ] [realtime-job] Tick #970 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:48:03.619Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:48:07.673Z] [INFO ] [realtime-job] Tick #975 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:48:08.671Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:48:12.701Z] [INFO ] [realtime-job] Tick #980 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:48:13.697Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:48:17.732Z] [INFO ] [realtime-job] Tick #985 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:48:18.742Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:48:22.776Z] [INFO ] [realtime-job] Tick #990 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:48:23.772Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:48:27.805Z] [INFO ] [realtime-job] Tick #995 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:48:28.809Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:48:32.833Z] [INFO ] [realtime-job] Tick #1000 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:48:33.842Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:48:37.871Z] [INFO ] [realtime-job] Tick #1005 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:48:38.865Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:48:42.910Z] [INFO ] [realtime-job] Tick #1010 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:48:43.910Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:48:47.953Z] [INFO ] [realtime-job] Tick #1015 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:48:48.960Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:48:53.010Z] [INFO ] [realtime-job] Tick #1020 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:48:54.016Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:48:58.050Z] [INFO ] [realtime-job] Tick #1025 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:48:59.049Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:48:59.101Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:49:03.095Z] [INFO ] [realtime-job] Tick #1030 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:49:04.099Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:49:08.144Z] [INFO ] [realtime-job] Tick #1035 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:49:09.137Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:49:13.188Z] [INFO ] [realtime-job] Tick #1040 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:49:14.185Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:49:18.244Z] [INFO ] [realtime-job] Tick #1045 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:49:19.250Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:49:23.278Z] [INFO ] [realtime-job] Tick #1050 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:49:24.276Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:49:28.308Z] [INFO ] [realtime-job] Tick #1055 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:49:29.314Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:49:33.368Z] [INFO ] [realtime-job] Tick #1060 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:49:34.358Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:49:38.410Z] [INFO ] [realtime-job] Tick #1065 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:49:39.416Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:49:43.444Z] [INFO ] [realtime-job] Tick #1070 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:49:44.436Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:49:48.464Z] [INFO ] [realtime-job] Tick #1075 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:49:49.455Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:49:49.512Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:49:53.510Z] [INFO ] [realtime-job] Tick #1080 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:49:54.504Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:49:58.540Z] [INFO ] [realtime-job] Tick #1085 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:49:59.544Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:50:03.592Z] [INFO ] [realtime-job] Tick #1090 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:50:04.596Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:50:08.649Z] [INFO ] [realtime-job] Tick #1095 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:50:09.653Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:50:13.685Z] [INFO ] [realtime-job] Tick #1100 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:50:14.679Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:50:18.712Z] [INFO ] [realtime-job] Tick #1105 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:50:19.709Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:50:19.773Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:50:23.750Z] [INFO ] [realtime-job] Tick #1110 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:50:24.744Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:50:28.782Z] [INFO ] [realtime-job] Tick #1115 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:50:29.787Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:50:29.852Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:50:33.827Z] [INFO ] [realtime-job] Tick #1120 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:50:34.831Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:50:38.877Z] [INFO ] [realtime-job] Tick #1125 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:50:39.883Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:50:39.941Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:50:43.909Z] [INFO ] [realtime-job] Tick #1130 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:50:44.915Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:50:48.957Z] [INFO ] [realtime-job] Tick #1135 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:50:49.951Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:50:54.013Z] [INFO ] [realtime-job] Tick #1140 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:50:55.005Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:50:55.191Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:50:59.054Z] [INFO ] [realtime-job] Tick #1145 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:51:00.052Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:51:04.105Z] [INFO ] [realtime-job] Tick #1150 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:51:05.103Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:51:09.135Z] [INFO ] [realtime-job] Tick #1155 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:51:10.141Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:51:14.196Z] [INFO ] [realtime-job] Tick #1160 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:51:15.190Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:51:19.230Z] [INFO ] [realtime-job] Tick #1165 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:51:20.233Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:51:24.280Z] [INFO ] [realtime-job] Tick #1170 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:51:25.282Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:51:29.318Z] [INFO ] [realtime-job] Tick #1175 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:51:30.318Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:51:34.347Z] [INFO ] [realtime-job] Tick #1180 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:51:35.345Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:51:39.366Z] [INFO ] [realtime-job] Tick #1185 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:51:40.374Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:51:44.401Z] [INFO ] [realtime-job] Tick #1190 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:51:45.408Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:51:49.426Z] [INFO ] [realtime-job] Tick #1195 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:51:50.426Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:51:54.470Z] [INFO ] [realtime-job] Tick #1200 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:51:55.464Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:51:59.503Z] [INFO ] [realtime-job] Tick #1205 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:52:00.499Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:52:04.534Z] [INFO ] [realtime-job] Tick #1210 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:52:05.528Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:52:09.567Z] [INFO ] [realtime-job] Tick #1215 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:52:10.561Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:52:14.588Z] [INFO ] [realtime-job] Tick #1220 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:52:15.589Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:52:19.616Z] [INFO ] [realtime-job] Tick #1225 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:52:20.622Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:52:24.654Z] [INFO ] [realtime-job] Tick #1230 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:52:25.654Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:52:29.682Z] [INFO ] [realtime-job] Tick #1235 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:52:30.681Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:52:34.708Z] [INFO ] [realtime-job] Tick #1240 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:52:35.712Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:52:39.744Z] [INFO ] [realtime-job] Tick #1245 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:52:40.742Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:52:44.769Z] [INFO ] [realtime-job] Tick #1250 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:52:45.776Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:52:49.823Z] [INFO ] [realtime-job] Tick #1255 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:52:50.820Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:52:54.846Z] [INFO ] [realtime-job] Tick #1260 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:52:55.855Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:52:59.908Z] [INFO ] [realtime-job] Tick #1265 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:53:00.905Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:53:04.954Z] [INFO ] [realtime-job] Tick #1270 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:53:05.962Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:53:10.008Z] [INFO ] [realtime-job] Tick #1275 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:53:11.012Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:53:15.053Z] [INFO ] [realtime-job] Tick #1280 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:53:16.055Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:53:20.092Z] [INFO ] [realtime-job] Tick #1285 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:53:21.090Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:53:25.123Z] [INFO ] [realtime-job] Tick #1290 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:53:26.120Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:53:30.163Z] [INFO ] [realtime-job] Tick #1295 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:53:31.164Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:53:35.200Z] [INFO ] [realtime-job] Tick #1300 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:53:36.204Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:53:40.247Z] [INFO ] [realtime-job] Tick #1305 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:53:41.252Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:53:45.298Z] [INFO ] [realtime-job] Tick #1310 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:53:46.302Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:53:50.355Z] [INFO ] [realtime-job] Tick #1315 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:53:51.360Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:53:55.394Z] [INFO ] [realtime-job] Tick #1320 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:53:56.398Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:54:00.439Z] [INFO ] [realtime-job] Tick #1325 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:54:01.443Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:54:05.486Z] [INFO ] [realtime-job] Tick #1330 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:54:06.493Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:54:10.524Z] [INFO ] [realtime-job] Tick #1335 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:54:11.531Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:54:15.579Z] [INFO ] [realtime-job] Tick #1340 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:54:16.582Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:54:20.633Z] [INFO ] [realtime-job] Tick #1345 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:54:21.636Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:54:25.678Z] [INFO ] [realtime-job] Tick #1350 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:54:26.677Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:54:30.725Z] [INFO ] [realtime-job] Tick #1355 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:54:31.724Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:54:35.776Z] [INFO ] [realtime-job] Tick #1360 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:54:36.779Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:54:40.830Z] [INFO ] [realtime-job] Tick #1365 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:54:41.836Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:54:45.876Z] [INFO ] [realtime-job] Tick #1370 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:54:46.880Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:54:50.926Z] [INFO ] [realtime-job] Tick #1375 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:54:51.932Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:54:52.080Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-09T23:54:55.965Z] [INFO ] [realtime-job] Tick #1380 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:54:56.967Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:55:01.009Z] [INFO ] [realtime-job] Tick #1385 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:55:02.009Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:55:06.045Z] [INFO ] [realtime-job] Tick #1390 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:55:07.048Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:55:11.096Z] [INFO ] [realtime-job] Tick #1395 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:55:12.093Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:55:16.132Z] [INFO ] [realtime-job] Tick #1400 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:55:17.134Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:55:21.162Z] [INFO ] [realtime-job] Tick #1405 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:55:22.159Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:55:26.193Z] [INFO ] [realtime-job] Tick #1410 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:55:27.192Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:55:31.222Z] [INFO ] [realtime-job] Tick #1415 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:55:32.224Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:55:36.255Z] [INFO ] [realtime-job] Tick #1420 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:55:37.251Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:55:41.283Z] [INFO ] [realtime-job] Tick #1425 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:55:42.283Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:55:46.308Z] [INFO ] [realtime-job] Tick #1430 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:55:47.307Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:55:51.347Z] [INFO ] [realtime-job] Tick #1435 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:55:52.353Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:55:56.389Z] [INFO ] [realtime-job] Tick #1440 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:55:57.388Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:56:01.420Z] [INFO ] [realtime-job] Tick #1445 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:56:02.419Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:56:06.455Z] [INFO ] [realtime-job] Tick #1450 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:56:07.456Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:56:11.490Z] [INFO ] [realtime-job] Tick #1455 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:56:12.496Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:56:16.527Z] [INFO ] [realtime-job] Tick #1460 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:56:17.525Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:56:21.562Z] [INFO ] [realtime-job] Tick #1465 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:56:22.565Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:56:26.601Z] [INFO ] [realtime-job] Tick #1470 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:56:27.610Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:56:31.639Z] [INFO ] [realtime-job] Tick #1475 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:56:32.637Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:56:36.683Z] [INFO ] [realtime-job] Tick #1480 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:56:37.687Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:56:41.728Z] [INFO ] [realtime-job] Tick #1485 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:56:42.730Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:56:46.765Z] [INFO ] [realtime-job] Tick #1490 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:56:47.762Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:56:51.793Z] [INFO ] [realtime-job] Tick #1495 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:56:52.789Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:56:56.818Z] [INFO ] [realtime-job] Tick #1500 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:56:57.807Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:57:01.835Z] [INFO ] [realtime-job] Tick #1505 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:57:02.836Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:57:06.859Z] [INFO ] [realtime-job] Tick #1510 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:57:07.865Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:57:11.894Z] [INFO ] [realtime-job] Tick #1515 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:57:12.899Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:57:16.932Z] [INFO ] [realtime-job] Tick #1520 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:57:17.936Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:57:21.970Z] [INFO ] [realtime-job] Tick #1525 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:57:22.976Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:57:27.013Z] [INFO ] [realtime-job] Tick #1530 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:57:28.024Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:57:32.078Z] [INFO ] [realtime-job] Tick #1535 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:57:33.083Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:57:37.125Z] [INFO ] [realtime-job] Tick #1540 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:57:38.124Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:57:42.162Z] [INFO ] [realtime-job] Tick #1545 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:57:43.163Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:57:47.204Z] [INFO ] [realtime-job] Tick #1550 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:57:48.202Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:57:52.244Z] [INFO ] [realtime-job] Tick #1555 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:57:53.240Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:57:57.260Z] [INFO ] [realtime-job] Tick #1560 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:57:58.260Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:58:02.290Z] [INFO ] [realtime-job] Tick #1565 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:58:03.300Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:58:07.345Z] [INFO ] [realtime-job] Tick #1570 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:58:08.353Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:58:12.382Z] [INFO ] [realtime-job] Tick #1575 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:58:13.387Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:58:17.420Z] [INFO ] [realtime-job] Tick #1580 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:58:18.416Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:58:22.440Z] [INFO ] [realtime-job] Tick #1585 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:58:23.441Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:58:27.478Z] [INFO ] [realtime-job] Tick #1590 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:58:28.480Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:58:32.512Z] [INFO ] [realtime-job] Tick #1595 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:58:33.517Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:58:37.552Z] [INFO ] [realtime-job] Tick #1600 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:58:38.551Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:58:42.584Z] [INFO ] [realtime-job] Tick #1605 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:58:43.586Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:58:47.612Z] [INFO ] [realtime-job] Tick #1610 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:58:48.611Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:58:52.647Z] [INFO ] [realtime-job] Tick #1615 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:58:53.645Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:58:57.685Z] [INFO ] [realtime-job] Tick #1620 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:58:58.689Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:59:02.723Z] [INFO ] [realtime-job] Tick #1625 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:59:03.725Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:59:07.762Z] [INFO ] [realtime-job] Tick #1630 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:59:08.765Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:59:12.805Z] [INFO ] [realtime-job] Tick #1635 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:59:13.805Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:59:17.852Z] [INFO ] [realtime-job] Tick #1640 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:59:18.851Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:59:22.880Z] [INFO ] [realtime-job] Tick #1645 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:59:23.881Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:59:27.924Z] [INFO ] [realtime-job] Tick #1650 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:59:28.919Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:59:32.954Z] [INFO ] [realtime-job] Tick #1655 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:59:33.964Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:59:37.995Z] [INFO ] [realtime-job] Tick #1660 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:59:38.995Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:59:43.030Z] [INFO ] [realtime-job] Tick #1665 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:59:44.030Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:59:48.054Z] [INFO ] [realtime-job] Tick #1670 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:59:49.049Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:59:53.094Z] [INFO ] [realtime-job] Tick #1675 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:59:54.099Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-09T23:59:58.139Z] [INFO ] [realtime-job] Tick #1680 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-09T23:59:59.137Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:00:03.166Z] [INFO ] [realtime-job] Tick #1685 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:00:04.162Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:00:08.189Z] [INFO ] [realtime-job] Tick #1690 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:00:09.194Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:00:13.230Z] [INFO ] [realtime-job] Tick #1695 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:00:14.232Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:00:18.258Z] [INFO ] [realtime-job] Tick #1700 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:00:19.255Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:00:23.286Z] [INFO ] [realtime-job] Tick #1705 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:00:24.286Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:00:28.321Z] [INFO ] [realtime-job] Tick #1710 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:00:29.329Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:00:33.357Z] [INFO ] [realtime-job] Tick #1715 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:00:34.354Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:00:38.397Z] [INFO ] [realtime-job] Tick #1720 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:00:39.398Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:00:43.438Z] [INFO ] [realtime-job] Tick #1725 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:00:44.436Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:00:48.477Z] [INFO ] [realtime-job] Tick #1730 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:00:49.474Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:00:53.513Z] [INFO ] [realtime-job] Tick #1735 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:00:54.515Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:00:58.552Z] [INFO ] [realtime-job] Tick #1740 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:00:59.556Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:01:03.594Z] [INFO ] [realtime-job] Tick #1745 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:01:04.597Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:01:08.619Z] [INFO ] [realtime-job] Tick #1750 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:01:09.630Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:01:13.661Z] [INFO ] [realtime-job] Tick #1755 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:01:14.669Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:01:18.716Z] [INFO ] [realtime-job] Tick #1760 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:01:19.714Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:01:23.751Z] [INFO ] [realtime-job] Tick #1765 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:01:24.753Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:01:28.819Z] [INFO ] [realtime-job] Tick #1770 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:01:29.813Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:01:29.940Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-10T00:01:33.858Z] [INFO ] [realtime-job] Tick #1775 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:01:34.852Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:01:38.880Z] [INFO ] [realtime-job] Tick #1780 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:01:39.884Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:01:43.904Z] [INFO ] [realtime-job] Tick #1785 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:01:44.899Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:01:48.932Z] [INFO ] [realtime-job] Tick #1790 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:01:49.932Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:01:53.967Z] [INFO ] [realtime-job] Tick #1795 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:01:54.973Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:01:59.007Z] [INFO ] [realtime-job] Tick #1800 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:02:00.014Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:02:04.051Z] [INFO ] [realtime-job] Tick #1805 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:02:05.049Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:02:09.103Z] [INFO ] [realtime-job] Tick #1810 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:02:10.098Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:02:14.124Z] [INFO ] [realtime-job] Tick #1815 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:02:15.129Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:02:19.168Z] [INFO ] [realtime-job] Tick #1820 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:02:20.166Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:02:24.207Z] [INFO ] [realtime-job] Tick #1825 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:02:25.216Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:02:29.263Z] [INFO ] [realtime-job] Tick #1830 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:02:30.263Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:02:34.293Z] [INFO ] [realtime-job] Tick #1835 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:02:35.293Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:02:39.319Z] [INFO ] [realtime-job] Tick #1840 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:02:40.323Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:02:44.358Z] [INFO ] [realtime-job] Tick #1845 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:02:45.368Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:02:49.399Z] [INFO ] [realtime-job] Tick #1850 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:02:50.403Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:02:54.442Z] [INFO ] [realtime-job] Tick #1855 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:02:55.444Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:02:59.487Z] [INFO ] [realtime-job] Tick #1860 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:03:00.487Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:03:04.522Z] [INFO ] [realtime-job] Tick #1865 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:03:05.521Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:03:09.546Z] [INFO ] [realtime-job] Tick #1870 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:03:10.548Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:03:14.593Z] [INFO ] [realtime-job] Tick #1875 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:03:15.589Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:03:19.638Z] [INFO ] [realtime-job] Tick #1880 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:03:20.643Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:03:24.687Z] [INFO ] [realtime-job] Tick #1885 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:03:25.693Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:03:29.729Z] [INFO ] [realtime-job] Tick #1890 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:03:30.732Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:03:34.774Z] [INFO ] [realtime-job] Tick #1895 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:03:35.774Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:03:39.830Z] [INFO ] [realtime-job] Tick #1900 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:03:40.834Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:03:44.886Z] [INFO ] [realtime-job] Tick #1905 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:03:45.886Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:03:49.930Z] [INFO ] [realtime-job] Tick #1910 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:03:50.932Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:03:54.988Z] [INFO ] [realtime-job] Tick #1915 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:03:55.989Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:04:00.032Z] [INFO ] [realtime-job] Tick #1920 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:04:01.032Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:04:05.086Z] [INFO ] [realtime-job] Tick #1925 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:04:06.084Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:04:10.134Z] [INFO ] [realtime-job] Tick #1930 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:04:11.131Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:04:15.170Z] [INFO ] [realtime-job] Tick #1935 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:04:16.173Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:04:20.210Z] [INFO ] [realtime-job] Tick #1940 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:04:21.210Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:04:25.235Z] [INFO ] [realtime-job] Tick #1945 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:04:26.235Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:04:30.270Z] [INFO ] [realtime-job] Tick #1950 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:04:31.279Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:04:35.325Z] [INFO ] [realtime-job] Tick #1955 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:04:36.326Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:04:40.371Z] [INFO ] [realtime-job] Tick #1960 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:04:41.373Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:04:45.411Z] [INFO ] [realtime-job] Tick #1965 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:04:46.418Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:04:50.461Z] [INFO ] [realtime-job] Tick #1970 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:04:51.468Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:04:55.501Z] [INFO ] [realtime-job] Tick #1975 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:04:56.503Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:05:00.556Z] [INFO ] [realtime-job] Tick #1980 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:05:01.562Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:05:05.596Z] [INFO ] [realtime-job] Tick #1985 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:05:06.596Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:05:10.646Z] [INFO ] [realtime-job] Tick #1990 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:05:11.653Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:05:15.683Z] [INFO ] [realtime-job] Tick #1995 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:05:16.688Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:05:20.716Z] [INFO ] [realtime-job] Tick #2000 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:05:21.720Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:05:25.759Z] [INFO ] [realtime-job] Tick #2005 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:05:26.756Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:05:30.798Z] [INFO ] [realtime-job] Tick #2010 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:05:31.807Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:05:35.840Z] [INFO ] [realtime-job] Tick #2015 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:05:36.848Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:05:40.898Z] [INFO ] [realtime-job] Tick #2020 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:05:41.905Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:05:45.947Z] [INFO ] [realtime-job] Tick #2025 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:05:46.954Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:05:50.996Z] [INFO ] [realtime-job] Tick #2030 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:05:51.994Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:05:56.044Z] [INFO ] [realtime-job] Tick #2035 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:05:57.050Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:06:01.101Z] [INFO ] [realtime-job] Tick #2040 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:06:02.095Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:06:06.143Z] [INFO ] [realtime-job] Tick #2045 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:06:07.151Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:06:11.198Z] [INFO ] [realtime-job] Tick #2050 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:06:12.203Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:06:16.258Z] [INFO ] [realtime-job] Tick #2055 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:06:17.267Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:06:17.443Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-10T00:06:21.315Z] [INFO ] [realtime-job] Tick #2060 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:06:22.323Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:06:26.373Z] [INFO ] [realtime-job] Tick #2065 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:06:27.381Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:06:31.429Z] [INFO ] [realtime-job] Tick #2070 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:06:32.435Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:06:36.460Z] [INFO ] [realtime-job] Tick #2075 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:06:37.457Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:06:41.502Z] [INFO ] [realtime-job] Tick #2080 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:06:42.499Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:06:46.536Z] [INFO ] [realtime-job] Tick #2085 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:06:47.531Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:06:51.554Z] [INFO ] [realtime-job] Tick #2090 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:06:52.554Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:06:56.584Z] [INFO ] [realtime-job] Tick #2095 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:06:57.584Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:07:01.615Z] [INFO ] [realtime-job] Tick #2100 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:07:02.616Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:07:06.661Z] [INFO ] [realtime-job] Tick #2105 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:07:07.663Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:07:11.702Z] [INFO ] [realtime-job] Tick #2110 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:07:12.704Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:07:16.744Z] [INFO ] [realtime-job] Tick #2115 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:07:17.744Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:07:21.783Z] [INFO ] [realtime-job] Tick #2120 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:07:22.786Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:07:26.811Z] [INFO ] [realtime-job] Tick #2125 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:07:27.809Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:07:31.848Z] [INFO ] [realtime-job] Tick #2130 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:07:32.851Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:07:36.892Z] [INFO ] [realtime-job] Tick #2135 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:07:37.893Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:07:41.925Z] [INFO ] [realtime-job] Tick #2140 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:07:42.932Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:07:46.962Z] [INFO ] [realtime-job] Tick #2145 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:07:47.970Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:07:52.012Z] [INFO ] [realtime-job] Tick #2150 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:07:53.016Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:07:57.062Z] [INFO ] [realtime-job] Tick #2155 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:07:58.065Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:08:02.095Z] [INFO ] [realtime-job] Tick #2160 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:08:03.100Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:08:07.134Z] [INFO ] [realtime-job] Tick #2165 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:08:08.134Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:08:12.176Z] [INFO ] [realtime-job] Tick #2170 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:08:13.177Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:08:17.219Z] [INFO ] [realtime-job] Tick #2175 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:08:18.220Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:08:22.246Z] [INFO ] [realtime-job] Tick #2180 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:08:23.252Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:08:27.278Z] [INFO ] [realtime-job] Tick #2185 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:08:28.272Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:08:32.307Z] [INFO ] [realtime-job] Tick #2190 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:08:33.304Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:08:37.333Z] [INFO ] [realtime-job] Tick #2195 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:08:38.335Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:08:42.372Z] [INFO ] [realtime-job] Tick #2200 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:08:43.367Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:08:47.441Z] [INFO ] [realtime-job] Tick #2205 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:08:48.448Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:08:52.480Z] [INFO ] [realtime-job] Tick #2210 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:08:53.485Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:08:57.525Z] [INFO ] [realtime-job] Tick #2215 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:08:58.519Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:09:02.552Z] [INFO ] [realtime-job] Tick #2220 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:09:03.551Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:09:07.578Z] [INFO ] [realtime-job] Tick #2225 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:09:08.581Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:09:12.634Z] [INFO ] [realtime-job] Tick #2230 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:09:13.629Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:09:17.660Z] [INFO ] [realtime-job] Tick #2235 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:09:18.658Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:09:22.701Z] [INFO ] [realtime-job] Tick #2240 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:09:23.709Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:09:27.750Z] [INFO ] [realtime-job] Tick #2245 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:09:28.757Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:09:32.806Z] [INFO ] [realtime-job] Tick #2250 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:09:33.812Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:09:37.848Z] [INFO ] [realtime-job] Tick #2255 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:09:38.852Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:09:42.889Z] [INFO ] [realtime-job] Tick #2260 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:09:43.896Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:09:47.957Z] [INFO ] [realtime-job] Tick #2265 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:09:48.948Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:09:49.091Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-10T00:09:52.988Z] [INFO ] [realtime-job] Tick #2270 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:09:53.995Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:09:58.039Z] [INFO ] [realtime-job] Tick #2275 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:09:59.036Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:10:03.067Z] [INFO ] [realtime-job] Tick #2280 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:10:04.073Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:10:08.114Z] [INFO ] [realtime-job] Tick #2285 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:10:09.108Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:10:13.158Z] [INFO ] [realtime-job] Tick #2290 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:10:14.164Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:10:18.215Z] [INFO ] [realtime-job] Tick #2295 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:10:19.221Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:10:23.263Z] [INFO ] [realtime-job] Tick #2300 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:10:24.265Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:10:28.311Z] [INFO ] [realtime-job] Tick #2305 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:10:29.317Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:10:33.380Z] [INFO ] [realtime-job] Tick #2310 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:10:34.379Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:10:38.441Z] [INFO ] [realtime-job] Tick #2315 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:10:39.434Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:10:43.492Z] [INFO ] [realtime-job] Tick #2320 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:10:44.500Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:10:48.535Z] [INFO ] [realtime-job] Tick #2325 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:10:49.541Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:10:53.581Z] [INFO ] [realtime-job] Tick #2330 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:10:54.573Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:10:58.601Z] [INFO ] [realtime-job] Tick #2335 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:10:59.611Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:11:03.677Z] [INFO ] [realtime-job] Tick #2340 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:11:04.682Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:11:08.718Z] [INFO ] [realtime-job] Tick #2345 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:11:09.724Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:11:13.748Z] [INFO ] [realtime-job] Tick #2350 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:11:14.752Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:11:18.774Z] [INFO ] [realtime-job] Tick #2355 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:11:19.782Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:11:23.821Z] [INFO ] [realtime-job] Tick #2360 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:11:24.820Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:11:28.867Z] [INFO ] [realtime-job] Tick #2365 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:11:29.871Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:11:33.917Z] [INFO ] [realtime-job] Tick #2370 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:11:34.922Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:11:38.958Z] [INFO ] [realtime-job] Tick #2375 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:11:39.956Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:11:43.994Z] [INFO ] [realtime-job] Tick #2380 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:11:44.998Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:11:49.046Z] [INFO ] [realtime-job] Tick #2385 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:11:50.044Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:11:54.078Z] [INFO ] [realtime-job] Tick #2390 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:11:55.073Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:11:59.134Z] [INFO ] [realtime-job] Tick #2395 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:12:00.138Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:12:04.177Z] [INFO ] [realtime-job] Tick #2400 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:12:05.187Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:12:09.225Z] [INFO ] [realtime-job] Tick #2405 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:12:10.230Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:12:14.273Z] [INFO ] [realtime-job] Tick #2410 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:12:15.262Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:12:19.301Z] [INFO ] [realtime-job] Tick #2415 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:12:20.295Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:12:24.334Z] [INFO ] [realtime-job] Tick #2420 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:12:25.340Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:12:29.375Z] [INFO ] [realtime-job] Tick #2425 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:12:30.370Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:12:34.423Z] [INFO ] [realtime-job] Tick #2430 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:12:35.428Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:12:39.448Z] [INFO ] [realtime-job] Tick #2435 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:12:40.456Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:12:44.506Z] [INFO ] [realtime-job] Tick #2440 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:12:45.511Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:12:49.556Z] [INFO ] [realtime-job] Tick #2445 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:12:50.564Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:12:54.599Z] [INFO ] [realtime-job] Tick #2450 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:12:55.591Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:12:59.635Z] [INFO ] [realtime-job] Tick #2455 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:13:00.640Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:13:04.683Z] [INFO ] [realtime-job] Tick #2460 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:13:05.684Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:13:09.735Z] [INFO ] [realtime-job] Tick #2465 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:13:10.728Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:13:14.779Z] [INFO ] [realtime-job] Tick #2470 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:13:15.788Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:13:19.845Z] [INFO ] [realtime-job] Tick #2475 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:13:20.847Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:13:24.881Z] [INFO ] [realtime-job] Tick #2480 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:13:25.889Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:13:29.942Z] [INFO ] [realtime-job] Tick #2485 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:13:30.944Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:13:34.988Z] [INFO ] [realtime-job] Tick #2490 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:13:35.992Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:13:40.046Z] [INFO ] [realtime-job] Tick #2495 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:13:41.052Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:13:45.098Z] [INFO ] [realtime-job] Tick #2500 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:13:46.101Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:13:50.128Z] [INFO ] [realtime-job] Tick #2505 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:13:51.138Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:13:55.192Z] [INFO ] [realtime-job] Tick #2510 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:13:56.194Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:14:00.220Z] [INFO ] [realtime-job] Tick #2515 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:14:01.228Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:14:05.274Z] [INFO ] [realtime-job] Tick #2520 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:14:06.269Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:14:10.319Z] [INFO ] [realtime-job] Tick #2525 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:14:11.329Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:14:15.371Z] [INFO ] [realtime-job] Tick #2530 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:14:16.379Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:14:20.403Z] [INFO ] [realtime-job] Tick #2535 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:14:21.413Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:14:25.463Z] [INFO ] [realtime-job] Tick #2540 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:14:26.470Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:14:30.494Z] [INFO ] [realtime-job] Tick #2545 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:14:31.500Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:14:35.558Z] [INFO ] [realtime-job] Tick #2550 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:14:36.564Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:14:40.619Z] [INFO ] [realtime-job] Tick #2555 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:14:41.627Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:14:45.685Z] [INFO ] [realtime-job] Tick #2560 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:14:46.695Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:14:50.747Z] [INFO ] [realtime-job] Tick #2565 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:14:51.743Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:14:55.787Z] [INFO ] [realtime-job] Tick #2570 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:14:56.793Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:15:00.840Z] [INFO ] [realtime-job] Tick #2575 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:15:01.836Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:15:05.880Z] [INFO ] [realtime-job] Tick #2580 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:15:06.885Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:15:10.935Z] [INFO ] [realtime-job] Tick #2585 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:15:11.939Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:15:15.994Z] [INFO ] [realtime-job] Tick #2590 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:15:16.990Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:15:21.049Z] [INFO ] [realtime-job] Tick #2595 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:15:22.052Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:15:26.099Z] [INFO ] [realtime-job] Tick #2600 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:15:27.093Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:15:31.141Z] [INFO ] [realtime-job] Tick #2605 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:15:32.148Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:15:36.181Z] [INFO ] [realtime-job] Tick #2610 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:15:37.188Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:15:41.242Z] [INFO ] [realtime-job] Tick #2615 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:15:42.247Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:15:46.291Z] [INFO ] [realtime-job] Tick #2620 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:15:47.295Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:15:51.333Z] [INFO ] [realtime-job] Tick #2625 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:15:52.338Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:15:56.386Z] [INFO ] [realtime-job] Tick #2630 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:15:57.391Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:16:01.429Z] [INFO ] [realtime-job] Tick #2635 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:16:02.435Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:16:06.484Z] [INFO ] [realtime-job] Tick #2640 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:16:07.487Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:16:11.526Z] [INFO ] [realtime-job] Tick #2645 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:16:12.531Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:16:16.575Z] [INFO ] [realtime-job] Tick #2650 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:16:17.583Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:16:21.602Z] [INFO ] [realtime-job] Tick #2655 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:16:22.606Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:16:26.650Z] [INFO ] [realtime-job] Tick #2660 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:16:27.654Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:16:31.708Z] [INFO ] [realtime-job] Tick #2665 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:16:32.716Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:16:33.031Z] [ERROR] [shelly-sync] Tick failed (1 consecutive): Error: Shelly HTTP 429: {"error":"TOO_MANY_REQUESTS","data":{"messages":["Too many requests. Please try again later."]}}
+[2026-06-10T00:16:36.769Z] [INFO ] [realtime-job] Tick #2670 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:16:37.763Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:16:41.819Z] [INFO ] [realtime-job] Tick #2675 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:16:42.822Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:16:46.869Z] [INFO ] [realtime-job] Tick #2680 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+[2026-06-10T00:16:47.873Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+02:16:51 [tsx] change in ./index.ts Restarting...
+c[2026-06-10T00:16:53.229Z] [INFO ] ─────────────────────────────────────────
+[2026-06-10T00:16:53.232Z] [INFO ] Dream Massage realtime server started
+[2026-06-10T00:16:53.232Z] [INFO ]   Port       : 4001
+[2026-06-10T00:16:53.233Z] [INFO ]   Mode       : development
+[2026-06-10T00:16:53.233Z] [INFO ]   Origin     : http://localhost:3000
+[2026-06-10T00:16:53.233Z] [INFO ]   simulationEnabled : false
+[2026-06-10T00:16:53.233Z] [INFO ]   activeSource      : shelly
+[2026-06-10T00:16:53.233Z] [INFO ]   shellyConfigured  : true
+[2026-06-10T00:16:53.233Z] [INFO ]   shellyPollMs      : 5000
+[2026-06-10T00:16:53.233Z] [INFO ] ─────────────────────────────────────────
+[2026-06-10T00:16:53.234Z] [INFO ] [realtime-job] Starting — interval 1000ms | source: shelly
+[2026-06-10T00:16:53.636Z] [INFO ] [socket] Client connected — id: m3egBVFwN5SkBaJqAAAB
+[2026-06-10T00:16:54.349Z] [INFO ] [shelly-sync] Chair ID map loaded: F1, F2, F3, F4, F5
+[2026-06-10T00:16:54.349Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+02:16:56 [tsx] change in ./index.ts Restarting...
+c[2026-06-10T00:16:57.390Z] [ERROR] [server] Uncaught exception: listen EADDRINUSE: address already in use :::4001
+02:17:00 [tsx] change in ./socket.ts Rerunning...
+c[2026-06-10T00:17:01.994Z] [INFO ] ─────────────────────────────────────────
+[2026-06-10T00:17:01.997Z] [INFO ] Dream Massage realtime server started
+[2026-06-10T00:17:01.997Z] [INFO ]   Port       : 4001
+[2026-06-10T00:17:01.997Z] [INFO ]   Mode       : development
+[2026-06-10T00:17:01.997Z] [INFO ]   CORS       : http://localhost:3000 + any localhost:* in dev
+[2026-06-10T00:17:01.997Z] [INFO ]   simulationEnabled : false
+[2026-06-10T00:17:01.997Z] [INFO ]   activeSource      : shelly
+[2026-06-10T00:17:01.998Z] [INFO ]   shellyConfigured  : true
+[2026-06-10T00:17:01.998Z] [INFO ]   shellyPollMs      : 5000
+[2026-06-10T00:17:01.998Z] [INFO ] ─────────────────────────────────────────
+[2026-06-10T00:17:01.999Z] [INFO ] [realtime-job] Starting — interval 1000ms | source: shelly
+[2026-06-10T00:17:03.287Z] [INFO ] [shelly-sync] Chair ID map loaded: F1, F2, F3, F4, F5
+[2026-06-10T00:17:03.287Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:17:03.623Z] [INFO ] [socket] Client connected — id: fNA6_KmMTKdbmocYAAAB
+02:17:04 [tsx] change in ./socket.ts Restarting...
+c[2026-06-10T00:17:05.720Z] [INFO ] ─────────────────────────────────────────
+[2026-06-10T00:17:05.722Z] [INFO ] Dream Massage realtime server started
+[2026-06-10T00:17:05.722Z] [INFO ]   Port       : 4001
+[2026-06-10T00:17:05.722Z] [INFO ]   Mode       : development
+[2026-06-10T00:17:05.722Z] [INFO ]   CORS       : http://localhost:3000 + any localhost:* in dev
+[2026-06-10T00:17:05.722Z] [INFO ]   simulationEnabled : false
+[2026-06-10T00:17:05.722Z] [INFO ]   activeSource      : shelly
+[2026-06-10T00:17:05.722Z] [INFO ]   shellyConfigured  : true
+[2026-06-10T00:17:05.722Z] [INFO ]   shellyPollMs      : 5000
+[2026-06-10T00:17:05.722Z] [INFO ] ─────────────────────────────────────────
+[2026-06-10T00:17:05.723Z] [INFO ] [realtime-job] Starting — interval 1000ms | source: shelly
+[2026-06-10T00:17:06.987Z] [INFO ] [shelly-sync] Chair ID map loaded: F1, F2, F3, F4, F5
+[2026-06-10T00:17:06.988Z] [DEBUG] [shelly] POST shelly-165-eu.shelly.cloud/v2/devices/api/get (5 devices)
+[2026-06-10T00:17:07.628Z] [INFO ] [socket] Client connected — id: uQwJgVV6aNIa1TYTAAAB
+[2026-06-10T00:17:10.787Z] [INFO ] [realtime-job] Tick #5 (shelly) — 0 ACTIVE, 0 MAYBE_FINISHED
+02:17:11 [tsx] change in ./socket.ts Restarting...
+c[2026-06-10T00:17:12.554Z] [ERROR] [server] Uncaught exception: listen EADDRINUSE: address already in use :::4001

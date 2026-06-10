@@ -171,16 +171,17 @@ model PricingPlan {
 // Global billing ruleset. Only one rule may be active at a time.
 // See RAW_SQL_CONSTRAINTS.md for unique_active_pricing_rule partial index.
 model PricingRule {
-  id               String         @id @default(uuid())
-  roundingMode     RoundingMode   @default(NEXT_PLAN) @map("rounding_mode")
-  graceSeconds     Int            @default(120) @map("grace_seconds")
-  minimumPlanId    String?        @map("minimum_plan_id")
-  overtimePolicy   OvertimePolicy @default(NEXT_PLAN) @map("overtime_policy")
-  extraMinutePrice Decimal?       @map("extra_minute_price") @db.Decimal(10, 2)
-  isActive         Boolean        @default(true) @map("is_active")
-  createdByUserId  String?        @map("created_by_user_id")
-  createdAt        DateTime       @default(now()) @map("created_at")
-  updatedAt        DateTime       @updatedAt @map("updated_at")
+  id                     String         @id @default(uuid())
+  roundingMode           RoundingMode   @default(NEXT_PLAN) @map("rounding_mode")
+  graceSeconds           Int            @default(120) @map("grace_seconds")
+  minimumBillableSeconds Int            @default(180) @map("minimum_billable_seconds")
+  minimumPlanId          String?        @map("minimum_plan_id")
+  overtimePolicy         OvertimePolicy @default(NEXT_PLAN) @map("overtime_policy")
+  extraMinutePrice       Decimal?       @map("extra_minute_price") @db.Decimal(10, 2)
+  isActive               Boolean        @default(true) @map("is_active")
+  createdByUserId        String?        @map("created_by_user_id")
+  createdAt              DateTime       @default(now()) @map("created_at")
+  updatedAt              DateTime       @updatedAt @map("updated_at")
 
   minimumPlan PricingPlan? @relation("MinimumPlan", fields: [minimumPlanId], references: [id])
   createdBy   User?        @relation("PricingRuleCreatedBy", fields: [createdByUserId], references: [id])
