@@ -23,8 +23,15 @@ export async function getDashboardState(): Promise<DashboardState> {
   }
   const res = await fetch(`${BASE}/api/dashboard/state`, {
     cache: 'no-store',
+    credentials: 'include',
     signal: AbortSignal.timeout(6000),
   });
+  if (res.status === 401) {
+    if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+      window.location.replace('/login');
+    }
+    throw new Error('Unauthorized');
+  }
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json() as Promise<DashboardState>;
 }
@@ -32,17 +39,68 @@ export async function getDashboardState(): Promise<DashboardState> {
 export async function getChairOverview(chairIdOrName: string): Promise<ChairOverview> {
   const res = await fetch(
     `${BASE}/api/chairs/${encodeURIComponent(chairIdOrName)}/overview`,
-    { cache: 'no-store', signal: AbortSignal.timeout(6000) },
+    { cache: 'no-store', credentials: 'include', signal: AbortSignal.timeout(6000) },
   );
+  if (res.status === 401) {
+    if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+      window.location.replace('/login');
+    }
+    throw new Error('Unauthorized');
+  }
   if (res.status === 404) throw new Error('CHAIR_NOT_FOUND');
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json() as Promise<ChairOverview>;
 }
 
+// ── Auth ───────────────────────────────────────────────────────────────────────
+
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  role: 'OWNER' | 'ADMIN';
+}
+
+export async function login(email: string, password: string): Promise<AuthUser> {
+  const res = await fetch(`${BASE}/api/auth/login`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+    signal: AbortSignal.timeout(8000),
+  });
+  const body = (await res.json()) as { ok: boolean; user?: AuthUser; error?: string };
+  if (!res.ok || !body.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
+  return body.user!;
+}
+
+export async function getMe(): Promise<AuthUser> {
+  return apiRequest<{ ok: boolean; user: AuthUser }>(`${BASE}/api/auth/me`).then((r) => r.user);
+}
+
+export async function logout(): Promise<void> {
+  await fetch(`${BASE}/api/auth/logout`, {
+    method: 'POST',
+    credentials: 'include',
+    signal: AbortSignal.timeout(8000),
+  });
+}
+
 // ── Settings helpers ───────────────────────────────────────────────────────────
 
 async function apiRequest<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(8000), ...init });
+  const res = await fetch(url, {
+    cache: 'no-store',
+    credentials: 'include',
+    signal: AbortSignal.timeout(8000),
+    ...init,
+  });
+  if (res.status === 401) {
+    if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+      window.location.replace('/login');
+    }
+    throw new Error('Unauthorized');
+  }
   if (!res.ok) {
     let msg = `HTTP ${res.status}`;
     try {

@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, RefreshCw, Settings } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, RefreshCw, Settings, LogOut } from 'lucide-react';
 import type { SettingsChair, PricingPlan, PricingRule, StaffMember, SystemSettings } from '@/lib/types';
 import {
   getSettingsChairs,
@@ -16,6 +17,8 @@ import { PricingPlansSettings } from '@/components/settings/PricingPlansSettings
 import { PricingRuleSettings } from '@/components/settings/PricingRuleSettings';
 import { StaffSettings } from '@/components/settings/StaffSettings';
 import { SystemSettingsPanel } from '@/components/settings/SystemSettings';
+import { AuthGuard } from '@/components/AuthGuard';
+import { logout } from '@/lib/api';
 
 // ── Tabs ───────────────────────────────────────────────────────────────────────
 
@@ -78,16 +81,30 @@ function ErrorScreen({ message, onRetry }: { message: string; onRetry: () => voi
 }
 
 function PageHeader() {
+  const router = useRouter();
+
+  async function handleLogout() {
+    await logout();
+    router.replace('/login');
+  }
+
   return (
     <header className="sticky top-0 z-10 border-b border-stone-200 bg-white/95 backdrop-blur-sm">
       <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3.5">
         <Link href="/" className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700">
           <ArrowLeft className="h-4 w-4" />
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-1 items-center gap-2">
           <Settings className="h-4 w-4 text-stone-400" />
           <h1 className="text-base font-bold text-stone-900">Paramétrages</h1>
         </div>
+        <button
+          onClick={() => void handleLogout()}
+          className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700"
+          title="Déconnexion"
+        >
+          <LogOut className="h-4 w-4" />
+        </button>
       </div>
     </header>
   );
@@ -132,7 +149,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 // ── Main page ──────────────────────────────────────────────────────────────────
 
-export default function SettingsPage() {
+function SettingsContent() {
   const [data, setData] = useState<SettingsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -229,5 +246,13 @@ export default function SettingsPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <AuthGuard>
+      <SettingsContent />
+    </AuthGuard>
   );
 }

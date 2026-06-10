@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
 import { env } from './config/env';
 import { logger } from './utils/logger';
@@ -17,6 +18,8 @@ import {
 import { processSimulationTick } from './jobs/fake-power-simulation.job';
 import { shellyService, isShellyConfigured, getMissingFields } from './modules/shelly/shelly.service';
 import { corsOriginFn } from './config/cors';
+import { requireAuth } from './middleware/auth.middleware';
+import authRouter from './modules/auth/auth.controller';
 import chairRouter from './modules/chairs/chair.controller';
 import settingsRouter from './modules/settings/settings.controller';
 
@@ -24,8 +27,9 @@ const app = express();
 
 app.use(cors({ origin: corsOriginFn, credentials: true }));
 app.use(express.json());
+app.use(cookieParser());
 
-// ── Health ─────────────────────────────────────────────────────────────────────
+// ── Health (public) ────────────────────────────────────────────────────────────
 
 app.get('/health', (_req, res) => {
   res.json({
@@ -36,8 +40,13 @@ app.get('/health', (_req, res) => {
   });
 });
 
-// ── Dashboard ──────────────────────────────────────────────────────────────────
+// ── Auth routes (public — login must be registered BEFORE requireAuth) ─────────
 
+app.use('/api/auth', authRouter);
+
+// ── Protected routes ───────────────────────────────────────────────────────────
+
+app.use('/api/dashboard/state', requireAuth);
 app.get('/api/dashboard/state', (_req, res) => {
   dashboardService
     .getState()
@@ -47,7 +56,9 @@ app.get('/api/dashboard/state', (_req, res) => {
     });
 });
 
-// ── Shelly ─────────────────────────────────────────────────────────────────────
+// ── Shelly (protected) ─────────────────────────────────────────────────────────
+
+app.use('/api/shelly', requireAuth);
 
 app.get('/api/shelly/config', (_req, res) => {
   const devices = (['F1', 'F2', 'F3', 'F4', 'F5'] as const).map((name) => {
@@ -56,7 +67,6 @@ app.get('/api/shelly/config', (_req, res) => {
       chairName: name,
       deviceIdConfigured: !!raw,
     };
-    // Show a masked ID in development so the env can be verified without exposing it fully
     if (env.NODE_ENV === 'development' && raw) {
       entry.deviceIdMasked = raw.slice(0, 4) + '***';
     }
@@ -105,9 +115,11 @@ app.get('/api/shelly/test', (_req, res) => {
     });
 });
 
-// ── Dev-only endpoints (never enabled in production) ───────────────────────────
+// ── Dev-only endpoints (protected) ────────────────────────────────────────────
 
 if (env.NODE_ENV !== 'production') {
+  app.use('/api/dev', requireAuth);
+
   app.get('/api/dev/source-status', (_req, res) => {
     res.json({
       simulationEnabled: env.SIMULATION_ENABLED,
@@ -134,8 +146,6 @@ if (env.NODE_ENV !== 'production') {
       .catch((err) => res.status(500).json({ ok: false, error: String(err) }));
   });
 
-  // POST /api/dev/chairs/:chairId/reading
-  // Body: { "powerWatts": 12.5, "isOnline": true, "relayIsOn"?: true }
   app.post('/api/dev/chairs/:chairId/reading', (req, res) => {
     const { chairId } = req.params;
     const { powerWatts, isOnline, relayIsOn } = req.body as {
@@ -161,13 +171,13 @@ if (env.NODE_ENV !== 'production') {
   });
 }
 
-// ── Chairs ─────────────────────────────────────────────────────────────────────
+// ── Chairs (protected) ─────────────────────────────────────────────────────────
 
-app.use('/api/chairs', chairRouter);
+app.use('/api/chairs', requireAuth, chairRouter);
 
-// ── Settings ───────────────────────────────────────────────────────────────────
+// ── Settings (protected) ───────────────────────────────────────────────────────
 
-app.use('/api/settings', settingsRouter);
+app.use('/api/settings', requireAuth, settingsRouter);
 
 // ── 404 ────────────────────────────────────────────────────────────────────────
 

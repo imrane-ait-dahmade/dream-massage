@@ -11,8 +11,10 @@ if (process.env.NODE_ENV === 'development') {
 export function createSocket(): Socket {
   return io(SOCKET_URL, {
     transports: ['websocket', 'polling'],
+    withCredentials: true, // send the auth cookie so future Socket.IO auth middleware can read it
     reconnectionAttempts: Infinity,
     reconnectionDelay: 2000,
     reconnectionDelayMax: 10000,
   });
 }
+// TODO: add Socket.IO auth middleware on the server to verify the JWT cookie on connect

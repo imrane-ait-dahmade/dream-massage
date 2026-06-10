@@ -1,13 +1,16 @@
 'use client';
 
-import { Wifi, WifiOff, RefreshCw, Settings } from 'lucide-react';
+import { Wifi, WifiOff, RefreshCw, Settings, LogOut } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useDashboard } from '@/hooks/useDashboard';
 import { TodayStats } from '@/components/dashboard/TodayStats';
 import { ChairCard } from '@/components/dashboard/ChairCard';
 import { ChairCardSkeleton } from '@/components/dashboard/ChairCardSkeleton';
 import { ShiftSummary } from '@/components/dashboard/ShiftSummary';
 import { ConnectionStatusBar } from '@/components/dashboard/ConnectionStatus';
+import { AuthGuard } from '@/components/AuthGuard';
+import { logout } from '@/lib/api';
 
 // ── Loading state ─────────────────────────────────────────────────────────────
 
@@ -51,8 +54,14 @@ function LoadingScreen() {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-export default function DashboardPage() {
+function DashboardContent() {
+  const router = useRouter();
   const { state, connStatus, lastUpdated } = useDashboard();
+
+  async function handleLogout() {
+    await logout();
+    router.replace('/login');
+  }
 
   if (!state) return <LoadingScreen />;
 
@@ -67,11 +76,18 @@ export default function DashboardPage() {
             <p className="text-xs text-stone-400">Suivi temps réel des fauteuils</p>
           </div>
 
-          {/* Right side: settings link + connection badge */}
+          {/* Right side: settings link + logout + connection badge */}
           <div className="flex items-center gap-2">
             <Link href="/settings" className="rounded-lg p-2 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700" title="Paramétrages">
               <Settings className="h-4 w-4" />
             </Link>
+            <button
+              onClick={() => void handleLogout()}
+              className="rounded-lg p-2 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700"
+              title="Déconnexion"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
             <ConnectionBadge status={connStatus} lastUpdated={lastUpdated} />
           </div>
         </div>
@@ -124,6 +140,14 @@ export default function DashboardPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <AuthGuard>
+      <DashboardContent />
+    </AuthGuard>
   );
 }
 

@@ -25,6 +25,7 @@ import type {
 import { getStatusLabel, getStatusStyle } from '@/lib/status';
 import { formatDH, formatElapsed, formatTimeHHMM } from '@/lib/format';
 import { createSocket } from '@/lib/socket';
+import { AuthGuard } from '@/components/AuthGuard';
 
 // ── Local helpers ──────────────────────────────────────────────────────────────
 
@@ -385,7 +386,7 @@ function EventsList({ events }: { events: ChairEvent[] }) {
 
 // ── Page ───────────────────────────────────────────────────────────────────────
 
-export default function ChairDetailPage() {
+function ChairDetailContent() {
   const params = useParams();
   const chairId =
     typeof params.chairId === 'string' ? params.chairId : String(params.chairId ?? '');
@@ -536,5 +537,13 @@ export default function ChairDetailPage() {
         </section>
       </main>
     </div>
+  );
+}
+
+export default function ChairDetailPage() {
+  return (
+    <AuthGuard>
+      <ChairDetailContent />
+    </AuthGuard>
   );
 }

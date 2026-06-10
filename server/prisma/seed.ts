@@ -17,6 +17,7 @@ import { join } from 'path';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
+import bcrypt from 'bcryptjs';
 
 // Load .env from server/ first, then fall back to project root
 config({ path: join(process.cwd(), '.env') });
@@ -105,24 +106,37 @@ async function seedBaseData(): Promise<void> {
   console.log('── Seeding base data ─────────────────────────────────────────────');
 
   // ── Owner user ──────────────────────────────────────────────────────────────
-  // DEV placeholder hash — NOT a valid bcrypt hash; login will fail until replaced.
-  // Generate real hash: node -e "require('bcryptjs').hash('yourpassword',10).then(console.log)"
-  const DEV_PASSWORD_HASH =
-    '$2b$10$DEV_PLACEHOLDER_REPLACE_BEFORE_PRODUCTION_00000000000';
+  // In dev: seed sets the dev password so login works immediately.
+  // In production: never overwrite an existing password — only create if missing.
+  // CHANGE THE PASSWORD before going to production.
+  const DEV_PASSWORD = 'changeme123';
+  const ownerHash = IS_PRODUCTION
+    ? '$2b$10$PLACEHOLDER_CHANGE_BEFORE_PRODUCTION_00000000000000000'
+    : await bcrypt.hash(DEV_PASSWORD, 10);
 
   const owner = await prisma.user.upsert({
     where:  { id: IDS.owner },
-    update: {},
+    update: IS_PRODUCTION ? {} : { passwordHash: ownerHash },
     create: {
       id:           IDS.owner,
       name:         'Owner',
       email:        'owner@example.com',
-      passwordHash: DEV_PASSWORD_HASH,
+      passwordHash: ownerHash,
       role:         'OWNER',
       isActive:     true,
     },
   });
   console.log(`  ✓ Owner user   : ${owner.email} (${owner.role})`);
+  if (!IS_PRODUCTION) {
+    console.log('');
+    console.log('  ┌─────────────────────────────────────────────────┐');
+    console.log('  │  Owner login credentials (dev only)             │');
+    console.log('  │  email    : owner@example.com                   │');
+    console.log('  │  password : changeme123                         │');
+    console.log('  │  Change before production!                      │');
+    console.log('  └─────────────────────────────────────────────────┘');
+    console.log('');
+  }
 
   // ── Demo staff member ───────────────────────────────────────────────────────
   const staff = await prisma.staffMember.upsert({
