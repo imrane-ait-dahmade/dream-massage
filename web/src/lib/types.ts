@@ -185,3 +185,89 @@ export interface SystemSettings {
   };
   database: { connected: boolean };
 }
+
+export interface RevenueStats {
+  period: string;
+  labels: string[];
+  revenue: number[];
+  sessions: number[];
+  totalRevenue: number;
+  totalSessions: number;
+}
+
+// ── Prime & Bonus ──────────────────────────────────────────────────────────────
+
+export type CommissionType = 'PERCENTAGE' | 'FIXED_AMOUNT';
+
+export interface ShiftTypeSetting {
+  id: string;
+  name: string;
+  label: string | null;
+  startTime: string;
+  endTime: string;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export interface CommissionRuleSetting {
+  id: string;
+  pricingPlanId: string;
+  pricingPlanName: string;
+  pricingPlanPrice: number;
+  type: CommissionType;
+  value: number;
+  isActive: boolean;
+  validFrom: string;
+  validTo: string | null;
+  createdAt: string;
+}
+
+export interface TargetBonusRuleSetting {
+  id: string;
+  shiftTypeId: string;
+  shiftTypeLabel: string;
+  targetAmount: number;
+  bonusAmount: number;
+  isActive: boolean;
+  validFrom: string;
+  validTo: string | null;
+  createdAt: string;
+}
+
+export interface PrimeSettingsSummary {
+  shiftTypes: ShiftTypeSetting[];
+  pricingPlans: PricingPlan[];
+  commissionRules: CommissionRuleSetting[];
+  targetBonusRules: TargetBonusRuleSetting[];
+}
+
+// ── Shift Planning ─────────────────────────────────────────────────────────────
+
+export interface StaffScheduleItem {
+  id: string;
+  staffMemberId: string;
+  staffMemberName: string;
+  shiftTypeId: string | null;
+  shiftTypeLabel: string | null;
+  startTime: string | null;
+  endTime: string | null;
+  isOff: boolean;
+  isActive: boolean;
+  notes: string | null;
+}
+
+export interface WeeklyScheduleDay {
+  dayOfWeek: number;
+  label: string;
+  items: StaffScheduleItem[];
+}
+
+export interface TodayShiftSuggestion {
+  staffMemberId: string;
+  staffMemberName: string;
+  shiftTypeId: string | null;
+  shiftTypeLabel: string | null;
+  startTime: string | null;
+  endTime: string | null;
+}

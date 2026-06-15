@@ -10,22 +10,22 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Dream Massage',
+  title: 'Dream Care',
   description: 'Suivi en temps réel des fauteuils de massage',
-  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'Dream Massage' },
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'Dream Care' },
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  themeColor: '#fafaf9',
+  themeColor: '#0f172a',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" className={inter.variable}>
-      <body className="min-h-screen bg-stone-50 font-sans antialiased">{children}</body>
+      <body className="min-h-screen bg-slate-900 font-sans antialiased">{children}</body>
     </html>
   );
 }

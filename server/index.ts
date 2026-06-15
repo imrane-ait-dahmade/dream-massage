@@ -4,7 +4,7 @@ import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
 import { env } from './config/env';
 import { logger } from './utils/logger';
-import { dashboardService } from './modules/dashboard/dashboard.service';
+import { dashboardService, revenueStatsService } from './modules/dashboard/dashboard.service';
 import { chairStateService } from './modules/chairs/chair-state.service';
 import { createSocketServer } from './socket';
 import {
@@ -22,6 +22,7 @@ import { requireAuth } from './middleware/auth.middleware';
 import authRouter from './modules/auth/auth.controller';
 import chairRouter from './modules/chairs/chair.controller';
 import settingsRouter from './modules/settings/settings.controller';
+import shiftRouter from './modules/shifts/shift.controller';
 
 const app = express();
 
@@ -46,13 +47,24 @@ app.use('/api/auth', authRouter);
 
 // ── Protected routes ───────────────────────────────────────────────────────────
 
-app.use('/api/dashboard/state', requireAuth);
+app.use('/api/dashboard', requireAuth);
 app.get('/api/dashboard/state', (_req, res) => {
   dashboardService
     .getState()
     .then((state) => res.json(state))
     .catch((err) => {
       res.status(500).json({ ok: false, error: 'Failed to read dashboard state', detail: String(err) });
+    });
+});
+
+app.get('/api/dashboard/revenue-stats', (req, res) => {
+  const raw = typeof req.query.period === 'string' ? req.query.period : 'week';
+  const period = ['day', 'week', 'month', 'year'].includes(raw) ? raw : 'week';
+  revenueStatsService
+    .get(period)
+    .then((stats) => res.json(stats))
+    .catch((err) => {
+      res.status(500).json({ ok: false, error: 'Failed to compute revenue stats', detail: String(err) });
     });
 });
 
@@ -178,6 +190,10 @@ app.use('/api/chairs', requireAuth, chairRouter);
 // ── Settings (protected) ───────────────────────────────────────────────────────
 
 app.use('/api/settings', requireAuth, settingsRouter);
+
+// ── Shifts (protected) ─────────────────────────────────────────────────────────
+
+app.use('/api/shifts', requireAuth, shiftRouter);
 
 // ── 404 ────────────────────────────────────────────────────────────────────────
 

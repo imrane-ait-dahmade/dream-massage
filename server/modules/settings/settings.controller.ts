@@ -11,8 +11,14 @@ import {
   staffCreateSchema,
   staffUpdateSchema,
 } from './settings.types';
+import primeSettingsRouter from './prime-settings.controller';
+import shiftSettingsRouter from './shift-settings.controller';
 
 const router = Router();
+
+// ── Sub-routers ────────────────────────────────────────────────────────────────
+router.use('/prime',  primeSettingsRouter);
+router.use('/shifts', shiftSettingsRouter);
 
 // ── Zod parse helper ───────────────────────────────────────────────────────────
 

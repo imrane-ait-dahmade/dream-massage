@@ -54,6 +54,23 @@ CREATE UNIQUE INDEX unique_open_shift
   WHERE status = 'OPEN';
 ```
 
+### 5. One active schedule entry per staff member per day
+
+Prevents conflicting planning rows: each staff member can have at most one active
+schedule entry per ISO day-of-week. Deactivated (historical) rows are excluded so
+the audit trail is preserved without causing index violations.
+
+```sql
+CREATE UNIQUE INDEX unique_active_staff_schedule_per_day
+  ON staff_schedules (staff_member_id, day_of_week)
+  WHERE is_active = true;
+```
+
+**Enforcement order**: `shift-settings.service.ts` deactivates the previous active
+entry for the same `(staffMemberId, dayOfWeek)` pair before inserting a new one.
+This index is the database-level safety net — it prevents race conditions if two
+concurrent requests slip past the service-layer check.
+
 ---
 
 ## When to apply

@@ -71,3 +71,63 @@ export function getStatusStyle(status: ChairStatus): StatusStyle {
   };
   return map[status] ?? map.OFFLINE;
 }
+
+/** Status style variants for use on dark backgrounds (slate-800 cards). */
+export interface DarkStatusStyle {
+  /** Card left-border accent class */
+  accent: string;
+  /** Badge background + text (dark-compatible) */
+  badge: string;
+  /** Small dot background */
+  dot: string;
+  /** Whether the dot should pulse */
+  pulse: boolean;
+}
+
+export function getDarkStatusStyle(status: ChairStatus): DarkStatusStyle {
+  const map: Record<ChairStatus, DarkStatusStyle> = {
+    IDLE: {
+      accent: 'border-l-emerald-400',
+      badge: 'bg-emerald-400/15 text-emerald-300',
+      dot: 'bg-emerald-400',
+      pulse: false,
+    },
+    MAYBE_ACTIVE: {
+      accent: 'border-l-amber-400',
+      badge: 'bg-amber-400/15 text-amber-300',
+      dot: 'bg-amber-400',
+      pulse: true,
+    },
+    ACTIVE: {
+      accent: 'border-l-blue-400',
+      badge: 'bg-blue-400/15 text-blue-300',
+      dot: 'bg-blue-400',
+      pulse: true,
+    },
+    MAYBE_FINISHED: {
+      accent: 'border-l-orange-400',
+      badge: 'bg-orange-400/15 text-orange-300',
+      dot: 'bg-orange-400',
+      pulse: true,
+    },
+    OFFLINE: {
+      accent: 'border-l-red-400',
+      badge: 'bg-red-400/15 text-red-300',
+      dot: 'bg-red-400',
+      pulse: false,
+    },
+    ERROR: {
+      accent: 'border-l-red-500',
+      badge: 'bg-red-500/15 text-red-300',
+      dot: 'bg-red-500',
+      pulse: false,
+    },
+    MAINTENANCE: {
+      accent: 'border-l-slate-500',
+      badge: 'bg-slate-500/20 text-slate-400',
+      dot: 'bg-slate-500',
+      pulse: false,
+    },
+  };
+  return map[status] ?? map.OFFLINE;
+}

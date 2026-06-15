@@ -1,4 +1,4 @@
-import { elapsedSeconds, nowISO } from '../../utils/time';
+import { elapsedSeconds, nowISO, getTimezone } from '../../utils/time';
 import { prisma } from '../../prisma';
 
 export type ChairStatus =
@@ -151,4 +151,92 @@ export class DashboardService {
   // private _mockState(): DashboardState { ... }
 }
 
+export interface RevenueStats {
+  period: string;
+  labels: string[];
+  revenue: number[];
+  sessions: number[];
+  totalRevenue: number;
+  totalSessions: number;
+}
+
+function toLocalDate(date: Date, tz: string): Date {
+  return new Date(date.toLocaleString('en-US', { timeZone: tz }));
+}
+
+export class RevenueStatsService {
+  async get(period: string): Promise<RevenueStats> {
+    const tz = getTimezone();
+    const now = new Date();
+    const localNow = toLocalDate(now, tz);
+    // tzOffsetMs: local.getTime() − utc.getTime() (positive = ahead of UTC)
+    const tzOffsetMs = localNow.getTime() - now.getTime();
+
+    let startUTC: Date;
+    let labels: string[];
+    let bucketCount: number;
+    let getBucket: (local: Date) => number;
+
+    if (period === 'day') {
+      const ls = new Date(localNow.getFullYear(), localNow.getMonth(), localNow.getDate(), 0, 0, 0);
+      startUTC = new Date(ls.getTime() - tzOffsetMs);
+      bucketCount = 24;
+      labels = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}h`);
+      getBucket = (d) => d.getHours();
+    } else if (period === 'week') {
+      const daysFromMon = (localNow.getDay() + 6) % 7;
+      const ls = new Date(localNow.getFullYear(), localNow.getMonth(), localNow.getDate() - daysFromMon, 0, 0, 0);
+      startUTC = new Date(ls.getTime() - tzOffsetMs);
+      bucketCount = 7;
+      labels = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+      getBucket = (d) => (d.getDay() + 6) % 7;
+    } else if (period === 'month') {
+      const ls = new Date(localNow.getFullYear(), localNow.getMonth(), 1, 0, 0, 0);
+      startUTC = new Date(ls.getTime() - tzOffsetMs);
+      const daysInMonth = new Date(localNow.getFullYear(), localNow.getMonth() + 1, 0).getDate();
+      bucketCount = daysInMonth;
+      labels = Array.from({ length: daysInMonth }, (_, i) => String(i + 1));
+      getBucket = (d) => d.getDate() - 1;
+    } else {
+      // year
+      const ls = new Date(localNow.getFullYear(), 0, 1, 0, 0, 0);
+      startUTC = new Date(ls.getTime() - tzOffsetMs);
+      bucketCount = 12;
+      labels = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+      getBucket = (d) => d.getMonth();
+    }
+
+    const rows = await prisma.chairSession.findMany({
+      where: {
+        startedAt: { gte: startUTC },
+        status: { notIn: ['CANCELLED'] },
+      },
+      select: { startedAt: true, expectedAmount: true, correctedAmount: true },
+    });
+
+    const revenue = new Array<number>(bucketCount).fill(0);
+    const sessionCounts = new Array<number>(bucketCount).fill(0);
+
+    for (const s of rows) {
+      const local = toLocalDate(s.startedAt, tz);
+      const bucket = getBucket(local);
+      if (bucket >= 0 && bucket < bucketCount) {
+        revenue[bucket] += Number(s.correctedAmount ?? s.expectedAmount ?? 0);
+        sessionCounts[bucket]++;
+      }
+    }
+
+    const roundedRevenue = revenue.map((v) => Math.round(v * 100) / 100);
+    return {
+      period,
+      labels,
+      revenue: roundedRevenue,
+      sessions: sessionCounts,
+      totalRevenue: Math.round(roundedRevenue.reduce((a, b) => a + b, 0) * 100) / 100,
+      totalSessions: sessionCounts.reduce((a, b) => a + b, 0),
+    };
+  }
+}
+
 export const dashboardService = new DashboardService();
+export const revenueStatsService = new RevenueStatsService();

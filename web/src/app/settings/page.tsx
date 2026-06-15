@@ -17,12 +17,14 @@ import { PricingPlansSettings } from '@/components/settings/PricingPlansSettings
 import { PricingRuleSettings } from '@/components/settings/PricingRuleSettings';
 import { StaffSettings } from '@/components/settings/StaffSettings';
 import { SystemSettingsPanel } from '@/components/settings/SystemSettings';
+import { PrimeBonusSettings } from '@/components/settings/PrimeBonusSettings';
+import { ShiftPlanningSettings } from '@/components/settings/ShiftPlanningSettings';
 import { AuthGuard } from '@/components/AuthGuard';
 import { logout } from '@/lib/api';
 
 // ── Tabs ───────────────────────────────────────────────────────────────────────
 
-type Tab = 'fauteuils' | 'prix' | 'regles' | 'staff' | 'systeme';
+type Tab = 'fauteuils' | 'prix' | 'regles' | 'staff' | 'systeme' | 'primes' | 'planning';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'fauteuils', label: 'Fauteuils' },
@@ -30,6 +32,8 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'regles', label: 'Règles' },
   { id: 'staff', label: 'Staff' },
   { id: 'systeme', label: 'Système' },
+  { id: 'primes', label: 'Primes & Bonus' },
+  { id: 'planning', label: 'Shifts & Planning' },
 ];
 
 // ── Data ───────────────────────────────────────────────────────────────────────
@@ -233,7 +237,7 @@ function SettingsContent() {
 
         {/* ── Staff ──────────────────────────────────────────────────────────── */}
         {activeTab === 'staff' && (
-          <Section title="Membres du staff">
+          <Section title="Assistantes">
             <StaffSettings members={data.staff} onSaved={() => void load()} />
           </Section>
         )}
@@ -242,6 +246,20 @@ function SettingsContent() {
         {activeTab === 'systeme' && (
           <Section title="Informations système">
             <SystemSettingsPanel info={data.system} />
+          </Section>
+        )}
+
+        {/* ── Primes & Bonus ──────────────────────────────────────────────────── */}
+        {activeTab === 'primes' && (
+          <Section title="Primes & Bonus">
+            <PrimeBonusSettings />
+          </Section>
+        )}
+
+        {/* ── Shifts & Planning ───────────────────────────────────────────────── */}
+        {activeTab === 'planning' && (
+          <Section title="Shifts & Planning">
+            <ShiftPlanningSettings />
           </Section>
         )}
       </main>

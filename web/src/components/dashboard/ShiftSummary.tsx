@@ -11,13 +11,13 @@ interface Props {
 export function ShiftSummary({ openShift }: Props) {
   if (!openShift) {
     return (
-      <div className="flex items-start gap-3 rounded-2xl bg-amber-50 px-4 py-4 ring-1 ring-amber-200">
-        <div className="mt-0.5 rounded-xl bg-amber-100 p-2">
-          <AlertTriangle className="h-4 w-4 text-amber-600" />
+      <div className="flex items-start gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-4">
+        <div className="mt-0.5 rounded-xl bg-amber-500/20 p-2">
+          <AlertTriangle className="h-4 w-4 text-amber-400" />
         </div>
         <div>
-          <p className="font-semibold text-amber-800">Aucun shift ouvert</p>
-          <p className="mt-0.5 text-sm text-amber-700 opacity-80">
+          <p className="font-semibold text-amber-300">Aucun shift ouvert</p>
+          <p className="mt-0.5 text-sm text-amber-400/70">
             Les sessions ne seront pas liées à un quart de travail.
           </p>
         </div>
@@ -26,20 +26,20 @@ export function ShiftSummary({ openShift }: Props) {
   }
 
   return (
-    <div className="flex items-center justify-between rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-stone-100">
+    <div className="flex items-center justify-between rounded-2xl border border-slate-700 bg-slate-800 px-4 py-4 shadow-lg">
       <div className="flex items-center gap-3">
-        <div className="rounded-xl bg-emerald-100 p-2">
-          <UserRound className="h-4 w-4 text-emerald-600" />
+        <div className="rounded-xl bg-emerald-500/15 p-2">
+          <UserRound className="h-4 w-4 text-emerald-400" />
         </div>
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-stone-400">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
             Shift ouvert
           </p>
-          <p className="mt-0.5 font-semibold text-stone-800">{openShift.staffMemberName}</p>
+          <p className="mt-0.5 font-semibold text-white">{openShift.staffMemberName}</p>
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 text-stone-500">
+      <div className="flex items-center gap-1.5 text-slate-400">
         <Clock className="h-3.5 w-3.5" />
         <span className="text-sm font-medium">{formatTimeHHMM(openShift.startedAt)}</span>
       </div>

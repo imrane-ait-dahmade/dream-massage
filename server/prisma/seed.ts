@@ -31,6 +31,15 @@ const IDS = {
   plan30: '00000000-0000-0000-0002-000000000002',
   plan40: '00000000-0000-0000-0002-000000000003',
   rule:   '00000000-0000-0000-0003-000000000001',
+  // ── Shift types ──
+  shiftTypeMatin:   '00000000-0000-0000-0004-000000000001',
+  shiftTypeSoir:    '00000000-0000-0000-0004-000000000002',
+  shiftTypeJournee: '00000000-0000-0000-0004-000000000003',
+  // ── Target bonus rules ──
+  bonusRuleMatin: '00000000-0000-0000-0005-000000000001',
+  bonusRuleSoir:  '00000000-0000-0000-0005-000000000002',
+  // ── Example commission rule (inactive until owner confirms) ──
+  commRule30: '00000000-0000-0000-0006-000000000001',
 } as const;
 
 // ── Prisma client (standalone, not the shared server/prisma.ts) ────────────────
@@ -354,6 +363,187 @@ async function seedBaseData(): Promise<void> {
   console.log('── Seed complete ─────────────────────────────────────────────────');
 }
 
+// ── Prime / commission seed data ───────────────────────────────────────────────
+
+async function seedPrimeData(): Promise<void> {
+  console.log('── Seeding prime/commission data ─────────────────────────────────');
+
+  // ── Shift types ─────────────────────────────────────────────────────────────
+  await prisma.shiftType.upsert({
+    where:  { id: IDS.shiftTypeMatin },
+    update: {},
+    create: {
+      id:        IDS.shiftTypeMatin,
+      name:      'matin',
+      label:     'Matin',
+      startTime: '10:00',
+      endTime:   '15:00',
+      isActive:  true,
+      sortOrder: 1,
+    },
+  });
+
+  await prisma.shiftType.upsert({
+    where:  { id: IDS.shiftTypeSoir },
+    update: {},
+    create: {
+      id:        IDS.shiftTypeSoir,
+      name:      'soir',
+      label:     'Soir',
+      startTime: '15:00',
+      endTime:   '22:00',
+      isActive:  true,
+      sortOrder: 2,
+    },
+  });
+
+  await prisma.shiftType.upsert({
+    where:  { id: IDS.shiftTypeJournee },
+    update: {},
+    create: {
+      id:        IDS.shiftTypeJournee,
+      name:      'journee',
+      label:     'Journée',
+      startTime: '10:00',
+      endTime:   '22:00',
+      isActive:  true,
+      sortOrder: 3,
+    },
+  });
+
+  console.log('  ✓ Shift types  : Matin (10:00–15:00), Soir (15:00–22:00), Journée (10:00–22:00)');
+
+  // ── Target bonus rules ───────────────────────────────────────────────────────
+  // isActive=true — these are reasonable business defaults.
+  // Owner activates/edits from settings UI; these serve as ready-to-use examples.
+  await prisma.shiftTargetBonusRule.upsert({
+    where:  { id: IDS.bonusRuleMatin },
+    update: {},
+    create: {
+      id:           IDS.bonusRuleMatin,
+      shiftTypeId:  IDS.shiftTypeMatin,
+      targetAmount: 500,
+      bonusAmount:  50,
+      isActive:     true,
+    },
+  });
+
+  await prisma.shiftTargetBonusRule.upsert({
+    where:  { id: IDS.bonusRuleSoir },
+    update: {},
+    create: {
+      id:           IDS.bonusRuleSoir,
+      shiftTypeId:  IDS.shiftTypeSoir,
+      targetAmount: 1000,
+      bonusAmount:  100,
+      isActive:     true,
+    },
+  });
+
+  console.log('  ✓ Bonus rules  : Matin ≥500→50 MAD, Soir ≥1000→100 MAD (isActive=true)');
+
+  // ── Example commission rule — INACTIVE until owner confirms ──────────────────
+  // Seeded for the 30-minute plan (IDS.plan30) as a starting point.
+  // The owner must activate this rule from Settings → Primes before it takes effect.
+  // Rationale: we do not know the owner's agreed commission rate; activating an
+  // incorrect rule would silently generate wrong prime calculations.
+  await prisma.commissionRule.upsert({
+    where:  { id: IDS.commRule30 },
+    update: {},
+    create: {
+      id:            IDS.commRule30,
+      pricingPlanId: IDS.plan30,
+      type:          'PERCENTAGE',
+      value:         10,
+      isActive:      false,   // owner must review and activate from settings
+    },
+  });
+
+  console.log('  ✓ Commission   : 30 min plan → 10% example rule (isActive=false, needs owner activation)');
+  console.log('── Prime seed complete ────────────────────────────────────────────');
+}
+
+// ── Partial unique indexes (raw SQL — Prisma cannot express WHERE clauses) ─────
+
+async function applyRawSqlConstraints(): Promise<void> {
+  console.log('── Applying raw SQL constraints ──────────────────────────────────');
+
+  const indexes: Array<{ name: string; sql: string }> = [
+    {
+      name: 'unique_active_session_per_chair',
+      sql: `CREATE UNIQUE INDEX IF NOT EXISTS unique_active_session_per_chair
+              ON chair_sessions (chair_id) WHERE status = 'ACTIVE'`,
+    },
+    {
+      name: 'unique_active_detection_config_per_chair',
+      sql: `CREATE UNIQUE INDEX IF NOT EXISTS unique_active_detection_config_per_chair
+              ON chair_detection_configs (chair_id) WHERE is_active = true`,
+    },
+    {
+      name: 'unique_active_pricing_rule',
+      sql: `CREATE UNIQUE INDEX IF NOT EXISTS unique_active_pricing_rule
+              ON pricing_rules (is_active) WHERE is_active = true`,
+    },
+    {
+      name: 'unique_open_shift',
+      sql: `CREATE UNIQUE INDEX IF NOT EXISTS unique_open_shift
+              ON shifts (status) WHERE status = 'OPEN'`,
+    },
+    {
+      name: 'unique_active_staff_schedule_per_day',
+      sql: `CREATE UNIQUE INDEX IF NOT EXISTS unique_active_staff_schedule_per_day
+              ON staff_schedules (staff_member_id, day_of_week) WHERE is_active = true`,
+    },
+  ];
+
+  for (const idx of indexes) {
+    try {
+      await prisma.$executeRawUnsafe(idx.sql);
+      console.log(`  ✓ Index : ${idx.name}`);
+    } catch (err) {
+      // Index already exists with the same definition — safe to ignore.
+      // Any real error (e.g. existing duplicate data) will surface here.
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('already exists')) {
+        console.log(`  · Index : ${idx.name} (already exists)`);
+      } else {
+        console.warn(`  ⚠ Index : ${idx.name} — ${msg}`);
+      }
+    }
+  }
+
+  console.log('── Constraints done ──────────────────────────────────────────────');
+}
+
+// ── Demo schedule (opt-in, never overwrites) ───────────────────────────────────
+
+async function seedDemoSchedule(): Promise<void> {
+  console.log('── Seeding demo schedule ─────────────────────────────────────────');
+
+  // Only create entries if none exist at all (fully idempotent — never wipes data)
+  const existingCount = await prisma.staffSchedule.count();
+  if (existingCount > 0) {
+    console.log(`  · Staff schedules already exist (${existingCount} rows). Skipping.`);
+    console.log('── Demo schedule skipped ─────────────────────────────────────────');
+    return;
+  }
+
+  // Assign Demo Staff to MATIN shift on Monday (day 1)
+  await prisma.staffSchedule.create({
+    data: {
+      staffMemberId: IDS.staff,
+      shiftTypeId:   IDS.shiftTypeMatin,
+      dayOfWeek:     1,     // Monday
+      isOff:         false,
+      isActive:      true,
+      notes:         'Exemple — généré par le seed',
+    },
+  });
+
+  console.log('  ✓ Demo schedule: Demo Staff → Matin, Lundi');
+  console.log('── Demo schedule done ────────────────────────────────────────────');
+}
+
 // ── Entry point ────────────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
@@ -375,6 +565,15 @@ async function main(): Promise<void> {
 
   await seedBaseData();
   console.log('');
+  await seedPrimeData();
+  console.log('');
+  await applyRawSqlConstraints();
+  console.log('');
+
+  if (process.env.SEED_DEMO_SCHEDULE === 'true') {
+    await seedDemoSchedule();
+    console.log('');
+  }
 }
 
 main()

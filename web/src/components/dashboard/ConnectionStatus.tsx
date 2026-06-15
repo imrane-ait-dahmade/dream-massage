@@ -17,8 +17,8 @@ export function ConnectionStatusBar({ status, lastUpdated }: Props) {
     <div
       className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm ${
         isConnecting
-          ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200'
-          : 'bg-red-50 text-red-700 ring-1 ring-red-200'
+          ? 'border border-blue-500/20 bg-blue-500/10 text-blue-300'
+          : 'border border-red-500/20 bg-red-500/10 text-red-300'
       }`}
     >
       {isConnecting ? (

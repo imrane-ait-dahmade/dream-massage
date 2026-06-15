@@ -7,6 +7,15 @@ import type {
   PricingRule,
   StaffMember,
   SystemSettings,
+  RevenueStats,
+  PrimeSettingsSummary,
+  ShiftTypeSetting,
+  CommissionRuleSetting,
+  TargetBonusRuleSetting,
+  CommissionType,
+  StaffScheduleItem,
+  WeeklyScheduleDay,
+  TodayShiftSuggestion,
 } from './types';
 
 const BASE =
@@ -230,6 +239,186 @@ export async function updateStaffMember(
 
 export async function getSystemSettings(): Promise<SystemSettings> {
   return apiRequest(`${BASE}/api/settings/system`);
+}
+
+// ── Settings — prime & bonus ───────────────────────────────────────────────────
+
+export async function getPrimeSettingsSummary(): Promise<PrimeSettingsSummary> {
+  return apiRequest(`${BASE}/api/settings/prime/summary`);
+}
+
+export async function getShiftTypes(): Promise<{ items: ShiftTypeSetting[] }> {
+  return apiRequest(`${BASE}/api/settings/prime/shift-types`);
+}
+
+export async function createShiftType(payload: {
+  name: string;
+  label?: string;
+  startTime: string;
+  endTime: string;
+  isActive?: boolean;
+  sortOrder?: number;
+}): Promise<ShiftTypeSetting> {
+  return apiRequest(`${BASE}/api/settings/prime/shift-types`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateShiftType(
+  id: string,
+  payload: Partial<{ label: string; startTime: string; endTime: string; isActive: boolean; sortOrder: number }>,
+): Promise<ShiftTypeSetting> {
+  return apiRequest(`${BASE}/api/settings/prime/shift-types/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getCommissionRules(): Promise<{ items: CommissionRuleSetting[] }> {
+  return apiRequest(`${BASE}/api/settings/prime/commission-rules`);
+}
+
+export async function createCommissionRule(payload: {
+  pricingPlanId: string;
+  type: CommissionType;
+  value: number;
+  isActive?: boolean;
+}): Promise<CommissionRuleSetting> {
+  return apiRequest(`${BASE}/api/settings/prime/commission-rules`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateCommissionRule(
+  id: string,
+  payload: Partial<{ type: CommissionType; value: number; isActive: boolean }>,
+): Promise<CommissionRuleSetting> {
+  return apiRequest(
+    `${BASE}/api/settings/prime/commission-rules/${encodeURIComponent(id)}`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function getTargetBonusRules(): Promise<{ items: TargetBonusRuleSetting[] }> {
+  return apiRequest(`${BASE}/api/settings/prime/target-bonus-rules`);
+}
+
+export async function createTargetBonusRule(payload: {
+  shiftTypeId: string;
+  targetAmount: number;
+  bonusAmount: number;
+  isActive?: boolean;
+}): Promise<TargetBonusRuleSetting> {
+  return apiRequest(`${BASE}/api/settings/prime/target-bonus-rules`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateTargetBonusRule(
+  id: string,
+  payload: Partial<{ targetAmount: number; bonusAmount: number; isActive: boolean }>,
+): Promise<TargetBonusRuleSetting> {
+  return apiRequest(
+    `${BASE}/api/settings/prime/target-bonus-rules/${encodeURIComponent(id)}`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+// ── Settings — shift planning ──────────────────────────────────────────────────
+// Note: getShiftTypes / createShiftType / updateShiftType already exist above and
+// use /api/settings/prime/shift-types — same backend service, same data.
+
+export async function getShiftSchedule(params?: {
+  staffMemberId?: string;
+}): Promise<{ days: WeeklyScheduleDay[] }> {
+  const qs = new URLSearchParams();
+  if (params?.staffMemberId) qs.set('staffMemberId', params.staffMemberId);
+  const suffix = qs.toString() ? `?${qs.toString()}` : '';
+  return apiRequest(`${BASE}/api/settings/shifts/schedule${suffix}`);
+}
+
+export async function createShiftSchedule(payload: {
+  staffMemberId: string;
+  shiftTypeId?: string | null;
+  dayOfWeek: number;
+  startTime?: string | null;
+  endTime?: string | null;
+  isOff?: boolean;
+  notes?: string | null;
+}): Promise<StaffScheduleItem> {
+  return apiRequest(`${BASE}/api/settings/shifts/schedule`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateShiftSchedule(
+  id: string,
+  payload: Partial<{
+    shiftTypeId: string | null;
+    startTime: string | null;
+    endTime: string | null;
+    isOff: boolean;
+    isActive: boolean;
+    notes: string | null;
+  }>,
+): Promise<StaffScheduleItem> {
+  return apiRequest(
+    `${BASE}/api/settings/shifts/schedule/${encodeURIComponent(id)}`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function deleteShiftSchedule(id: string): Promise<{ ok: boolean }> {
+  return apiRequest(
+    `${BASE}/api/settings/shifts/schedule/${encodeURIComponent(id)}`,
+    { method: 'DELETE' },
+  );
+}
+
+export async function getTodayShiftSuggestions(): Promise<{
+  dayOfWeek: number;
+  label: string;
+  suggestions: TodayShiftSuggestion[];
+}> {
+  return apiRequest(`${BASE}/api/settings/shifts/today-suggestions`);
+}
+
+export async function openShift(payload: {
+  staffMemberId: string;
+  shiftTypeId?: string;
+}): Promise<{ shift: unknown }> {
+  return apiRequest(`${BASE}/api/shifts/open`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+// ── Dashboard — revenue stats ──────────────────────────────────────────────────
+
+export async function getRevenueStats(period: 'day' | 'week' | 'month' | 'year'): Promise<RevenueStats> {
+  return apiRequest<RevenueStats>(`${BASE}/api/dashboard/revenue-stats?period=${period}`);
 }
 
 // ── Chair sessions (existing, kept below) ─────────────────────────────────────

@@ -29,6 +29,9 @@ model User {
   openedShifts            Shift[]                @relation("ShiftOpenedBy")
   closedShifts            Shift[]                @relation("ShiftClosedBy")
   correctedSessions       ChairSession[]         @relation("SessionCorrectedBy")
+  createdCommissionRules  CommissionRule[]        @relation("CommissionRuleCreatedBy")
+  createdBonusRules       ShiftTargetBonusRule[]  @relation("BonusRuleCreatedBy")
+  createdBonusAdjustments ShiftBonusAdjustment[]  @relation("BonusAdjustmentCreatedBy")
 
   @@map("users")
 }
@@ -43,7 +46,8 @@ model StaffMember {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  shifts Shift[]
+  shifts    Shift[]
+  schedules StaffSchedule[]
 
   @@index([isActive])
   @@map("staff_members")
@@ -64,17 +68,32 @@ model Shift {
   declaredCash   Decimal?    @map("declared_cash") @db.Decimal(10, 2)
   differenceCash Decimal?    @map("difference_cash") @db.Decimal(10, 2)
   notes          String?     @db.Text
+
+  // ── Shift type (optional: Matin / Soir / Journée) ────────────────────────
+  shiftTypeId    String?  @map("shift_type_id")
+
+  // ── Prime snapshot (populated at shift close by shift.service.ts) ─────────
+  grossRevenue   Decimal? @map("gross_revenue")   @db.Decimal(10, 2)
+  planCommission Decimal? @map("plan_commission")  @db.Decimal(10, 2)
+  targetBonus    Decimal? @map("target_bonus")     @db.Decimal(10, 2)
+  manualBonus    Decimal? @map("manual_bonus")     @db.Decimal(10, 2)
+  totalPrime     Decimal? @map("total_prime")      @db.Decimal(10, 2)
+  netRevenue     Decimal? @map("net_revenue")      @db.Decimal(10, 2)
+
   createdAt      DateTime    @default(now()) @map("created_at")
   updatedAt      DateTime    @updatedAt @map("updated_at")
 
-  staffMember StaffMember    @relation(fields: [staffMemberId], references: [id])
-  openedBy    User           @relation("ShiftOpenedBy", fields: [openedByUserId], references: [id])
-  closedBy    User?          @relation("ShiftClosedBy", fields: [closedByUserId], references: [id])
-  sessions    ChairSession[]
+  staffMember      StaffMember            @relation(fields: [staffMemberId], references: [id])
+  openedBy         User                   @relation("ShiftOpenedBy", fields: [openedByUserId], references: [id])
+  closedBy         User?                  @relation("ShiftClosedBy", fields: [closedByUserId], references: [id])
+  sessions         ChairSession[]
+  shiftType        ShiftType?             @relation(fields: [shiftTypeId], references: [id])
+  bonusAdjustments ShiftBonusAdjustment[]
 
   @@index([status])
   @@index([startedAt])
   @@index([staffMemberId])
+  @@index([shiftTypeId])
   @@map("shifts")
 }
 
@@ -160,9 +179,10 @@ model PricingPlan {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
-  createdBy        User?          @relation("PricingPlanCreatedBy", fields: [createdByUserId], references: [id])
-  minimumPlanRules PricingRule[]  @relation("MinimumPlan")
+  createdBy        User?            @relation("PricingPlanCreatedBy", fields: [createdByUserId], references: [id])
+  minimumPlanRules PricingRule[]    @relation("MinimumPlan")
   sessions         ChairSession[]
+  commissionRules  CommissionRule[]
 
   @@index([isActive])
   @@map("pricing_plans")
@@ -339,6 +359,125 @@ model SettingsAuditLog {
   @@map("settings_audit_logs")
 }
 
+// ── Prime / Commission models ─────────────────────────────────────────────────
+
+// Shift type template (Matin, Soir, Journée).
+// Assigned to a shift at open time so the correct target-bonus rule is selected.
+model ShiftType {
+  id        String   @id @default(uuid())
+  name      String   @unique @db.VarChar(50)
+  label     String?  @db.VarChar(100)
+  startTime String   @map("start_time") @db.VarChar(5)   // HH:mm
+  endTime   String   @map("end_time") @db.VarChar(5)     // HH:mm
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  shifts     Shift[]
+  bonusRules ShiftTargetBonusRule[]
+  schedules  StaffSchedule[]
+
+  @@index([isActive])
+  @@map("shift_types")
+}
+
+// Commission rule for one pricing plan.
+// PERCENTAGE: commission = finalAmount * (value / 100)
+// FIXED_AMOUNT: commission = value DH per eligible session
+// validFrom/validTo: temporal history — historical shifts stay accurate
+// after a rule is changed or deactivated.
+model CommissionRule {
+  id              String         @id @default(uuid())
+  pricingPlanId   String         @map("pricing_plan_id")
+  type            CommissionType @default(PERCENTAGE)
+  value           Decimal        @db.Decimal(8, 4)
+  isActive        Boolean        @default(true) @map("is_active")
+  validFrom       DateTime       @default(now()) @map("valid_from")
+  validTo         DateTime?      @map("valid_to")
+  createdByUserId String?        @map("created_by_user_id")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  plan      PricingPlan @relation(fields: [pricingPlanId], references: [id])
+  createdBy User?       @relation("CommissionRuleCreatedBy", fields: [createdByUserId], references: [id])
+
+  @@index([pricingPlanId, isActive])
+  @@index([isActive])
+  @@index([validFrom])
+  @@map("commission_rules")
+}
+
+// Revenue-target bonus per shift type.
+// If shift.grossRevenue >= targetAmount → staff earns bonusAmount.
+// When multiple rules match, the calculation service uses ONLY the highest
+// matching rule (non-cumulative). This is enforced in prime.service.ts.
+model ShiftTargetBonusRule {
+  id              String    @id @default(uuid())
+  shiftTypeId     String    @map("shift_type_id")
+  targetAmount    Decimal   @map("target_amount") @db.Decimal(10, 2)
+  bonusAmount     Decimal   @map("bonus_amount") @db.Decimal(10, 2)
+  isActive        Boolean   @default(true) @map("is_active")
+  validFrom       DateTime  @default(now()) @map("valid_from")
+  validTo         DateTime? @map("valid_to")
+  createdByUserId String?   @map("created_by_user_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  shiftType ShiftType @relation(fields: [shiftTypeId], references: [id])
+  createdBy User?     @relation("BonusRuleCreatedBy", fields: [createdByUserId], references: [id])
+
+  @@index([shiftTypeId, isActive])
+  @@index([isActive])
+  @@index([targetAmount])
+  @@map("shift_target_bonus_rules")
+}
+
+// Manual bonus adjustment added by Owner/Admin to a specific shift.
+// Multiple adjustments per shift are summed into Shift.manualBonus at close time.
+// Individual records remain as a permanent audit trail.
+model ShiftBonusAdjustment {
+  id              String   @id @default(uuid())
+  shiftId         String   @map("shift_id")
+  amount          Decimal  @db.Decimal(10, 2)
+  reason          String?  @db.Text
+  createdByUserId String?  @map("created_by_user_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  shift     Shift @relation(fields: [shiftId], references: [id])
+  createdBy User? @relation("BonusAdjustmentCreatedBy", fields: [createdByUserId], references: [id])
+
+  @@index([shiftId])
+  @@map("shift_bonus_adjustments")
+}
+
+// Weekly planning row: which staff member works which shift type on which day.
+// isActive=false means the row is soft-deleted (schedule changed or removed).
+// Partial unique index (see RAW_SQL_CONSTRAINTS.md §5) prevents two active rows
+// for the same (staffMemberId, dayOfWeek) pair from coexisting.
+model StaffSchedule {
+  id            String    @id @default(uuid())
+  staffMemberId String    @map("staff_member_id")
+  shiftTypeId   String?   @map("shift_type_id")
+  dayOfWeek     Int       @map("day_of_week")               // 1=Monday … 7=Sunday (ISO 8601)
+  startTime     String?   @map("start_time") @db.VarChar(5) // HH:mm override; null = use ShiftType default
+  endTime       String?   @map("end_time") @db.VarChar(5)   // HH:mm override; null = use ShiftType default
+  isOff         Boolean   @default(false) @map("is_off")
+  isActive      Boolean   @default(true) @map("is_active")
+  notes         String?   @db.Text
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  staffMember StaffMember @relation(fields: [staffMemberId], references: [id])
+  shiftType   ShiftType?  @relation(fields: [shiftTypeId], references: [id])
+
+  @@index([staffMemberId])
+  @@index([shiftTypeId])
+  @@index([dayOfWeek])
+  @@index([isActive])
+  @@map("staff_schedules")
+}
+
 // ── Enums ─────────────────────────────────────────────────────────────────────
 
 enum UserRole {
@@ -393,4 +532,9 @@ enum LogSeverity {
   INFO
   WARNING
   ERROR
+}
+
+enum CommissionType {
+  PERCENTAGE
+  FIXED_AMOUNT
 }
