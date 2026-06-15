@@ -5,6 +5,7 @@ import { createServer } from 'http';
 import { env } from './config/env';
 import { logger } from './utils/logger';
 import { dashboardService, revenueStatsService } from './modules/dashboard/dashboard.service';
+import { homeDashboardService } from './modules/dashboard/home-dashboard.service';
 import { chairStateService } from './modules/chairs/chair-state.service';
 import { createSocketServer } from './socket';
 import {
@@ -65,6 +66,25 @@ app.get('/api/dashboard/revenue-stats', (req, res) => {
     .then((stats) => res.json(stats))
     .catch((err) => {
       res.status(500).json({ ok: false, error: 'Failed to compute revenue stats', detail: String(err) });
+    });
+});
+
+app.get('/api/dashboard/home', (req, res) => {
+  const q = req.query;
+  const str = (k: string) => (typeof q[k] === 'string' ? (q[k] as string) : undefined);
+  homeDashboardService
+    .get({
+      from:        str('from'),
+      to:          str('to'),
+      period:      str('period') as never,
+      periodStart: str('periodStart'),
+      periodEnd:   str('periodEnd'),
+      chair:       str('chair'),
+      chartPeriod: str('chartPeriod') as never,
+    })
+    .then((data) => res.json(data))
+    .catch((err: unknown) => {
+      res.status(500).json({ ok: false, error: 'Failed to compute home dashboard', detail: String(err) });
     });
 });
 

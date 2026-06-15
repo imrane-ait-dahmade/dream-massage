@@ -271,3 +271,91 @@ export interface TodayShiftSuggestion {
   startTime: string | null;
   endTime: string | null;
 }
+
+// ── Home Dashboard ─────────────────────────────────────────────────────────────
+
+export interface HomeDashboardFilters {
+  from: string;
+  to: string;
+  period: 'all' | 'matin' | 'soir' | 'journee' | 'custom';
+  periodStart?: string;
+  periodEnd?: string;
+  chair: string;
+  chartPeriod: 'day' | 'week' | 'month' | 'year';
+}
+
+export interface HomeSummary {
+  grossRevenue: number;
+  netRevenue: number;
+  sessionsCount: number;
+  completedSessionsCount: number;
+  activeSessionsCount: number;
+  outOfRuleSessionsCount: number;
+  activeChairs: number;
+  offlineChairs: number;
+  totalPrime: number;
+}
+
+export interface HomeLiveChair {
+  id: string;
+  name: string;
+  displayName: string | null;
+  status: ChairStatus;
+  powerWatts: number;
+  isOnline: boolean;
+  warning: string | null;
+}
+
+export interface HomeTotalsByChair {
+  chairId: string;
+  chairName: string;
+  displayName: string | null;
+  sessionsCount: number;
+  completedSessionsCount: number;
+  activeSessionsCount: number;
+  outOfRuleSessionsCount: number;
+  revenue: number;
+  durationTotalSeconds: number;
+  plans: Array<{ label: string; count: number; revenue: number }>;
+}
+
+export interface HomePrimeRevenue {
+  grossRevenue: number;
+  planCommission: number;
+  targetBonus: number;
+  manualBonus: number;
+  totalPrime: number;
+  netRevenue: number;
+}
+
+export interface HomeRevenueChart {
+  period: string;
+  labels: string[];
+  revenue: number[];
+  sessions: number[];
+  totalRevenue: number;
+  totalSessions: number;
+}
+
+export interface HomeRecentSession {
+  id: string;
+  chairName: string;
+  startedAt: string;
+  endedAt: string | null;
+  durationSeconds: number | null;
+  status: string;
+  matchedPlanName: string | null;
+  amount: number;
+  anomalyType: string | null;
+  billingStatus: string;
+}
+
+export interface HomeDashboardResponse {
+  filters: HomeDashboardFilters;
+  summary: HomeSummary;
+  liveChairs: HomeLiveChair[];
+  totalsByChair: HomeTotalsByChair[];
+  primeRevenue: HomePrimeRevenue;
+  revenueChart: HomeRevenueChart;
+  recentSessions: HomeRecentSession[];
+}

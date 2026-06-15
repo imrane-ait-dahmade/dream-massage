@@ -16,6 +16,8 @@ import type {
   StaffScheduleItem,
   WeeklyScheduleDay,
   TodayShiftSuggestion,
+  HomeDashboardFilters,
+  HomeDashboardResponse,
 } from './types';
 
 const BASE =
@@ -419,6 +421,20 @@ export async function openShift(payload: {
 
 export async function getRevenueStats(period: 'day' | 'week' | 'month' | 'year'): Promise<RevenueStats> {
   return apiRequest<RevenueStats>(`${BASE}/api/dashboard/revenue-stats?period=${period}`);
+}
+
+// ── Dashboard — home (filterable analytics) ────────────────────────────────────
+
+export async function getHomeDashboard(filters: Partial<HomeDashboardFilters>): Promise<HomeDashboardResponse> {
+  const qs = new URLSearchParams();
+  if (filters.from)        qs.set('from', filters.from);
+  if (filters.to)          qs.set('to', filters.to);
+  if (filters.period)      qs.set('period', filters.period);
+  if (filters.periodStart) qs.set('periodStart', filters.periodStart);
+  if (filters.periodEnd)   qs.set('periodEnd', filters.periodEnd);
+  if (filters.chair)       qs.set('chair', filters.chair);
+  if (filters.chartPeriod) qs.set('chartPeriod', filters.chartPeriod);
+  return apiRequest<HomeDashboardResponse>(`${BASE}/api/dashboard/home?${qs.toString()}`);
 }
 
 // ── Chair sessions (existing, kept below) ─────────────────────────────────────

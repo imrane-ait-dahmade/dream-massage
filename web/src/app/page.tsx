@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDashboard } from '@/hooks/useDashboard';
+import { useHomeDashboard } from '@/hooks/useHomeDashboard';
 import { logout, getMe, type AuthUser } from '@/lib/api';
 import { AuthGuard } from '@/components/AuthGuard';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { DashboardFilters } from '@/components/dashboard/DashboardFilters';
-import { TodayStats } from '@/components/dashboard/TodayStats';
+import { DashboardSummaryCards } from '@/components/dashboard/DashboardSummaryCards';
 import { ChairCard } from '@/components/dashboard/ChairCard';
 import { ChairCardSkeleton } from '@/components/dashboard/ChairCardSkeleton';
 import { ShiftSummary } from '@/components/dashboard/ShiftSummary';
@@ -22,20 +23,14 @@ import { RecentSessionsTable } from '@/components/dashboard/RecentSessionsTable'
 function LoadingScreen() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Nav placeholder */}
       <div className="h-[57px] border-b border-white/10 bg-slate-900/95" />
-      {/* Hero placeholder */}
-      <div className="h-36 bg-slate-800/40" />
       <main className="mx-auto max-w-6xl space-y-5 px-4 py-6">
-        {/* Filters skeleton */}
-        <div className="h-16 animate-pulse rounded-2xl bg-slate-800/60" />
-        {/* Stats skeleton */}
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
+        <div className="h-20 animate-pulse rounded-2xl bg-slate-800/60" />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-7">
+          {Array.from({ length: 7 }).map((_, i) => (
             <div key={i} className="h-[104px] animate-pulse rounded-2xl bg-slate-800" />
           ))}
         </div>
-        {/* Chairs skeleton */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
           {Array.from({ length: 5 }).map((_, i) => (
             <ChairCardSkeleton key={i} />
@@ -60,10 +55,15 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 function DashboardContent() {
   const router = useRouter();
-  const { state, connStatus, lastUpdated } = useDashboard();
-  const [user, setUser] = useState<AuthUser | null>(null);
 
-  // Fetch current user for role badge — AuthGuard already verified auth, this is non-critical
+  // Real-time chair grid + open shift + connection status
+  const { state, connStatus, lastUpdated } = useDashboard();
+
+  // Filtered analytics from /api/dashboard/home
+  const { data, loading, error, filters, setFilters, reset } = useHomeDashboard();
+
+  // Current user (non-critical, used only for role badge in header)
+  const [user, setUser] = useState<AuthUser | null>(null);
   useEffect(() => {
     getMe().then(setUser).catch(() => {});
   }, []);
@@ -73,11 +73,11 @@ function DashboardContent() {
     router.replace('/login');
   }
 
+  // Show full-page skeleton until live state is ready
   if (!state) return <LoadingScreen />;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* ── App shell: nav + hero ───────────────────────────────────────────── */}
       <DashboardHeader
         user={user}
         connStatus={connStatus}
@@ -85,24 +85,35 @@ function DashboardContent() {
         onLogout={() => void handleLogout()}
       />
 
-      {/* ── Main content ────────────────────────────────────────────────────── */}
       <main className="mx-auto max-w-6xl space-y-5 px-4 py-6 pb-14">
-        {/* Connection warning banner (hidden when connected) */}
+        {/* Connection warning */}
         <ConnectionStatusBar status={connStatus} lastUpdated={lastUpdated} />
 
-        {/* Filters */}
-        <DashboardFilters />
+        {/* ── Filters — drive all sections below ─────────────────────────── */}
+        <DashboardFilters
+          filters={filters}
+          onChange={setFilters}
+          onReset={reset}
+          loading={loading}
+        />
 
-        {/* Today KPI cards */}
+        {/* API error banner */}
+        {error && (
+          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            Erreur de chargement des données : {error}
+          </div>
+        )}
+
+        {/* ── KPI summary cards — from home endpoint ──────────────────────── */}
         <section>
-          <SectionLabel>Aujourd&apos;hui</SectionLabel>
-          <TodayStats stats={state.todayStats} />
+          <SectionLabel>Résumé de la période</SectionLabel>
+          <DashboardSummaryCards summary={data?.summary} loading={loading} />
         </section>
 
-        {/* Active shift */}
+        {/* ── Active shift ─────────────────────────────────────────────────── */}
         <ShiftSummary openShift={state.openShift} />
 
-        {/* Live chair grid */}
+        {/* ── Live chair grid — real-time via WebSocket ───────────────────── */}
         <section>
           <SectionLabel>Fauteuils en temps réel</SectionLabel>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
@@ -117,31 +128,31 @@ function DashboardContent() {
           </div>
         </section>
 
-        {/* Revenue chart — live from /api/dashboard/revenue-stats */}
+        {/* ── Revenue chart — from home endpoint ──────────────────────────── */}
         <section>
           <SectionLabel>Statistiques de revenu</SectionLabel>
-          <RevenueChart />
+          <RevenueChart data={data?.revenueChart} loading={loading} />
         </section>
 
-        {/* Totals by chair — placeholder, needs report endpoint */}
+        {/* ── Totals by chair — from home endpoint ────────────────────────── */}
         <section>
           <SectionLabel>Totaux par fauteuil</SectionLabel>
-          <TotalsByChairTable />
+          <TotalsByChairTable data={data?.totalsByChair} loading={loading} />
         </section>
 
-        {/* Primes & Recettes — placeholder */}
+        {/* ── Primes & Recettes — from home endpoint ──────────────────────── */}
         <section>
           <SectionLabel>Primes &amp; Recettes</SectionLabel>
-          <PrimeRevenueCard />
+          <PrimeRevenueCard data={data?.primeRevenue} loading={loading} />
         </section>
 
-        {/* Recent sessions — placeholder, needs global report endpoint */}
+        {/* ── Recent sessions — from home endpoint ────────────────────────── */}
         <section>
           <SectionLabel>Sessions récentes</SectionLabel>
-          <RecentSessionsTable />
+          <RecentSessionsTable sessions={data?.recentSessions} loading={loading} />
         </section>
 
-        {/* Footer timestamp */}
+        {/* Footer timestamp from WebSocket */}
         {lastUpdated && (
           <p className="pt-2 text-center text-[11px] text-slate-700">
             Mis à jour :{' '}

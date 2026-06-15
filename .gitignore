@@ -1,2 +1,25 @@
+# Environment files — never commit real secrets
+.env
+.env.*
+!.env.example
+# Legacy bare names (kept for safety)
 env
 env.example
+
+# Node
+node_modules/
+
+# Build outputs
+dist/
+.next/
+out/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+
+# Logs
+*.log

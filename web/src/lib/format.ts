@@ -24,3 +24,20 @@ export function formatTimeHHMM(isoString: string): string {
     minute: '2-digit',
   });
 }
+
+/** Format seconds as compact duration: "2h05m" or "45m" */
+export function formatDuration(totalSeconds: number): string {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  if (h > 0) return `${h}h${String(m).padStart(2, '0')}m`;
+  return `${m}m`;
+}
+
+/** Format an ISO string to HH:mm (returns "—" if null) */
+export function formatTime(isoString: string | null | undefined): string {
+  if (!isoString) return '—';
+  return new Date(isoString).toLocaleTimeString('fr-FR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
