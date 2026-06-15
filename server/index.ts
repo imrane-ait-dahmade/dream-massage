@@ -226,10 +226,12 @@ app.use((_req, res) => {
 const httpServer = createServer(app);
 const io = createSocketServer(httpServer);
 
-httpServer.listen(env.PORT, () => {
+const PORT = Number(process.env.PORT ?? env.PORT);
+
+httpServer.listen(PORT, '0.0.0.0', () => {
   logger.info('─────────────────────────────────────────');
   logger.info('Dream Massage realtime server started');
-  logger.info(`  Port       : ${env.PORT}`);
+  logger.info(`  Port       : ${PORT}`);
   logger.info(`  Mode       : ${env.NODE_ENV}`);
   logger.info(`  CORS       : ${env.FRONTEND_ORIGIN} + any localhost:* in dev`);
   const activeSource = getActiveSource();

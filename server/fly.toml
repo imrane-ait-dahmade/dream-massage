@@ -1,19 +1,20 @@
-# fly.toml app configuration file generated for dream-massage on 2026-06-15T16:58:46Z
-#
-# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-#
+# fly.toml app configuration file — dream-massage
+# See https://fly.io/docs/reference/configuration/
 
 app = 'dream-massage'
 primary_region = 'iad'
 
 [build]
 
+[env]
+  PORT = "8080"
+  NODE_ENV = "production"
+
 [deploy]
   release_command = 'npx prisma migrate deploy'
-  seed_command = 'tsx prisma/seed.ts'
 
 [http_service]
-  internal_port = 3000
+  internal_port = 8080
   force_https = true
   auto_stop_machines = 'stop'
   auto_start_machines = true
