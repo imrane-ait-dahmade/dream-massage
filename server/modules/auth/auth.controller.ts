@@ -22,7 +22,14 @@ function setCookie(res: Response, token: string): void {
 }
 
 function clearCookie(res: Response): void {
-  res.clearCookie(env.COOKIE_NAME, { path: '/' });
+  // Must mirror the same attributes used in setCookie so browsers (especially Safari)
+  // match and delete the correct cookie entry.
+  res.clearCookie(env.COOKIE_NAME, {
+    httpOnly: true,
+    secure:   env.COOKIE_SECURE,
+    sameSite: env.COOKIE_SAME_SITE,
+    path:     '/',
+  });
 }
 
 // ── POST /api/auth/login ───────────────────────────────────────────────────────

@@ -2,7 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { login } from '@/lib/api';
+import { login, getMe } from '@/lib/api';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,6 +17,19 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
+      // Verify the cookie was actually stored by the browser before navigating.
+      // On mobile or in cross-origin deployments, SameSite/Secure mismatches can
+      // cause the cookie to be silently dropped — without this check the user just
+      // bounces back to /login with no explanation.
+      try {
+        await getMe();
+      } catch {
+        setError(
+          'Connexion réussie mais la session n\'a pas pu être sauvegardée. ' +
+          'Vérifiez que les cookies sont activés et que l\'application est accessible en HTTPS.',
+        );
+        return;
+      }
       router.replace('/');
     } catch (err) {
       setError((err as Error).message || 'Connexion échouée');
