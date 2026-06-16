@@ -1,23 +1,26 @@
 'use client';
 
-import { UserRound, Clock, AlertTriangle } from 'lucide-react';
-import type { OpenShift } from '@/lib/types';
-import { formatTimeHHMM } from '@/lib/format';
+import { UserRound, Clock, TrendingUp, AlertTriangle } from 'lucide-react';
+import type { DashboardCurrentShift, OpenShift } from '@/lib/types';
+import { formatDH, formatTimeHHMM } from '@/lib/format';
 
 interface Props {
-  openShift: OpenShift | null;
+  currentShift: DashboardCurrentShift | null;
+  openShift:    OpenShift | null;
 }
 
-export function ShiftSummary({ openShift }: Props) {
-  if (!openShift) {
+export function ShiftSummary({ currentShift, openShift }: Props) {
+  const hasShift = !!(currentShift ?? openShift);
+
+  if (!hasShift) {
     return (
-      <div className="flex items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 md:rounded-2xl md:gap-3 md:px-4 md:py-4">
-        <div className="shrink-0 rounded-lg bg-amber-500/20 p-1.5 md:rounded-xl md:p-2">
-          <AlertTriangle className="h-3.5 w-3.5 text-amber-400 md:h-4 md:w-4" />
+      <div className="flex items-center gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3">
+        <div className="shrink-0 rounded-xl bg-amber-500/20 p-2">
+          <AlertTriangle className="h-4 w-4 text-amber-400" />
         </div>
         <div>
-          <p className="text-xs font-semibold text-amber-300 md:text-sm">Aucun shift ouvert</p>
-          <p className="hidden text-xs text-amber-400/70 md:block">
+          <p className="text-sm font-semibold text-amber-300">Aucun shift actif</p>
+          <p className="mt-0.5 text-xs text-amber-400/70">
             Les sessions ne seront pas liées à un quart de travail.
           </p>
         </div>
@@ -25,24 +28,60 @@ export function ShiftSummary({ openShift }: Props) {
     );
   }
 
+  const staffName   = currentShift?.staffMemberName ?? openShift?.staffMemberName ?? '—';
+  const shiftLabel  = currentShift?.shiftTypeLabel;
+  const startedAt   = currentShift?.startedAt ?? openShift?.startedAt ?? '';
+  const scheduledEnd = currentShift?.scheduledEndAt;
+  const gross       = currentShift?.grossRevenue;
+  const net         = currentShift?.netRevenue;
+
   return (
-    <div className="flex items-center justify-between rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 shadow-lg md:rounded-2xl md:px-4 md:py-4">
-      <div className="flex items-center gap-2 md:gap-3">
-        <div className="shrink-0 rounded-lg bg-emerald-500/15 p-1.5 md:rounded-xl md:p-2">
-          <UserRound className="h-3.5 w-3.5 text-emerald-400 md:h-4 md:w-4" />
+    <div className="rounded-2xl border border-slate-700 bg-slate-800 shadow-lg">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+        {/* Left: staff name + shift type */}
+        <div className="flex items-center gap-3">
+          <div className="shrink-0 rounded-xl bg-emerald-500/15 p-2">
+            <UserRound className="h-4 w-4 text-emerald-400" />
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Shift actif</p>
+            <p className="text-sm font-bold text-white">{staffName}</p>
+            {shiftLabel && (
+              <p className="text-xs text-slate-400">{shiftLabel}</p>
+            )}
+          </div>
         </div>
-        <div>
-          <p className="hidden text-[11px] font-semibold uppercase tracking-wide text-slate-500 md:block">
-            Shift ouvert
-          </p>
-          <p className="text-xs font-semibold text-white md:text-sm">{openShift.staffMemberName}</p>
+
+        {/* Right: times */}
+        <div className="flex items-center gap-4 text-slate-400">
+          <div className="flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5" />
+            <div className="text-xs">
+              <span className="font-medium text-white">{formatTimeHHMM(startedAt)}</span>
+              {scheduledEnd && (
+                <span className="text-slate-500"> → {formatTimeHHMM(scheduledEnd)}</span>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-1 text-slate-400">
-        <Clock className="h-3 w-3 md:h-3.5 md:w-3.5" />
-        <span className="text-xs font-medium">{formatTimeHHMM(openShift.startedAt)}</span>
-      </div>
+      {/* Revenue row — only when data from REST API */}
+      {gross !== undefined && (
+        <div className="flex flex-wrap gap-4 border-t border-slate-700/60 px-4 py-2">
+          <div className="flex items-center gap-1.5">
+            <TrendingUp className="h-3 w-3 text-emerald-400" />
+            <span className="text-[10px] text-slate-500">Brut</span>
+            <span className="text-xs font-semibold text-white">{formatDH(gross ?? 0)}</span>
+          </div>
+          {net !== undefined && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-slate-500">Net</span>
+              <span className="text-xs font-semibold text-emerald-400">{formatDH(net ?? 0)}</span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

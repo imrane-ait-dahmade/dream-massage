@@ -25,11 +25,11 @@ function Row({
 }) {
   return (
     <div
-      className={`flex items-center justify-between px-4 py-2.5 ${highlight ? 'bg-slate-700/30' : ''}`}
+      className={`flex items-center justify-between px-3 py-1.5 md:px-4 md:py-2.5 ${highlight ? 'bg-slate-700/30' : ''}`}
     >
-      <span className={`text-xs ${muted ? 'text-slate-600' : 'text-slate-400'}`}>{label}</span>
+      <span className={`text-[10px] md:text-xs ${muted ? 'text-slate-600' : 'text-slate-400'}`}>{label}</span>
       <span
-        className={`text-sm font-semibold ${
+        className={`text-xs font-semibold md:text-sm ${
           highlight ? 'text-white' : muted ? 'text-slate-600' : 'text-slate-300'
         }`}
       >
@@ -41,9 +41,9 @@ function Row({
 
 function SkeletonRow() {
   return (
-    <div className="flex items-center justify-between px-4 py-2.5">
-      <div className="h-3 w-40 animate-pulse rounded bg-slate-700" />
-      <div className="h-3 w-20 animate-pulse rounded bg-slate-700" />
+    <div className="flex items-center justify-between px-3 py-1.5 md:px-4 md:py-2.5">
+      <div className="h-2.5 w-36 animate-pulse rounded bg-slate-700 md:h-3 md:w-40" />
+      <div className="h-2.5 w-14 animate-pulse rounded bg-slate-700 md:h-3 md:w-20" />
     </div>
   );
 }
@@ -60,9 +60,9 @@ export function PrimeRevenueCard({ data, loading }: Props) {
 
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800">
-      <div className="border-b border-slate-700 px-4 py-3">
-        <h3 className="text-sm font-bold text-white">Primes &amp; Recettes</h3>
-        <p className="mt-0.5 text-xs text-slate-500">
+      <div className="border-b border-slate-700 px-2 py-2 md:px-4 md:py-3">
+        <h3 className="text-xs font-bold text-white md:text-sm">Primes &amp; Recettes</h3>
+        <p className="mt-0.5 hidden text-xs text-slate-500 md:block">
           Basé sur les shifts clôturés dans la période
         </p>
       </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { AlertTriangle, WifiOff } from 'lucide-react';
 import { useDashboard } from '@/hooks/useDashboard';
 import { useHomeDashboard } from '@/hooks/useHomeDashboard';
 import { logout, getMe, type AuthUser } from '@/lib/api';
@@ -22,19 +23,53 @@ import { RecentSessionsTable } from '@/components/dashboard/RecentSessionsTable'
 function LoadingScreen() {
   return (
     <div className="min-h-screen bg-slate-900">
-      <div className="h-[49px] border-b border-white/10 bg-slate-900/95" />
-      <main className="mx-auto max-w-6xl space-y-3 px-4 py-3">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-[74px] animate-pulse rounded-xl bg-slate-800" />
+      <div className="h-[53px] border-b border-white/10 bg-slate-900/95" />
+      <main className="mx-auto max-w-6xl space-y-4 px-4 py-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div key={i} className="h-[100px] animate-pulse rounded-2xl bg-slate-800" />
           ))}
         </div>
-        <div className="grid grid-cols-4 gap-2 xl:grid-cols-8">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="h-[90px] animate-pulse rounded-2xl bg-slate-800" />
+        <div className="h-[80px] animate-pulse rounded-2xl bg-slate-800" />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-[100px] animate-pulse rounded-2xl bg-slate-800" />
           ))}
         </div>
       </main>
+    </div>
+  );
+}
+
+// ── Alerts section ────────────────────────────────────────────────────────────
+
+interface AlertsProps {
+  offlineChairs:      number;
+  outOfRuleSessions:  number;
+  noOpenShift:        boolean;
+  hasSessions:        boolean;
+}
+
+function AlertsSection({ offlineChairs, outOfRuleSessions, noOpenShift, hasSessions }: AlertsProps) {
+  const alerts: { key: string; msg: string; cls: string }[] = [];
+
+  if (offlineChairs > 0)
+    alerts.push({ key: 'offline', msg: `${offlineChairs} fauteuil${offlineChairs > 1 ? 's' : ''} hors ligne`, cls: 'text-red-400' });
+  if (outOfRuleSessions > 0)
+    alerts.push({ key: 'rule', msg: `${outOfRuleSessions} session${outOfRuleSessions > 1 ? 's' : ''} hors règle`, cls: 'text-orange-400' });
+  if (noOpenShift && hasSessions)
+    alerts.push({ key: 'shift', msg: 'Sessions en cours sans shift actif', cls: 'text-amber-400' });
+
+  if (alerts.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {alerts.map((a) => (
+        <div key={a.key} className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2">
+          <AlertTriangle className={`h-3.5 w-3.5 shrink-0 ${a.cls}`} />
+          <span className={`text-xs font-medium ${a.cls}`}>{a.msg}</span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -59,15 +94,19 @@ function DashboardContent() {
 
   if (!state) return <LoadingScreen />;
 
-  // currentShift from REST API (more complete than socket's openShift)
   const currentShift = data?.currentShift ?? null;
-  // openShift from socket — used as fallback for ShiftSummary
   const openShift = currentShift
     ? { id: currentShift.id, staffMemberName: currentShift.staffMemberName ?? '', startedAt: currentShift.startedAt }
     : state.openShift;
 
+  const hasOpenShift = !!(currentShift ?? openShift);
+  const activeSessions = data?.summary?.activeSessionsCount ?? state.todayStats.activeChairs;
+  const offlineChairs  = data?.summary?.offlineChairs ?? state.todayStats.offlineChairs;
+  const outOfRuleSessions = data?.summary?.outOfRuleSessionsCount ?? 0;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      {/* ── 1. Header ──────────────────────────────────────────────────────── */}
       <DashboardHeader
         user={user}
         connStatus={connStatus}
@@ -75,37 +114,52 @@ function DashboardContent() {
         onLogout={() => void handleLogout()}
       />
 
-      <main className="mx-auto max-w-6xl space-y-1.5 px-2 py-2 pb-3 md:space-y-3 md:px-4 md:py-3 md:pb-8">
+      <main className="mx-auto max-w-6xl space-y-4 px-3 py-4 md:px-4 md:py-5">
         {/* Connection warning */}
         <ConnectionStatusBar status={connStatus} lastUpdated={lastUpdated} />
 
-        {/* ── Top strip: shift status + filters ────────────────────────────── */}
-        <div className="flex flex-col gap-1.5 lg:flex-row lg:items-start lg:gap-3">
-          <div className="shrink-0 lg:w-64">
-            <ShiftSummary openShift={openShift} />
-          </div>
-          <div className="flex-1">
-            <DashboardFilters
-              filters={filters}
-              filterOptions={data?.filterOptions}
-              onChange={setFilters}
-              onReset={reset}
-              loading={loading}
-            />
-          </div>
-        </div>
+        {/* ── 2. Summary KPI cards ─────────────────────────────────────────── */}
+        <DashboardSummaryCards summary={data?.summary} loading={loading} />
 
-        {/* ── Live chairs — 5 across on all screens ─────────────────────────── */}
+        {/* ── 3. Current shift card ────────────────────────────────────────── */}
+        <ShiftSummary currentShift={currentShift} openShift={openShift} />
+
+        {/* ── 4. Alerts ────────────────────────────────────────────────────── */}
+        <AlertsSection
+          offlineChairs={offlineChairs}
+          outOfRuleSessions={outOfRuleSessions}
+          noOpenShift={!hasOpenShift}
+          hasSessions={activeSessions > 0}
+        />
+
+        {/* API error banner */}
+        {error && (
+          <div className="flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3">
+            <WifiOff className="h-4 w-4 shrink-0 text-red-400" />
+            <span className="text-sm text-red-400">Erreur de chargement des données : {error}</span>
+          </div>
+        )}
+
+        {/* ── 5. Filters ───────────────────────────────────────────────────── */}
+        <DashboardFilters
+          filters={filters}
+          filterOptions={data?.filterOptions}
+          onChange={setFilters}
+          onReset={reset}
+          loading={loading}
+        />
+
+        {/* ── 6. Live chairs ──────────────────────────────────────────────── */}
         <div>
-          <p className="mb-1 hidden text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-600 md:block md:text-[10px]">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-600">
             Fauteuils en temps réel
           </p>
           {state.chairs.length === 0 ? (
-            <p className="rounded-xl border border-slate-700 bg-slate-800/40 py-3 text-center text-xs text-slate-600 md:py-5 md:text-sm">
+            <p className="rounded-2xl border border-slate-700 bg-slate-800/40 py-6 text-center text-sm text-slate-600">
               Aucun fauteuil configuré.
             </p>
           ) : (
-            <div className="grid grid-cols-5 gap-1 md:gap-2">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
               {state.chairs.map((chair) => (
                 <ChairCard key={chair.id} chair={chair} compact />
               ))}
@@ -113,42 +167,24 @@ function DashboardContent() {
           )}
         </div>
 
-        {/* API error banner */}
-        {error && (
-          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400 md:px-4 md:py-3 md:text-sm">
-            Erreur de chargement des données : {error}
-          </div>
-        )}
+        {/* ── 7. Revenue chart ────────────────────────────────────────────── */}
+        <RevenueChart data={data?.revenueChart} loading={loading} />
 
-        {/* ── KPI summary cards ──────────────────────────────────────────────── */}
-        <DashboardSummaryCards summary={data?.summary} loading={loading} />
+        {/* ── 8. Primes & Recettes ────────────────────────────────────────── */}
+        <PrimeRevenueCard data={data?.primeRevenue} loading={loading} />
 
-        {/* ── Revenue chart + Prime breakdown ───────────────────────────────── */}
-        <div className="grid grid-cols-1 gap-1.5 md:gap-3 lg:grid-cols-5">
-          <div className="lg:col-span-3">
-            <RevenueChart data={data?.revenueChart} loading={loading} />
-          </div>
-          <div className="lg:col-span-2">
-            <PrimeRevenueCard data={data?.primeRevenue} loading={loading} />
-          </div>
-        </div>
+        {/* ── 9. Totaux par fauteuil ──────────────────────────────────────── */}
+        <TotalsByChairTable data={data?.totalsByChair} loading={loading} />
 
-        {/* ── Totals by chair + Recent sessions ─────────────────────────────── */}
-        <div className="grid grid-cols-1 gap-1.5 md:gap-3 lg:grid-cols-5">
-          <div className="lg:col-span-2">
-            <TotalsByChairTable data={data?.totalsByChair} loading={loading} />
-          </div>
-          <div className="lg:col-span-3">
-            <RecentSessionsTable
-              sessions={data?.recentSessions}
-              loading={loading}
-              onCorrect={refetch}
-            />
-          </div>
-        </div>
+        {/* ── 10. Recent sessions ─────────────────────────────────────────── */}
+        <RecentSessionsTable
+          sessions={data?.recentSessions}
+          loading={loading}
+          onCorrect={refetch}
+        />
 
         {lastUpdated && (
-          <p className="text-center text-[10px] text-slate-700 md:text-[11px]">
+          <p className="pb-4 text-center text-[11px] text-slate-700">
             Mis à jour :{' '}
             {lastUpdated.toLocaleTimeString('fr-FR', {
               hour:   '2-digit',

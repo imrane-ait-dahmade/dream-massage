@@ -42,7 +42,7 @@ const BILLING_BADGE: Record<string, { label: string; cls: string }> = {
 
 function StatusBadge({ status }: { status: string }) {
   return (
-    <span className={`inline-flex rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${STATUS_CLASS[status] ?? 'bg-slate-600/40 text-slate-400'}`}>
+    <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${STATUS_CLASS[status] ?? 'bg-slate-600/40 text-slate-400'}`}>
       {STATUS_LABEL[status] ?? status}
     </span>
   );
@@ -51,7 +51,7 @@ function StatusBadge({ status }: { status: string }) {
 function BillingBadge({ billingStatus, anomalyType }: { billingStatus: string; anomalyType: string | null }) {
   if (anomalyType) {
     return (
-      <span className="inline-flex rounded-full bg-orange-500/20 px-1.5 py-0.5 text-[9px] font-semibold text-orange-400">
+      <span className="inline-flex rounded-full bg-orange-500/20 px-2 py-0.5 text-[10px] font-semibold text-orange-400">
         {ANOMALY_LABEL[anomalyType] ?? 'ANOMALIE'}
       </span>
     );
@@ -59,7 +59,7 @@ function BillingBadge({ billingStatus, anomalyType }: { billingStatus: string; a
   const b = BILLING_BADGE[billingStatus];
   if (!b) return null;
   return (
-    <span className={`inline-flex rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${b.cls}`}>
+    <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${b.cls}`}>
       {b.label}
     </span>
   );
@@ -67,7 +67,7 @@ function BillingBadge({ billingStatus, anomalyType }: { billingStatus: string; a
 
 // ── Column headers ─────────────────────────────────────────────────────────────
 
-const COLS = ['Fauteuil', 'Fille', 'Shift', 'Début', 'Fin', 'Durée', 'Classe', 'Prix', 'Statut', ''];
+const COLS = ['Fauteuil', 'Fille', 'Shift', 'Début', 'Fin', 'Durée', 'Plan', 'Prix', 'Statut', ''];
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -90,8 +90,9 @@ export function RecentSessionsTable({ sessions, loading, onCorrect }: Props) {
           <p className="mt-0.5 text-xs text-slate-500">20 dernières — tous fauteuils</p>
         </div>
 
+        {/* Horizontal scroll — allow full vertical expansion (no max-height cap) */}
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[860px] text-sm">
+          <table className="w-full min-w-[720px] text-sm">
             <thead>
               <tr className="border-b border-slate-700 bg-slate-700/30">
                 {COLS.map((c) => (
@@ -126,7 +127,7 @@ export function RecentSessionsTable({ sessions, loading, onCorrect }: Props) {
               {/* Data rows */}
               {sessions?.map((s) => (
                 <tr key={s.id} className="transition-colors hover:bg-slate-700/20">
-                  <td className="px-3 py-2.5 font-semibold text-white">{s.chairName}</td>
+                  <td className="px-3 py-2.5 text-sm font-semibold text-white">{s.chairName}</td>
                   <td className="px-3 py-2.5 text-xs text-slate-400">
                     {s.staffMemberName ?? <span className="text-slate-600">—</span>}
                   </td>
@@ -144,7 +145,7 @@ export function RecentSessionsTable({ sessions, loading, onCorrect }: Props) {
                   {/* Prix: show finalAmount + billing/anomaly badge */}
                   <td className="px-3 py-2.5">
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-xs font-semibold text-white">
+                      <span className="text-sm font-semibold text-white">
                         {(s.finalAmount ?? s.amount) > 0 ? formatDH(s.finalAmount ?? s.amount) : '—'}
                       </span>
                       <BillingBadge billingStatus={s.billingStatus} anomalyType={s.anomalyType} />
@@ -161,8 +162,8 @@ export function RecentSessionsTable({ sessions, loading, onCorrect }: Props) {
                         title="Corriger le prix"
                         className="flex items-center gap-1 rounded-lg border border-slate-600 px-2 py-1 text-[10px] font-semibold text-slate-400 hover:border-blue-500/50 hover:bg-blue-500/10 hover:text-blue-300"
                       >
-                        <Pencil className="h-2.5 w-2.5" />
-                        Corriger
+                        <Pencil className="h-3 w-3" />
+                        <span className="hidden sm:block">Corriger</span>
                       </button>
                     )}
                   </td>

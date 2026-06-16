@@ -50,12 +50,12 @@ export function RevenueChart({ data, loading }: Props) {
   const hasData = chartData.some((d) => d.revenue > 0);
 
   return (
-    <div className="rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg">
-      {/* Header with summary numbers */}
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-        <h2 className="text-sm font-bold text-white">Statistiques de revenu</h2>
+    <div className="rounded-2xl border border-slate-700 bg-slate-800 p-2 shadow-lg md:p-5">
+      {/* Header */}
+      <div className="mb-1.5 flex flex-wrap items-start justify-between gap-1 md:mb-4 md:gap-3">
+        <h2 className="text-xs font-bold text-white md:text-sm">Revenus</h2>
         {data && (
-          <div className="flex gap-6">
+          <div className="hidden gap-6 md:flex">
             <div>
               <p className="text-[11px] uppercase tracking-wide text-slate-500">Revenu total</p>
               <p className="mt-0.5 text-lg font-bold text-white">
@@ -69,10 +69,17 @@ export function RevenueChart({ data, loading }: Props) {
             </div>
           </div>
         )}
+        {/* Mobile-only compact numbers */}
+        {data && (
+          <div className="flex gap-3 md:hidden">
+            <span className="text-[10px] font-bold text-white">{data.totalRevenue.toFixed(0)} <span className="font-normal text-slate-500">DH</span></span>
+            <span className="text-[10px] text-slate-500">{data.totalSessions} sess.</span>
+          </div>
+        )}
       </div>
 
       {/* Chart area */}
-      <div className="h-44">
+      <div className="h-[200px] md:h-52">
         {loading && !data && (
           <div className="flex h-full items-center justify-center">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-600 border-t-blue-400" />
