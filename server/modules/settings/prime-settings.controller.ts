@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
-import { z } from 'zod';
 import { primeSettingsService } from './prime-settings.service';
 import {
   shiftTypeCreateSchema,
@@ -10,38 +9,10 @@ import {
   targetBonusRuleCreateSchema,
   targetBonusRuleUpdateSchema,
 } from './prime-settings.types';
+import { parseBody, handleError } from '../../utils/controller-helpers';
 import type { AuthRequest } from '../../middleware/auth.middleware';
 
 const router = Router();
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
-
-function parseBody<S extends z.ZodTypeAny>(
-  schema: S,
-  body: unknown,
-): { ok: true; data: z.output<S> } | { ok: false; error: string } {
-  const result = schema.safeParse(body);
-  if (result.success) return { ok: true, data: result.data as z.output<S> };
-  const msg = result.error.issues
-    .map((i) => (i.path.length ? `${i.path.join('.')}: ${i.message}` : i.message))
-    .join('; ');
-  return { ok: false, error: msg };
-}
-
-function handleError(res: Response, err: unknown, fallbackMsg: string): void {
-  if (err instanceof Error) {
-    const status = (err as NodeJS.ErrnoException & { status?: number }).status;
-    if (status === 404 || err.message.toLowerCase().includes('not found')) {
-      res.status(404).json({ ok: false, error: err.message });
-      return;
-    }
-    if (status === 409 || err.message.toLowerCase().includes('already exists')) {
-      res.status(409).json({ ok: false, error: err.message });
-      return;
-    }
-  }
-  res.status(500).json({ ok: false, error: fallbackMsg, detail: String(err) });
-}
 
 function userId(req: Request): string | undefined {
   return (req as AuthRequest).user?.id;

@@ -66,6 +66,7 @@ export function SessionSettingsPanel() {
   const [graceSeconds,                 setGraceSeconds]                 = useState(120);
   const [roundingMode,                 setRoundingMode]                 = useState<SessionSettings['roundingMode']>('NEXT_PLAN');
   const [overtimePolicy,               setOvertimePolicy]               = useState<SessionSettings['overtimePolicy']>('ANOMALY');
+  const [extraMinutePrice,             setExtraMinutePrice]             = useState<string>('');
   const [minimumPlanId,                setMinimumPlanId]                = useState('');
   const [allowManualSessionCorrection, setAllowManualSessionCorrection] = useState(true);
   const [correctionReasonRequired,     setCorrectionReasonRequired]     = useState(true);
@@ -81,6 +82,7 @@ export function SessionSettingsPanel() {
       setGraceSeconds(s.graceSeconds);
       setRoundingMode(s.roundingMode);
       setOvertimePolicy(s.overtimePolicy);
+      setExtraMinutePrice(s.extraMinutePrice != null ? String(s.extraMinutePrice) : '');
       setMinimumPlanId(s.minimumPlanId ?? '');
       setAllowManualSessionCorrection(s.allowManualSessionCorrection);
       setCorrectionReasonRequired(s.correctionReasonRequired);
@@ -98,11 +100,18 @@ export function SessionSettingsPanel() {
     setError(null);
     setSaved(false);
     try {
+      const parsedExtraPrice = extraMinutePrice.trim() === '' ? null : parseFloat(extraMinutePrice);
+      if (overtimePolicy === 'EXTRA_MINUTE' && (parsedExtraPrice === null || isNaN(parsedExtraPrice) || parsedExtraPrice < 0)) {
+        setError('Prix par minute supplémentaire requis pour la politique EXTRA_MINUTE');
+        setSaving(false);
+        return;
+      }
       const updated = await updateSessionSettings({
         minimumBillableSeconds,
         graceSeconds,
         roundingMode,
         overtimePolicy,
+        extraMinutePrice: parsedExtraPrice,
         minimumPlanId: minimumPlanId || null,
         allowManualSessionCorrection,
         correctionReasonRequired,
@@ -203,6 +212,22 @@ export function SessionSettingsPanel() {
             <option value="EXTRA_MINUTE">Facturer par minute supplémentaire</option>
           </select>
         </Field>
+
+        {overtimePolicy === 'EXTRA_MINUTE' && (
+          <Field
+            label="Prix par minute supplémentaire (MAD)"
+            hint="Appliqué uniquement quand la session dépasse tous les plans."
+          >
+            <input
+              type="number"
+              min="0"
+              step="0.5"
+              value={extraMinutePrice}
+              onChange={(e) => setExtraMinutePrice(e.target.value)}
+              className={INPUT_CLS}
+            />
+          </Field>
+        )}
 
         <Field label="Plan minimum (optionnel)">
           <select

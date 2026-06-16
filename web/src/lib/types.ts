@@ -414,6 +414,7 @@ export interface SessionSettings {
   graceSeconds: number;
   roundingMode: 'NEAREST_PLAN' | 'NEXT_PLAN' | 'EXACT_MINUTES';
   overtimePolicy: 'NEXT_PLAN' | 'EXTRA_MINUTE' | 'ANOMALY';
+  extraMinutePrice: number | null;
   minimumPlanId: string | null;
   minimumPlan: { id: string; name: string; durationSeconds: number; priceAmount: number } | null;
   allowManualSessionCorrection: boolean;

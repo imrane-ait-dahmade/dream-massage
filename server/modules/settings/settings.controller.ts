@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
-import { z } from 'zod';
 import { settingsService } from './settings.service';
 import {
   chairUpdateSchema,
@@ -11,6 +10,8 @@ import {
   staffCreateSchema,
   staffUpdateSchema,
 } from './settings.types';
+import { parseBody } from '../../utils/controller-helpers';
+import type { AuthRequest } from '../../middleware/auth.middleware';
 import primeSettingsRouter from './prime-settings.controller';
 import shiftSettingsRouter from './shift-settings.controller';
 import sessionSettingsRouter from './session-settings.controller';
@@ -22,18 +23,8 @@ router.use('/prime',   primeSettingsRouter);
 router.use('/shifts',  shiftSettingsRouter);
 router.use('/session', sessionSettingsRouter);
 
-// ── Zod parse helper ───────────────────────────────────────────────────────────
-
-function parseBody<S extends z.ZodTypeAny>(
-  schema: S,
-  body: unknown,
-): { ok: true; data: z.output<S> } | { ok: false; error: string } {
-  const result = schema.safeParse(body);
-  if (result.success) return { ok: true, data: result.data as z.output<S> };
-  const msg = result.error.issues
-    .map((i) => (i.path.length ? `${i.path.join('.')}: ${i.message}` : i.message))
-    .join('; ');
-  return { ok: false, error: msg };
+function userId(req: Request): string | undefined {
+  return (req as AuthRequest).user?.id;
 }
 
 // ── A. Chair settings ──────────────────────────────────────────────────────────
@@ -61,7 +52,7 @@ router.patch('/chairs/:chairId', (req: Request, res: Response) => {
   }
 
   settingsService
-    .updateChair(req.params.chairId, parsed.data)
+    .updateChair(req.params.chairId, parsed.data, userId(req))
     .then((result) => {
       if (!result) {
         res.status(404).json({ ok: false, error: 'Chair not found' });
@@ -83,7 +74,7 @@ router.patch('/chairs/:chairId/detection-config', (req: Request, res: Response) 
   }
 
   settingsService
-    .updateDetectionConfig(req.params.chairId, parsed.data)
+    .updateDetectionConfig(req.params.chairId, parsed.data, userId(req))
     .then((result) => {
       if (!result) {
         res.status(404).json({ ok: false, error: 'Chair not found' });
@@ -121,7 +112,7 @@ router.post('/pricing/plans', (req: Request, res: Response) => {
   }
 
   settingsService
-    .createPricingPlan(parsed.data)
+    .createPricingPlan(parsed.data, userId(req))
     .then((plan) => res.status(201).json(plan))
     .catch((err: unknown) =>
       res
@@ -143,7 +134,7 @@ router.patch('/pricing/plans/:planId', (req: Request, res: Response) => {
   }
 
   settingsService
-    .updatePricingPlan(req.params.planId, parsed.data)
+    .updatePricingPlan(req.params.planId, parsed.data, userId(req))
     .then((result) => {
       if (!result) {
         res.status(404).json({ ok: false, error: 'Pricing plan not found' });
@@ -187,7 +178,7 @@ router.patch('/pricing/rule', (req: Request, res: Response) => {
   }
 
   settingsService
-    .upsertPricingRule(parsed.data)
+    .upsertPricingRule(parsed.data, userId(req))
     .then((rule) => res.json(rule))
     .catch((err: unknown) =>
       res
@@ -219,7 +210,7 @@ router.post('/staff', (req: Request, res: Response) => {
   }
 
   settingsService
-    .createStaff(parsed.data)
+    .createStaff(parsed.data, userId(req))
     .then((staff) => res.status(201).json(staff))
     .catch((err: unknown) =>
       res
@@ -241,7 +232,7 @@ router.patch('/staff/:staffMemberId', (req: Request, res: Response) => {
   }
 
   settingsService
-    .updateStaff(req.params.staffMemberId, parsed.data)
+    .updateStaff(req.params.staffMemberId, parsed.data, userId(req))
     .then((result) => {
       if (!result) {
         res.status(404).json({ ok: false, error: 'Staff member not found' });

@@ -27,9 +27,10 @@ interface AuditParams {
 // ── Service ────────────────────────────────────────────────────────────────────
 
 class SettingsService {
-  // TODO: Replace with authenticated user from JWT when auth is implemented.
-  // Until then, use the first OWNER user as the audit actor.
-  private async resolveAuditUserId(): Promise<string | null> {
+  // Prefer the authenticated userId from req.user; fall back to first OWNER for
+  // legacy callers that don't yet propagate the request context.
+  private async resolveAuditUserId(userId?: string): Promise<string | null> {
+    if (userId) return userId;
     try {
       const owner = await prisma.user.findFirst({
         where: { role: 'OWNER', isActive: true },
@@ -42,12 +43,12 @@ class SettingsService {
     }
   }
 
-  private async audit(params: AuditParams): Promise<void> {
+  private async audit(params: AuditParams, userId?: string): Promise<void> {
     try {
-      const userId = await this.resolveAuditUserId();
+      const userId2 = await this.resolveAuditUserId(userId);
       await prisma.settingsAuditLog.create({
         data: {
-          userId,
+          userId: userId2,
           entityType: params.entityType,
           entityId: params.entityId,
           action: params.action,
@@ -107,7 +108,7 @@ class SettingsService {
     };
   }
 
-  async updateChair(chairId: string, input: ChairUpdateInput) {
+  async updateChair(chairId: string, input: ChairUpdateInput, userId?: string) {
     const chair = await prisma.chair.findUnique({ where: { id: chairId } });
     if (!chair) return null;
 
@@ -127,7 +128,7 @@ class SettingsService {
       action: 'UPDATE',
       oldValue,
       newValue: { displayName: updated.displayName, isEnabled: updated.isEnabled },
-    });
+    }, userId);
 
     return {
       id: updated.id,
@@ -137,7 +138,7 @@ class SettingsService {
     };
   }
 
-  async updateDetectionConfig(chairId: string, input: DetectionConfigInput) {
+  async updateDetectionConfig(chairId: string, input: DetectionConfigInput, userId?: string) {
     const chair = await prisma.chair.findUnique({
       where: { id: chairId },
       include: {
@@ -202,7 +203,7 @@ class SettingsService {
         startThresholdWatts: newConfig.startThresholdWatts,
         stopThresholdWatts: newConfig.stopThresholdWatts,
       },
-    });
+    }, userId);
 
     return {
       id: newConfig.id,
@@ -240,7 +241,7 @@ class SettingsService {
     };
   }
 
-  async createPricingPlan(input: PricingPlanCreateInput) {
+  async createPricingPlan(input: PricingPlanCreateInput, userId?: string) {
     const plan = await prisma.pricingPlan.create({
       data: {
         name: input.name,
@@ -261,7 +262,7 @@ class SettingsService {
         durationSeconds: plan.durationSeconds,
         priceAmount: Number(plan.priceAmount),
       },
-    });
+    }, userId);
 
     return {
       id: plan.id,
@@ -275,7 +276,7 @@ class SettingsService {
     };
   }
 
-  async updatePricingPlan(planId: string, input: PricingPlanUpdateInput) {
+  async updatePricingPlan(planId: string, input: PricingPlanUpdateInput, userId?: string) {
     const existing = await prisma.pricingPlan.findUnique({ where: { id: planId } });
     if (!existing) return null;
 
@@ -309,7 +310,7 @@ class SettingsService {
         priceAmount: Number(plan.priceAmount),
         isActive: plan.isActive,
       },
-    });
+    }, userId);
 
     return {
       id: plan.id,
@@ -363,7 +364,7 @@ class SettingsService {
     return this.mapPricingRule(rule);
   }
 
-  async upsertPricingRule(input: PricingRuleUpdateInput) {
+  async upsertPricingRule(input: PricingRuleUpdateInput, userId?: string) {
     const activeRules = await prisma.pricingRule.findMany({
       where: { isActive: true },
       orderBy: { createdAt: 'desc' },
@@ -426,7 +427,7 @@ class SettingsService {
           minimumBillableSeconds: input.minimumBillableSeconds ?? existing.minimumBillableSeconds,
           overtimePolicy:         input.overtimePolicy         ?? existing.overtimePolicy,
         },
-      });
+      }, userId);
     }
 
     // Re-fetch with join for consistent response shape
@@ -452,7 +453,7 @@ class SettingsService {
     };
   }
 
-  async createStaff(input: StaffCreateInput) {
+  async createStaff(input: StaffCreateInput, userId?: string) {
     const staff = await prisma.staffMember.create({
       data: {
         name: input.name,
@@ -466,7 +467,7 @@ class SettingsService {
       entityId: staff.id,
       action: 'CREATE',
       newValue: { name: staff.name, phone: staff.phone },
-    });
+    }, userId);
 
     return {
       id: staff.id,
@@ -478,7 +479,7 @@ class SettingsService {
     };
   }
 
-  async updateStaff(staffMemberId: string, input: StaffUpdateInput) {
+  async updateStaff(staffMemberId: string, input: StaffUpdateInput, userId?: string) {
     const existing = await prisma.staffMember.findUnique({ where: { id: staffMemberId } });
     if (!existing) return null;
 
@@ -499,7 +500,7 @@ class SettingsService {
       action: 'UPDATE',
       oldValue,
       newValue: { name: staff.name, phone: staff.phone, isActive: staff.isActive },
-    });
+    }, userId);
 
     return {
       id: staff.id,

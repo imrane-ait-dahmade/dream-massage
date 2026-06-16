@@ -4,17 +4,15 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, RefreshCw, Settings, LogOut } from 'lucide-react';
-import type { SettingsChair, PricingPlan, PricingRule, StaffMember, SystemSettings } from '@/lib/types';
+import type { SettingsChair, PricingPlan, StaffMember, SystemSettings } from '@/lib/types';
 import {
   getSettingsChairs,
   getPricingPlans,
-  getPricingRule,
   getStaffMembers,
   getSystemSettings,
 } from '@/lib/api';
 import { ChairSettingsCard } from '@/components/settings/ChairSettingsCard';
 import { PricingPlansSettings } from '@/components/settings/PricingPlansSettings';
-import { PricingRuleSettings } from '@/components/settings/PricingRuleSettings';
 import { StaffSettings } from '@/components/settings/StaffSettings';
 import { SystemSettingsPanel } from '@/components/settings/SystemSettings';
 import { PrimeBonusSettings } from '@/components/settings/PrimeBonusSettings';
@@ -25,26 +23,24 @@ import { logout } from '@/lib/api';
 
 // ── Tabs ───────────────────────────────────────────────────────────────────────
 
-type Tab = 'fauteuils' | 'prix' | 'regles' | 'staff' | 'systeme' | 'primes' | 'planning' | 'sessions';
+type Tab = 'fauteuils' | 'prix' | 'staff' | 'systeme' | 'primes' | 'planning' | 'sessions';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'fauteuils', label: 'Fauteuils' },
-  { id: 'prix', label: 'Prix & plans' },
-  { id: 'regles', label: 'Règles' },
-  { id: 'staff', label: 'Staff' },
-  { id: 'systeme', label: 'Système' },
-  { id: 'primes', label: 'Primes & Bonus' },
-  { id: 'planning', label: 'Shifts & Planning' },
-  { id: 'sessions', label: 'Sessions' },
+  { id: 'prix',      label: 'Prix & plans' },
+  { id: 'staff',     label: 'Staff' },
+  { id: 'systeme',   label: 'Système' },
+  { id: 'primes',    label: 'Primes & Bonus' },
+  { id: 'planning',  label: 'Shifts & Planning' },
+  { id: 'sessions',  label: 'Sessions' },
 ];
 
 // ── Data ───────────────────────────────────────────────────────────────────────
 
 interface SettingsData {
   chairs: SettingsChair[];
-  plans: PricingPlan[];
-  rule: PricingRule | null;
-  staff: StaffMember[];
+  plans:  PricingPlan[];
+  staff:  StaffMember[];
   system: SystemSettings;
 }
 
@@ -165,18 +161,16 @@ function SettingsContent() {
     setLoading(true);
     setError(null);
     try {
-      const [chairsRes, plansRes, ruleRes, staffRes, systemRes] = await Promise.all([
+      const [chairsRes, plansRes, staffRes, systemRes] = await Promise.all([
         getSettingsChairs(),
         getPricingPlans(),
-        getPricingRule(),
         getStaffMembers(),
         getSystemSettings(),
       ]);
       setData({
         chairs: chairsRes.items,
-        plans: plansRes.items,
-        rule: 'rule' in ruleRes && ruleRes.rule === null ? null : (ruleRes as PricingRule),
-        staff: staffRes.items,
+        plans:  plansRes.items,
+        staff:  staffRes.items,
         system: systemRes,
       });
     } catch (e) {
@@ -225,15 +219,6 @@ function SettingsContent() {
         {activeTab === 'prix' && (
           <Section title="Plans tarifaires">
             <PricingPlansSettings plans={data.plans} onSaved={() => void load()} />
-          </Section>
-        )}
-
-        {/* ── Règles ─────────────────────────────────────────────────────────── */}
-        {activeTab === 'regles' && (
-          <Section title="Règles de calcul">
-            <div className="rounded-2xl border border-stone-100 bg-white p-4 shadow-sm">
-              <PricingRuleSettings rule={data.rule} plans={data.plans} onSaved={() => void load()} />
-            </div>
           </Section>
         )}
 

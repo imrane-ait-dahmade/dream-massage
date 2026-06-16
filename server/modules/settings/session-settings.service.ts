@@ -28,6 +28,7 @@ class SessionSettingsService {
       graceSeconds:                 rule?.graceSeconds           ?? 120,
       roundingMode:                 rule?.roundingMode           ?? 'NEXT_PLAN',
       overtimePolicy:               rule?.overtimePolicy         ?? 'ANOMALY',
+      extraMinutePrice:             rule?.extraMinutePrice != null ? Number(rule.extraMinutePrice) : null,
       minimumPlanId:                rule?.minimumPlanId          ?? null,
       minimumPlan: rule?.minimumPlan
         ? {
@@ -47,6 +48,7 @@ class SessionSettingsService {
     graceSeconds?:                 number;
     roundingMode?:                 string;
     overtimePolicy?:               string;
+    extraMinutePrice?:             number | null;
     minimumPlanId?:                string | null;
     allowManualSessionCorrection?: boolean;
     correctionReasonRequired?:     boolean;
@@ -57,6 +59,7 @@ class SessionSettingsService {
     if (input.graceSeconds           !== undefined) pricingInput.graceSeconds           = input.graceSeconds;
     if (input.roundingMode           !== undefined) pricingInput.roundingMode           = input.roundingMode as PricingRuleUpdateInput['roundingMode'];
     if (input.overtimePolicy         !== undefined) pricingInput.overtimePolicy         = input.overtimePolicy as PricingRuleUpdateInput['overtimePolicy'];
+    if (input.extraMinutePrice       !== undefined) pricingInput.extraMinutePrice       = input.extraMinutePrice;
     if (input.minimumPlanId          !== undefined) pricingInput.minimumPlanId          = input.minimumPlanId;
 
     if (Object.keys(pricingInput).length > 0) {

@@ -11,6 +11,7 @@ const updateSchema = z
     graceSeconds:                 z.number().int().nonnegative().optional(),
     roundingMode:                 z.enum(['NEAREST_PLAN', 'NEXT_PLAN', 'EXACT_MINUTES']).optional(),
     overtimePolicy:               z.enum(['NEXT_PLAN', 'EXTRA_MINUTE', 'ANOMALY']).optional(),
+    extraMinutePrice:             z.number().nonnegative().nullable().optional(),
     minimumPlanId:                z.string().uuid().nullable().optional(),
     allowManualSessionCorrection: z.boolean().optional(),
     correctionReasonRequired:     z.boolean().optional(),
