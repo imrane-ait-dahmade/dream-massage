@@ -75,12 +75,12 @@ function DashboardContent() {
         onLogout={() => void handleLogout()}
       />
 
-      <main className="mx-auto max-w-6xl space-y-3 px-4 py-3 pb-8">
+      <main className="mx-auto max-w-6xl space-y-1.5 px-2 py-2 pb-3 md:space-y-3 md:px-4 md:py-3 md:pb-8">
         {/* Connection warning */}
         <ConnectionStatusBar status={connStatus} lastUpdated={lastUpdated} />
 
         {/* ── Top strip: shift status + filters ────────────────────────────── */}
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
+        <div className="flex flex-col gap-1.5 lg:flex-row lg:items-start lg:gap-3">
           <div className="shrink-0 lg:w-64">
             <ShiftSummary openShift={openShift} />
           </div>
@@ -95,17 +95,17 @@ function DashboardContent() {
           </div>
         </div>
 
-        {/* ── Live chairs — compact horizontal row ──────────────────────────── */}
+        {/* ── Live chairs — 5 across on all screens ─────────────────────────── */}
         <div>
-          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
+          <p className="mb-1 hidden text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-600 md:block md:text-[10px]">
             Fauteuils en temps réel
           </p>
           {state.chairs.length === 0 ? (
-            <p className="rounded-xl border border-slate-700 bg-slate-800/40 py-5 text-center text-sm text-slate-600">
+            <p className="rounded-xl border border-slate-700 bg-slate-800/40 py-3 text-center text-xs text-slate-600 md:py-5 md:text-sm">
               Aucun fauteuil configuré.
             </p>
           ) : (
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
+            <div className="grid grid-cols-5 gap-1 md:gap-2">
               {state.chairs.map((chair) => (
                 <ChairCard key={chair.id} chair={chair} compact />
               ))}
@@ -115,7 +115,7 @@ function DashboardContent() {
 
         {/* API error banner */}
         {error && (
-          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400 md:px-4 md:py-3 md:text-sm">
             Erreur de chargement des données : {error}
           </div>
         )}
@@ -124,7 +124,7 @@ function DashboardContent() {
         <DashboardSummaryCards summary={data?.summary} loading={loading} />
 
         {/* ── Revenue chart + Prime breakdown ───────────────────────────────── */}
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-1.5 md:gap-3 lg:grid-cols-5">
           <div className="lg:col-span-3">
             <RevenueChart data={data?.revenueChart} loading={loading} />
           </div>
@@ -134,7 +134,7 @@ function DashboardContent() {
         </div>
 
         {/* ── Totals by chair + Recent sessions ─────────────────────────────── */}
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-1.5 md:gap-3 lg:grid-cols-5">
           <div className="lg:col-span-2">
             <TotalsByChairTable data={data?.totalsByChair} loading={loading} />
           </div>
@@ -148,7 +148,7 @@ function DashboardContent() {
         </div>
 
         {lastUpdated && (
-          <p className="text-center text-[11px] text-slate-700">
+          <p className="text-center text-[10px] text-slate-700 md:text-[11px]">
             Mis à jour :{' '}
             {lastUpdated.toLocaleTimeString('fr-FR', {
               hour:   '2-digit',

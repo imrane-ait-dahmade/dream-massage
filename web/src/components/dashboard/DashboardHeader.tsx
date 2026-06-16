@@ -17,15 +17,15 @@ export function DashboardHeader({ user, connStatus, lastUpdated, onLogout }: Pro
     <>
       {/* Sticky navbar */}
       <header className="sticky top-0 z-20 border-b border-white/10 bg-slate-900/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-2 py-1.5 md:gap-3 md:px-4 md:py-3">
           {/* Logo + title */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="Dream Care" className="h-8 w-auto" />
-            <div className="flex items-baseline gap-2">
-              <span className="text-base font-bold text-white">Dream Care</span>
+            <img src="/logo.png" alt="Dream Care" className="h-7 w-auto md:h-8" />
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-sm font-bold text-white md:text-base">Dream Care</span>
               {user && (
-                <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-300 ring-1 ring-blue-500/30">
+                <span className="hidden rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-300 ring-1 ring-blue-500/30 md:inline-flex">
                   {user.role === 'OWNER' ? 'Owner' : 'Admin'}
                 </span>
               )}
@@ -33,10 +33,10 @@ export function DashboardHeader({ user, connStatus, lastUpdated, onLogout }: Pro
           </div>
 
           {/* Right actions */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 md:gap-1">
             <Link
               href="/settings"
-              className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
+              className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white/10 hover:text-white md:p-2"
               title="Paramétrages"
             >
               <Settings className="h-4 w-4" />
@@ -46,7 +46,7 @@ export function DashboardHeader({ user, connStatus, lastUpdated, onLogout }: Pro
 
             <button
               onClick={onLogout}
-              className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
+              className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white/10 hover:text-white md:p-2"
               title="Déconnexion"
             >
               <LogOut className="h-4 w-4" />
