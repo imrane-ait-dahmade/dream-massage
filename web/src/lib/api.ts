@@ -31,6 +31,32 @@ if (process.env.NODE_ENV === 'development') {
   console.log('[api] Base URL =', BASE);
 }
 
+// ── Bearer token storage (Safari/iOS cross-origin fallback) ────────────────────
+// Cookie auth is preferred; when Safari blocks the cross-site httpOnly cookie
+// we fall back to a localStorage Bearer token. The backend accepts both.
+
+const TOKEN_KEY = 'dream_care_token';
+
+function getStoredToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function storeToken(token: string): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function clearToken(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(TOKEN_KEY);
+}
+
+function authHeaders(): Record<string, string> {
+  const token = getStoredToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export async function getDashboardState(): Promise<DashboardState> {
   if (process.env.NODE_ENV === 'development') {
     console.log('[api] GET', `${BASE}/api/dashboard/state`);
@@ -38,6 +64,7 @@ export async function getDashboardState(): Promise<DashboardState> {
   const res = await fetch(`${BASE}/api/dashboard/state`, {
     cache: 'no-store',
     credentials: 'include',
+    headers: authHeaders(),
     signal: AbortSignal.timeout(6000),
   });
   if (res.status === 401) {
@@ -53,7 +80,7 @@ export async function getDashboardState(): Promise<DashboardState> {
 export async function getChairOverview(chairIdOrName: string): Promise<ChairOverview> {
   const res = await fetch(
     `${BASE}/api/chairs/${encodeURIComponent(chairIdOrName)}/overview`,
-    { cache: 'no-store', credentials: 'include', signal: AbortSignal.timeout(6000) },
+    { cache: 'no-store', credentials: 'include', headers: authHeaders(), signal: AbortSignal.timeout(6000) },
   );
   if (res.status === 401) {
     if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
@@ -83,8 +110,10 @@ export async function login(email: string, password: string): Promise<AuthUser> 
     body: JSON.stringify({ email, password }),
     signal: AbortSignal.timeout(8000),
   });
-  const body = (await res.json()) as { ok: boolean; user?: AuthUser; error?: string };
+  const body = (await res.json()) as { ok: boolean; token?: string; user?: AuthUser; error?: string };
   if (!res.ok || !body.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
+  // Store token for Bearer fallback (Safari cross-origin — cookie may be blocked)
+  if (body.token) storeToken(body.token);
   return body.user!;
 }
 
@@ -96,18 +125,22 @@ export async function logout(): Promise<void> {
   await fetch(`${BASE}/api/auth/logout`, {
     method: 'POST',
     credentials: 'include',
+    headers: authHeaders(),
     signal: AbortSignal.timeout(8000),
   });
+  clearToken();
 }
 
 // ── Settings helpers ───────────────────────────────────────────────────────────
 
 async function apiRequest<T>(url: string, init?: RequestInit): Promise<T> {
+  const callerHeaders = (init?.headers ?? {}) as Record<string, string>;
   const res = await fetch(url, {
     cache: 'no-store',
     credentials: 'include',
     signal: AbortSignal.timeout(8000),
     ...init,
+    headers: { ...authHeaders(), ...callerHeaders },
   });
   if (res.status === 401) {
     if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
@@ -502,7 +535,7 @@ export async function getChairSessions(
   if (params.limit !== undefined) qs.set('limit', String(params.limit));
   if (params.status) qs.set('status', params.status);
   const url = `${BASE}/api/chairs/${encodeURIComponent(chairIdOrName)}/sessions?${qs}`;
-  const res = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(6000) });
+  const res = await fetch(url, { cache: 'no-store', credentials: 'include', headers: authHeaders(), signal: AbortSignal.timeout(6000) });
   if (res.status === 404) throw new Error('CHAIR_NOT_FOUND');
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json() as Promise<ChairSessionsResponse>;

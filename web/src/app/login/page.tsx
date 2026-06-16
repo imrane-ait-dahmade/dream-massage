@@ -17,17 +17,12 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
-      // Verify the cookie was actually stored by the browser before navigating.
-      // On mobile or in cross-origin deployments, SameSite/Secure mismatches can
-      // cause the cookie to be silently dropped — without this check the user just
-      // bounces back to /login with no explanation.
+      // Verify session is reachable before navigating — login() already stored
+      // the Bearer token so this request succeeds even when cookies are blocked.
       try {
         await getMe();
       } catch {
-        setError(
-          'Connexion réussie mais la session n\'a pas pu être sauvegardée. ' +
-          'Vérifiez que les cookies sont activés et que l\'application est accessible en HTTPS.',
-        );
+        setError('Session non initialisée. Vérifiez la connexion réseau et réessayez.');
         return;
       }
       router.replace('/');

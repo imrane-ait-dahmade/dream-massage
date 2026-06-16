@@ -56,7 +56,9 @@ router.post('/login', (req: Request, res: Response) => {
         return;
       }
       setCookie(res, result.token);
-      res.json({ ok: true, user: result.user });
+      // Return token in body so mobile clients (Safari cross-origin) can store it
+      // as a Bearer fallback — cookie is still set for browsers that accept it.
+      res.json({ ok: true, token: result.token, user: result.user });
     })
     .catch(() => {
       res.status(500).json({ ok: false, error: 'Erreur serveur' });
