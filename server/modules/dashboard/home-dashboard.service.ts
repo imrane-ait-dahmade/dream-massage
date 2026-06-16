@@ -193,6 +193,7 @@ export class HomeDashboardService {
     }
 
     // ── Shift/staff WHERE fragment ─────────────────────────────────────────────
+    // Only used when shiftId='all' — a specific shiftId takes full precedence.
     const shiftRelFilter =
       staffMemberId !== 'all' || shiftTypeId !== 'all'
         ? {
@@ -228,12 +229,36 @@ export class HomeDashboardService {
     }
 
     // ── Session WHERE clause ───────────────────────────────────────────────────
+    // shiftId is the dominant filter: when set, skip staff/type constraints
+    // (they would conflict if the user changed staff after picking a shift).
     const sessionWhere: Prisma.ChairSessionWhereInput = {
       startedAt: { gte: utcStart, lt: utcEnd },
-      ...(chairDbId                    ? { chairId: chairDbId } : {}),
-      ...(shiftId !== 'all'            ? { shiftId }            : {}),
-      ...(shiftRelFilter               ? { shift: shiftRelFilter } : {}),
+      ...(chairDbId     ? { chairId: chairDbId } : {}),
+      ...(shiftId !== 'all'
+        ? { shiftId }
+        : shiftRelFilter
+        ? { shift: shiftRelFilter }
+        : {}),
       ...statusCond,
+    };
+
+    // ── Shift filter options WHERE (respects staffMemberId + shiftTypeId) ───────
+    const rangeShiftsWhere: Prisma.ShiftWhereInput = {
+      startedAt: { gte: utcStart, lt: utcEnd },
+      ...(staffMemberId !== 'all' ? { staffMemberId } : {}),
+      ...(shiftTypeId   !== 'all' ? { shiftTypeId }   : {}),
+    };
+
+    // ── Closed-shift prime WHERE (must match the same staff/type/shift scope) ──
+    const closedShiftsWhere: Prisma.ShiftWhereInput = {
+      startedAt: { gte: utcStart, lt: utcEnd },
+      status: { in: ['CLOSED', 'REVIEWED'] },
+      ...(shiftId !== 'all'
+        ? { id: shiftId }
+        : {
+            ...(staffMemberId !== 'all' ? { staffMemberId } : {}),
+            ...(shiftTypeId   !== 'all' ? { shiftTypeId }   : {}),
+          }),
     };
 
     // ── Parallel DB fetches ────────────────────────────────────────────────────
@@ -258,12 +283,9 @@ export class HomeDashboardService {
         select:  SESSION_SELECT,
         orderBy: { startedAt: 'desc' },
       }),
-      // Closed shifts in range → prime snapshots
+      // Closed shifts in range → prime snapshots (filtered to same scope as sessions)
       prisma.shift.findMany({
-        where: {
-          startedAt: { gte: utcStart, lt: utcEnd },
-          status:    { in: ['CLOSED', 'REVIEWED'] },
-        },
+        where:  closedShiftsWhere,
         select: {
           grossRevenue: true, planCommission: true,
           targetBonus:  true, manualBonus:    true,
@@ -282,11 +304,11 @@ export class HomeDashboardService {
         orderBy: { sortOrder: 'asc' },
         select:  { id: true, name: true, label: true },
       }),
-      // Recent shifts in the date range → shift filter dropdown
+      // Shift filter dropdown — filtered by staffMemberId + shiftTypeId
       prisma.shift.findMany({
-        where:   { startedAt: { gte: utcStart, lt: utcEnd } },
+        where:   rangeShiftsWhere,
         orderBy: { startedAt: 'desc' },
-        take:    50,
+        take:    100,
         select: {
           id: true, status: true, startedAt: true,
           staffMember: { select: { name: true } },
@@ -327,13 +349,21 @@ export class HomeDashboardService {
     const chart      = this.buildChart(filtered, chartPeriod, from, tz);
     const recent     = this.buildRecentSessions(filtered);
 
+    // Deduplicate shift options by id (guards against any duplicate rows)
+    const seenShiftIds = new Set<string>();
+    const uniqueRangeShifts = rangeShifts.filter((sh) => {
+      if (seenShiftIds.has(sh.id)) return false;
+      seenShiftIds.add(sh.id);
+      return true;
+    });
+
     const filterOptions = {
       chairs: dbChairs.map((c) => ({
         id: c.id, name: c.name, displayName: c.displayName,
       })),
       staffMembers: allStaff.map((s) => ({ id: s.id, name: s.name })),
       shiftTypes:   allShiftTypes.map((st) => ({ id: st.id, label: st.label ?? st.name })),
-      shifts: rangeShifts.map((sh) => ({
+      shifts: uniqueRangeShifts.map((sh) => ({
         id:     sh.id,
         label:  [
           sh.shiftType?.label,

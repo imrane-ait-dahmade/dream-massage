@@ -115,9 +115,15 @@ interface Props {
 export function DashboardFilters({ filters, filterOptions, onChange, onReset, loading }: Props) {
   const set = (partial: Partial<HomeDashboardFilters>) => onChange({ ...filters, ...partial });
 
+  // When any "parent" filter changes (date range, staff, type, period), the
+  // previously selected shift may no longer be in the filtered options list.
+  // Reset shiftId eagerly so the dropdown shows "Tous les shifts" immediately.
+  const setParent = (partial: Partial<HomeDashboardFilters>) =>
+    onChange({ ...filters, ...partial, shiftId: 'all' });
+
   function applyPreset(key: string) {
     const { from, to } = presetDates(key);
-    set({ preset: key, from, to });
+    setParent({ preset: key, from, to });
   }
 
   const isCustom = filters.period === 'custom';
@@ -142,7 +148,7 @@ export function DashboardFilters({ filters, filterOptions, onChange, onReset, lo
             </button>
           ))}
           <button
-            onClick={() => set({ preset: 'custom' })}
+            onClick={() => setParent({ preset: 'custom' })}
             className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
               filters.preset === 'custom'
                 ? 'bg-slate-600 text-white'
@@ -179,7 +185,7 @@ export function DashboardFilters({ filters, filterOptions, onChange, onReset, lo
           <input
             type="date"
             value={filters.from}
-            onChange={(e) => set({ from: e.target.value, preset: 'custom' })}
+            onChange={(e) => setParent({ from: e.target.value, preset: 'custom' })}
             className={INPUT_CLS}
           />
         </Field>
@@ -188,7 +194,7 @@ export function DashboardFilters({ filters, filterOptions, onChange, onReset, lo
           <input
             type="date"
             value={filters.to}
-            onChange={(e) => set({ to: e.target.value, preset: 'custom' })}
+            onChange={(e) => setParent({ to: e.target.value, preset: 'custom' })}
             className={INPUT_CLS}
           />
         </Field>
@@ -196,7 +202,7 @@ export function DashboardFilters({ filters, filterOptions, onChange, onReset, lo
         <Field label="Période" className="w-[130px]">
           <select
             value={filters.period}
-            onChange={(e) => set({ period: e.target.value as HomeDashboardFilters['period'] })}
+            onChange={(e) => setParent({ period: e.target.value as HomeDashboardFilters['period'] })}
             className={SELECT_CLS}
           >
             {PERIODS.map(({ value, label }) => (
@@ -227,7 +233,7 @@ export function DashboardFilters({ filters, filterOptions, onChange, onReset, lo
         <Field label="Fille" className="w-[130px]">
           <select
             value={filters.staffMemberId}
-            onChange={(e) => set({ staffMemberId: e.target.value })}
+            onChange={(e) => setParent({ staffMemberId: e.target.value })}
             className={SELECT_CLS}
             disabled={!filterOptions?.staffMembers.length}
           >
@@ -256,7 +262,7 @@ export function DashboardFilters({ filters, filterOptions, onChange, onReset, lo
         <Field label="Type shift" className="w-[120px]">
           <select
             value={filters.shiftTypeId}
-            onChange={(e) => set({ shiftTypeId: e.target.value })}
+            onChange={(e) => setParent({ shiftTypeId: e.target.value })}
             className={SELECT_CLS}
             disabled={!filterOptions?.shiftTypes.length}
           >

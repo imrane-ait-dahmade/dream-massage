@@ -47,6 +47,17 @@ const envSchema = z.object({
     .string()
     .default('false')
     .transform((v) => v === 'true'),
+  // ── Demo / dev testing tools ─────────────────────────────────────────────────
+  // Enable only in non-production environments for manual scenario testing.
+  DEMO_TOOLS_ENABLED: z
+    .string()
+    .default('false')
+    .transform((v) => v === 'true'),
+  // When true, shortens confirm windows for quicker session detection in tests.
+  SESSION_TEST_FAST_MODE: z
+    .string()
+    .default('false')
+    .transform((v) => v === 'true'),
   // Shelly Cloud — optional; server starts without them but Shelly endpoints return 400
   SHELLY_AUTH_KEY: z.string().optional(),
   SHELLY_SERVER_URL: z.string().optional(),
