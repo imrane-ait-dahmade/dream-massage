@@ -10,7 +10,6 @@ import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { DashboardFilters } from '@/components/dashboard/DashboardFilters';
 import { DashboardSummaryCards } from '@/components/dashboard/DashboardSummaryCards';
 import { ChairCard } from '@/components/dashboard/ChairCard';
-import { ChairCardSkeleton } from '@/components/dashboard/ChairCardSkeleton';
 import { ShiftSummary } from '@/components/dashboard/ShiftSummary';
 import { ConnectionStatusBar } from '@/components/dashboard/ConnectionStatus';
 import { RevenueChart } from '@/components/dashboard/RevenueChart';
@@ -22,32 +21,21 @@ import { RecentSessionsTable } from '@/components/dashboard/RecentSessionsTable'
 
 function LoadingScreen() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <div className="h-[57px] border-b border-white/10 bg-slate-900/95" />
-      <main className="mx-auto max-w-6xl space-y-5 px-4 py-6">
-        <div className="h-20 animate-pulse rounded-2xl bg-slate-800/60" />
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-7">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <div key={i} className="h-[104px] animate-pulse rounded-2xl bg-slate-800" />
+    <div className="min-h-screen bg-slate-900">
+      <div className="h-[49px] border-b border-white/10 bg-slate-900/95" />
+      <main className="mx-auto max-w-6xl space-y-3 px-4 py-3">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-[74px] animate-pulse rounded-xl bg-slate-800" />
           ))}
         </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <ChairCardSkeleton key={i} />
+        <div className="grid grid-cols-4 gap-2 xl:grid-cols-8">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="h-[90px] animate-pulse rounded-2xl bg-slate-800" />
           ))}
         </div>
       </main>
     </div>
-  );
-}
-
-// ── Section label ─────────────────────────────────────────────────────────────
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">
-      {children}
-    </h2>
   );
 }
 
@@ -56,13 +44,9 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 function DashboardContent() {
   const router = useRouter();
 
-  // Real-time chair grid + open shift + connection status
   const { state, connStatus, lastUpdated } = useDashboard();
+  const { data, loading, error, filters, setFilters, reset, refetch } = useHomeDashboard();
 
-  // Filtered analytics from /api/dashboard/home
-  const { data, loading, error, filters, setFilters, reset } = useHomeDashboard();
-
-  // Current user (non-critical, used only for role badge in header)
   const [user, setUser] = useState<AuthUser | null>(null);
   useEffect(() => {
     getMe().then(setUser).catch(() => {});
@@ -73,8 +57,14 @@ function DashboardContent() {
     router.replace('/login');
   }
 
-  // Show full-page skeleton until live state is ready
   if (!state) return <LoadingScreen />;
+
+  // currentShift from REST API (more complete than socket's openShift)
+  const currentShift = data?.currentShift ?? null;
+  // openShift from socket — used as fallback for ShiftSummary
+  const openShift = currentShift
+    ? { id: currentShift.id, staffMemberName: currentShift.staffMemberName ?? '', startedAt: currentShift.startedAt }
+    : state.openShift;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -85,17 +75,43 @@ function DashboardContent() {
         onLogout={() => void handleLogout()}
       />
 
-      <main className="mx-auto max-w-6xl space-y-5 px-4 py-6 pb-14">
+      <main className="mx-auto max-w-6xl space-y-3 px-4 py-3 pb-8">
         {/* Connection warning */}
         <ConnectionStatusBar status={connStatus} lastUpdated={lastUpdated} />
 
-        {/* ── Filters — drive all sections below ─────────────────────────── */}
-        <DashboardFilters
-          filters={filters}
-          onChange={setFilters}
-          onReset={reset}
-          loading={loading}
-        />
+        {/* ── Top strip: shift status + filters ────────────────────────────── */}
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
+          <div className="shrink-0 lg:w-64">
+            <ShiftSummary openShift={openShift} />
+          </div>
+          <div className="flex-1">
+            <DashboardFilters
+              filters={filters}
+              filterOptions={data?.filterOptions}
+              onChange={setFilters}
+              onReset={reset}
+              loading={loading}
+            />
+          </div>
+        </div>
+
+        {/* ── Live chairs — compact horizontal row ──────────────────────────── */}
+        <div>
+          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
+            Fauteuils en temps réel
+          </p>
+          {state.chairs.length === 0 ? (
+            <p className="rounded-xl border border-slate-700 bg-slate-800/40 py-5 text-center text-sm text-slate-600">
+              Aucun fauteuil configuré.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
+              {state.chairs.map((chair) => (
+                <ChairCard key={chair.id} chair={chair} compact />
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* API error banner */}
         {error && (
@@ -104,60 +120,38 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* ── KPI summary cards — from home endpoint ──────────────────────── */}
-        <section>
-          <SectionLabel>Résumé de la période</SectionLabel>
-          <DashboardSummaryCards summary={data?.summary} loading={loading} />
-        </section>
+        {/* ── KPI summary cards ──────────────────────────────────────────────── */}
+        <DashboardSummaryCards summary={data?.summary} loading={loading} />
 
-        {/* ── Active shift ─────────────────────────────────────────────────── */}
-        <ShiftSummary openShift={state.openShift} />
-
-        {/* ── Live chair grid — real-time via WebSocket ───────────────────── */}
-        <section>
-          <SectionLabel>Fauteuils en temps réel</SectionLabel>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-            {state.chairs.map((chair) => (
-              <ChairCard key={chair.id} chair={chair} />
-            ))}
-            {state.chairs.length === 0 && (
-              <p className="col-span-full py-8 text-center text-sm text-slate-600">
-                Aucun fauteuil configuré.
-              </p>
-            )}
+        {/* ── Revenue chart + Prime breakdown ───────────────────────────────── */}
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-5">
+          <div className="lg:col-span-3">
+            <RevenueChart data={data?.revenueChart} loading={loading} />
           </div>
-        </section>
+          <div className="lg:col-span-2">
+            <PrimeRevenueCard data={data?.primeRevenue} loading={loading} />
+          </div>
+        </div>
 
-        {/* ── Revenue chart — from home endpoint ──────────────────────────── */}
-        <section>
-          <SectionLabel>Statistiques de revenu</SectionLabel>
-          <RevenueChart data={data?.revenueChart} loading={loading} />
-        </section>
+        {/* ── Totals by chair + Recent sessions ─────────────────────────────── */}
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-5">
+          <div className="lg:col-span-2">
+            <TotalsByChairTable data={data?.totalsByChair} loading={loading} />
+          </div>
+          <div className="lg:col-span-3">
+            <RecentSessionsTable
+              sessions={data?.recentSessions}
+              loading={loading}
+              onCorrect={refetch}
+            />
+          </div>
+        </div>
 
-        {/* ── Totals by chair — from home endpoint ────────────────────────── */}
-        <section>
-          <SectionLabel>Totaux par fauteuil</SectionLabel>
-          <TotalsByChairTable data={data?.totalsByChair} loading={loading} />
-        </section>
-
-        {/* ── Primes & Recettes — from home endpoint ──────────────────────── */}
-        <section>
-          <SectionLabel>Primes &amp; Recettes</SectionLabel>
-          <PrimeRevenueCard data={data?.primeRevenue} loading={loading} />
-        </section>
-
-        {/* ── Recent sessions — from home endpoint ────────────────────────── */}
-        <section>
-          <SectionLabel>Sessions récentes</SectionLabel>
-          <RecentSessionsTable sessions={data?.recentSessions} loading={loading} />
-        </section>
-
-        {/* Footer timestamp from WebSocket */}
         {lastUpdated && (
-          <p className="pt-2 text-center text-[11px] text-slate-700">
+          <p className="text-center text-[11px] text-slate-700">
             Mis à jour :{' '}
             {lastUpdated.toLocaleTimeString('fr-FR', {
-              hour: '2-digit',
+              hour:   '2-digit',
               minute: '2-digit',
               second: '2-digit',
             })}

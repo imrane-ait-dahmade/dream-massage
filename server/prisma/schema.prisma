@@ -72,6 +72,15 @@ model Shift {
   // ── Shift type (optional: Matin / Soir / Journée) ────────────────────────
   shiftTypeId    String?  @map("shift_type_id")
 
+  // ── Auto-shift tracking (populated when opened from StaffSchedule) ─────────
+  staffScheduleId     String?   @map("staff_schedule_id")
+  businessDate        String?   @map("business_date") @db.VarChar(10)  // YYYY-MM-DD in APP_TIMEZONE
+  scheduledStartAt    DateTime? @map("scheduled_start_at")
+  scheduledEndAt      DateTime? @map("scheduled_end_at")
+  openedAutomatically Boolean   @default(false) @map("opened_automatically")
+  closedAutomatically Boolean   @default(false) @map("closed_automatically")
+  autoCloseReason     String?   @map("auto_close_reason") @db.VarChar(100)
+
   // ── Prime snapshot (populated at shift close by shift.service.ts) ─────────
   grossRevenue   Decimal? @map("gross_revenue")   @db.Decimal(10, 2)
   planCommission Decimal? @map("plan_commission")  @db.Decimal(10, 2)
@@ -88,12 +97,15 @@ model Shift {
   closedBy         User?                  @relation("ShiftClosedBy", fields: [closedByUserId], references: [id])
   sessions         ChairSession[]
   shiftType        ShiftType?             @relation(fields: [shiftTypeId], references: [id])
+  staffSchedule    StaffSchedule?         @relation(fields: [staffScheduleId], references: [id])
   bonusAdjustments ShiftBonusAdjustment[]
 
   @@index([status])
   @@index([startedAt])
   @@index([staffMemberId])
   @@index([shiftTypeId])
+  @@index([staffScheduleId])
+  @@index([businessDate])
   @@map("shifts")
 }
 
@@ -470,6 +482,7 @@ model StaffSchedule {
 
   staffMember StaffMember @relation(fields: [staffMemberId], references: [id])
   shiftType   ShiftType?  @relation(fields: [shiftTypeId], references: [id])
+  shifts      Shift[]
 
   @@index([staffMemberId])
   @@index([shiftTypeId])

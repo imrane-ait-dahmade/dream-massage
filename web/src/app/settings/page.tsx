@@ -19,12 +19,13 @@ import { StaffSettings } from '@/components/settings/StaffSettings';
 import { SystemSettingsPanel } from '@/components/settings/SystemSettings';
 import { PrimeBonusSettings } from '@/components/settings/PrimeBonusSettings';
 import { ShiftPlanningSettings } from '@/components/settings/ShiftPlanningSettings';
+import { SessionSettingsPanel } from '@/components/settings/SessionSettingsPanel';
 import { AuthGuard } from '@/components/AuthGuard';
 import { logout } from '@/lib/api';
 
 // ── Tabs ───────────────────────────────────────────────────────────────────────
 
-type Tab = 'fauteuils' | 'prix' | 'regles' | 'staff' | 'systeme' | 'primes' | 'planning';
+type Tab = 'fauteuils' | 'prix' | 'regles' | 'staff' | 'systeme' | 'primes' | 'planning' | 'sessions';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'fauteuils', label: 'Fauteuils' },
@@ -34,6 +35,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'systeme', label: 'Système' },
   { id: 'primes', label: 'Primes & Bonus' },
   { id: 'planning', label: 'Shifts & Planning' },
+  { id: 'sessions', label: 'Sessions' },
 ];
 
 // ── Data ───────────────────────────────────────────────────────────────────────
@@ -260,6 +262,13 @@ function SettingsContent() {
         {activeTab === 'planning' && (
           <Section title="Shifts & Planning">
             <ShiftPlanningSettings />
+          </Section>
+        )}
+
+        {/* ── Sessions ────────────────────────────────────────────────────────── */}
+        {activeTab === 'sessions' && (
+          <Section title="Paramétrage sessions">
+            <SessionSettingsPanel />
           </Section>
         )}
       </main>

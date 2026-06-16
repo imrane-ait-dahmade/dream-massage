@@ -18,6 +18,21 @@ const DAY_LABELS: Record<number, string> = {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
+function timeToMinutes(hhmm: string): number {
+  const match = /^(\d{2}):(\d{2})$/.exec(hhmm);
+  if (!match) return -1;
+  return parseInt(match[1]!, 10) * 60 + parseInt(match[2]!, 10);
+}
+
+function timesOverlap(startA: string, endA: string, startB: string, endB: string): boolean {
+  const sa = timeToMinutes(startA);
+  const ea = timeToMinutes(endA);
+  const sb = timeToMinutes(startB);
+  const eb = timeToMinutes(endB);
+  if (sa < 0 || ea < 0 || sb < 0 || eb < 0) return false;
+  return sa < eb && sb < ea;
+}
+
 // Returns ISO 8601 day-of-week (1=Monday … 7=Sunday) in the app timezone.
 function todayDayOfWeek(tz: string): number {
   const formatter = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' });
@@ -181,16 +196,60 @@ class ShiftSettingsService {
     }
 
     // Validate shift type if provided
+    let resolvedShiftType: { startTime: string; endTime: string } | null = null;
     if (input.shiftTypeId) {
       const st = await prisma.shiftType.findUnique({
         where:  { id: input.shiftTypeId },
-        select: { id: true },
+        select: { id: true, startTime: true, endTime: true },
       });
       if (!st) {
         throw Object.assign(
           new Error(`Type de shift introuvable : ${input.shiftTypeId}`),
           { status: 404 },
         );
+      }
+      resolvedShiftType = st;
+    }
+
+    // Validate times and check for overlaps (only for working days)
+    if (!input.isOff) {
+      const effectiveStart = input.startTime ?? resolvedShiftType?.startTime;
+      const effectiveEnd   = input.endTime   ?? resolvedShiftType?.endTime;
+
+      if (effectiveStart && effectiveEnd) {
+        const startMins = timeToMinutes(effectiveStart);
+        const endMins   = timeToMinutes(effectiveEnd);
+        if (startMins >= 0 && endMins >= 0 && endMins <= startMins) {
+          throw Object.assign(
+            new Error('L\'heure de fin doit être après l\'heure de début'),
+            { status: 400 },
+          );
+        }
+
+        // If only one OPEN shift is allowed at a time, no two staff schedules
+        // on the same day can overlap — they would conflict at runtime.
+        if (!env.ALLOW_MULTIPLE_OPEN_SHIFTS && effectiveStart && effectiveEnd) {
+          const others = await prisma.staffSchedule.findMany({
+            where: {
+              dayOfWeek:     input.dayOfWeek,
+              isActive:      true,
+              isOff:         false,
+              staffMemberId: { not: input.staffMemberId },
+            },
+            include: { shiftType: { select: { startTime: true, endTime: true } } },
+          });
+
+          for (const other of others) {
+            const otherStart = other.startTime ?? other.shiftType?.startTime ?? '';
+            const otherEnd   = other.endTime   ?? other.shiftType?.endTime   ?? '';
+            if (timesOverlap(effectiveStart, effectiveEnd, otherStart, otherEnd)) {
+              throw Object.assign(
+                new Error('Un autre membre du staff a déjà un shift qui se chevauche ce jour-là.'),
+                { status: 409 },
+              );
+            }
+          }
+        }
       }
     }
 
@@ -262,16 +321,63 @@ class ShiftSettingsService {
     if (!existing) return null;
 
     // Validate new shiftTypeId if being changed to a non-null value
+    let updatedShiftType: { startTime: string; endTime: string } | null = null;
     if (input.shiftTypeId != null) {
       const st = await prisma.shiftType.findUnique({
         where:  { id: input.shiftTypeId },
-        select: { id: true },
+        select: { id: true, startTime: true, endTime: true },
       });
       if (!st) {
         throw Object.assign(
           new Error(`Type de shift introuvable : ${input.shiftTypeId}`),
           { status: 404 },
         );
+      }
+      updatedShiftType = st;
+    }
+
+    // Resolve the merged state after the update to validate times and overlaps
+    const mergedIsOff = 'isOff' in input ? (input.isOff ?? existing.isOff) : existing.isOff;
+    if (!mergedIsOff) {
+      const mergedShiftType = updatedShiftType ?? existing.shiftType;
+      const mergedStartTime = 'startTime' in input ? input.startTime : existing.startTime;
+      const mergedEndTime   = 'endTime'   in input ? input.endTime   : existing.endTime;
+      const effectiveStart  = mergedStartTime ?? mergedShiftType?.startTime;
+      const effectiveEnd    = mergedEndTime   ?? mergedShiftType?.endTime;
+
+      if (effectiveStart && effectiveEnd) {
+        const startMins = timeToMinutes(effectiveStart);
+        const endMins   = timeToMinutes(effectiveEnd);
+        if (startMins >= 0 && endMins >= 0 && endMins <= startMins) {
+          throw Object.assign(
+            new Error('L\'heure de fin doit être après l\'heure de début'),
+            { status: 400 },
+          );
+        }
+
+        if (!env.ALLOW_MULTIPLE_OPEN_SHIFTS) {
+          const others = await prisma.staffSchedule.findMany({
+            where: {
+              id:        { not: id },
+              dayOfWeek: existing.dayOfWeek,
+              isActive:  true,
+              isOff:     false,
+              staffMemberId: { not: existing.staffMemberId },
+            },
+            include: { shiftType: { select: { startTime: true, endTime: true } } },
+          });
+
+          for (const other of others) {
+            const otherStart = other.startTime ?? other.shiftType?.startTime ?? '';
+            const otherEnd   = other.endTime   ?? other.shiftType?.endTime   ?? '';
+            if (timesOverlap(effectiveStart, effectiveEnd, otherStart, otherEnd)) {
+              throw Object.assign(
+                new Error('Un autre membre du staff a déjà un shift qui se chevauche ce jour-là.'),
+                { status: 409 },
+              );
+            }
+          }
+        }
       }
     }
 

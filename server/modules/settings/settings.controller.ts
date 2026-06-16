@@ -13,12 +13,14 @@ import {
 } from './settings.types';
 import primeSettingsRouter from './prime-settings.controller';
 import shiftSettingsRouter from './shift-settings.controller';
+import sessionSettingsRouter from './session-settings.controller';
 
 const router = Router();
 
 // ── Sub-routers ────────────────────────────────────────────────────────────────
-router.use('/prime',  primeSettingsRouter);
-router.use('/shifts', shiftSettingsRouter);
+router.use('/prime',   primeSettingsRouter);
+router.use('/shifts',  shiftSettingsRouter);
+router.use('/session', sessionSettingsRouter);
 
 // ── Zod parse helper ───────────────────────────────────────────────────────────
 

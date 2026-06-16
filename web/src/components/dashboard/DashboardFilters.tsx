@@ -1,47 +1,99 @@
 'use client';
 
 import { RotateCcw, FileDown, RefreshCw } from 'lucide-react';
-import type { HomeDashboardFilters } from '@/lib/types';
+import type { HomeDashboardFilters, DashboardFilterOptions } from '@/lib/types';
+
+// ── Client-side preset date computation (for immediate UI feedback) ─────────────
+
+function localDateStr(d: Date): string {
+  const y  = d.getFullYear();
+  const m  = String(d.getMonth() + 1).padStart(2, '0');
+  const dy = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dy}`;
+}
+
+function presetDates(preset: string): { from: string; to: string } {
+  const now   = new Date();
+  const today = localDateStr(now);
+  switch (preset) {
+    case 'today':
+      return { from: today, to: today };
+    case 'yesterday': {
+      const d = new Date(now); d.setDate(d.getDate() - 1);
+      const y = localDateStr(d);
+      return { from: y, to: y };
+    }
+    case 'week': {
+      const d   = new Date(now);
+      const dow = d.getDay(); // 0=Sun
+      d.setDate(d.getDate() - ((dow + 6) % 7)); // Monday
+      const mon = localDateStr(d);
+      const sun = new Date(d); sun.setDate(d.getDate() + 6);
+      return { from: mon, to: localDateStr(sun) };
+    }
+    case 'month': {
+      const y  = now.getFullYear();
+      const mo = now.getMonth() + 1;
+      const mm = String(mo).padStart(2, '0');
+      const last = new Date(y, mo, 0).getDate();
+      return { from: `${y}-${mm}-01`, to: `${y}-${mm}-${String(last).padStart(2, '0')}` };
+    }
+    case 'year': {
+      const y = now.getFullYear();
+      return { from: `${y}-01-01`, to: `${y}-12-31` };
+    }
+    default:
+      return { from: today, to: today };
+  }
+}
 
 // ── Constants ──────────────────────────────────────────────────────────────────
+
+const PRESETS = [
+  { key: 'today',     label: "Auj." },
+  { key: 'yesterday', label: 'Hier' },
+  { key: 'week',      label: 'Sem.' },
+  { key: 'month',     label: 'Mois' },
+  { key: 'year',      label: 'Année' },
+] as const;
 
 const PERIODS = [
   { value: 'all',     label: 'Toute la journée' },
   { value: 'matin',   label: 'Matin' },
   { value: 'soir',    label: 'Soir' },
   { value: 'journee', label: 'Journée' },
-  { value: 'custom',  label: 'Personnalisé' },
+  { value: 'custom',  label: 'Horaire perso' },
 ] as const;
 
-const CHAIRS = [
-  { value: 'all', label: 'Tous' },
-  { value: 'F1',  label: 'F1' },
-  { value: 'F2',  label: 'F2' },
-  { value: 'F3',  label: 'F3' },
-  { value: 'F4',  label: 'F4' },
-  { value: 'F5',  label: 'F5' },
-];
+const STATUSES = [
+  { value: 'all',       label: 'Tous statuts' },
+  { value: 'ACTIVE',    label: 'En cours' },
+  { value: 'COMPLETED', label: 'Terminées' },
+  { value: 'PENDING',   label: 'En attente' },
+  { value: 'CORRECTED', label: 'Corrigées' },
+  { value: 'ANOMALY',   label: 'Hors règle' },
+] as const;
 
 const CHART_PERIODS: { key: HomeDashboardFilters['chartPeriod']; label: string }[] = [
-  { key: 'day',   label: 'Jour' },
-  { key: 'week',  label: 'Semaine' },
-  { key: 'month', label: 'Mois' },
-  { key: 'year',  label: 'Année' },
+  { key: 'day',   label: 'J' },
+  { key: 'week',  label: 'S' },
+  { key: 'month', label: 'M' },
+  { key: 'year',  label: 'A' },
 ];
 
 // ── Style constants ────────────────────────────────────────────────────────────
 
 const INPUT_CLS =
-  'rounded-xl border border-slate-600 bg-slate-700/60 px-3 py-2 text-sm text-white [color-scheme:dark] focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50';
+  'rounded-lg border border-slate-600 bg-slate-700/60 px-2.5 py-1.5 text-xs text-white [color-scheme:dark] focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 w-full';
 const SELECT_CLS =
-  'rounded-xl border border-slate-600 bg-slate-700/60 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 cursor-pointer';
-const LABEL_CLS = 'text-[11px] font-semibold uppercase tracking-wide text-slate-500';
+  'rounded-lg border border-slate-600 bg-slate-700/60 px-2.5 py-1.5 text-xs text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 cursor-pointer w-full';
+const LABEL_CLS = 'text-[10px] font-semibold uppercase tracking-wide text-slate-500 mb-1 block';
 
-// ── Sub-components ─────────────────────────────────────────────────────────────
+// ── Sub-component ──────────────────────────────────────────────────────────────
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children, className = '' }: { label: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className="flex min-w-[130px] flex-col gap-1.5">
+    <div className={`flex min-w-0 flex-col ${className}`}>
       <span className={LABEL_CLS}>{label}</span>
       {children}
     </div>
@@ -51,103 +103,210 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 // ── Props ──────────────────────────────────────────────────────────────────────
 
 interface Props {
-  filters: HomeDashboardFilters;
-  onChange: (f: HomeDashboardFilters) => void;
-  onReset: () => void;
-  loading: boolean;
+  filters:       HomeDashboardFilters;
+  filterOptions: DashboardFilterOptions | undefined;
+  onChange:      (f: HomeDashboardFilters) => void;
+  onReset:       () => void;
+  loading:       boolean;
 }
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
-export function DashboardFilters({ filters, onChange, onReset, loading }: Props) {
-  const set = (partial: Partial<HomeDashboardFilters>) =>
-    onChange({ ...filters, ...partial });
+export function DashboardFilters({ filters, filterOptions, onChange, onReset, loading }: Props) {
+  const set = (partial: Partial<HomeDashboardFilters>) => onChange({ ...filters, ...partial });
+
+  function applyPreset(key: string) {
+    const { from, to } = presetDates(key);
+    set({ preset: key, from, to });
+  }
 
   const isCustom = filters.period === 'custom';
 
   return (
-    <div className="space-y-3 rounded-2xl border border-slate-700 bg-slate-800/60 p-4 backdrop-blur-sm">
-      {/* ── Row 1: date range, period, chair, actions ──────────────────────── */}
-      <div className="flex flex-wrap items-end gap-3">
-        <Field label="Date début">
+    <div className="space-y-2 rounded-2xl border border-slate-700 bg-slate-800/60 p-3 backdrop-blur-sm">
+
+      {/* ── Row 1: Preset pills + Reset + Export ──────────────────────────────── */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-1">
+          {PRESETS.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => applyPreset(key)}
+              className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+                filters.preset === key
+                  ? 'bg-blue-600 text-white'
+                  : 'border border-slate-600 text-slate-400 hover:border-slate-500 hover:bg-slate-700 hover:text-white'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+          <button
+            onClick={() => set({ preset: 'custom' })}
+            className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+              filters.preset === 'custom'
+                ? 'bg-slate-600 text-white'
+                : 'border border-slate-600 text-slate-400 hover:border-slate-500 hover:bg-slate-700 hover:text-white'
+            }`}
+          >
+            Perso
+          </button>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          {loading && <RefreshCw className="h-3.5 w-3.5 animate-spin text-slate-500" />}
+          <button
+            onClick={onReset}
+            className="flex items-center gap-1 rounded-lg border border-slate-600 px-2.5 py-1 text-xs font-semibold text-slate-400 hover:border-slate-500 hover:bg-slate-700 hover:text-white"
+          >
+            <RotateCcw className="h-3 w-3" />
+            Reset
+          </button>
+          <button
+            disabled
+            title="Export Excel bientôt disponible"
+            className="flex cursor-not-allowed items-center gap-1 rounded-lg bg-blue-600/20 px-2.5 py-1 text-xs font-semibold text-blue-400/40"
+          >
+            <FileDown className="h-3 w-3" />
+            Excel
+          </button>
+        </div>
+      </div>
+
+      {/* ── Row 2: Date range + main filters ──────────────────────────────────── */}
+      <div className="flex flex-wrap gap-2">
+        <Field label="Du" className="w-[120px]">
           <input
             type="date"
             value={filters.from}
-            onChange={(e) => set({ from: e.target.value })}
+            onChange={(e) => set({ from: e.target.value, preset: 'custom' })}
             className={INPUT_CLS}
           />
         </Field>
 
-        <Field label="Date fin">
+        <Field label="Au" className="w-[120px]">
           <input
             type="date"
             value={filters.to}
-            onChange={(e) => set({ to: e.target.value })}
+            onChange={(e) => set({ to: e.target.value, preset: 'custom' })}
             className={INPUT_CLS}
           />
         </Field>
 
-        <Field label="Période">
+        <Field label="Période" className="w-[130px]">
           <select
             value={filters.period}
-            onChange={(e) =>
-              set({ period: e.target.value as HomeDashboardFilters['period'] })
-            }
+            onChange={(e) => set({ period: e.target.value as HomeDashboardFilters['period'] })}
             className={SELECT_CLS}
           >
             {PERIODS.map(({ value, label }) => (
-              <option key={value} value={value} className="bg-slate-800 text-white">
-                {label}
-              </option>
+              <option key={value} value={value} className="bg-slate-800">{label}</option>
             ))}
           </select>
         </Field>
 
-        <Field label="Fauteuil">
+        <Field label="Fauteuil" className="w-[100px]">
           <select
             value={filters.chair}
             onChange={(e) => set({ chair: e.target.value })}
             className={SELECT_CLS}
           >
-            {CHAIRS.map(({ value, label }) => (
-              <option key={value} value={value} className="bg-slate-800 text-white">
-                {label}
+            <option value="all" className="bg-slate-800">Tous</option>
+            {filterOptions?.chairs.map((c) => (
+              <option key={c.id} value={c.name} className="bg-slate-800">
+                {c.displayName ?? c.name}
+              </option>
+            )) ?? (
+              ['F1','F2','F3','F4','F5'].map((n) => (
+                <option key={n} value={n} className="bg-slate-800">{n}</option>
+              ))
+            )}
+          </select>
+        </Field>
+
+        <Field label="Fille" className="w-[130px]">
+          <select
+            value={filters.staffMemberId}
+            onChange={(e) => set({ staffMemberId: e.target.value })}
+            className={SELECT_CLS}
+            disabled={!filterOptions?.staffMembers.length}
+          >
+            <option value="all" className="bg-slate-800">Toutes</option>
+            {filterOptions?.staffMembers.map((s) => (
+              <option key={s.id} value={s.id} className="bg-slate-800">{s.name}</option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="Statut" className="w-[120px]">
+          <select
+            value={filters.status}
+            onChange={(e) => set({ status: e.target.value })}
+            className={SELECT_CLS}
+          >
+            {STATUSES.map(({ value, label }) => (
+              <option key={value} value={value} className="bg-slate-800">{label}</option>
+            ))}
+          </select>
+        </Field>
+      </div>
+
+      {/* ── Row 3: Secondary filters + chart period ────────────────────────────── */}
+      <div className="flex flex-wrap items-end gap-2 border-t border-slate-700/60 pt-2">
+        <Field label="Type shift" className="w-[120px]">
+          <select
+            value={filters.shiftTypeId}
+            onChange={(e) => set({ shiftTypeId: e.target.value })}
+            className={SELECT_CLS}
+            disabled={!filterOptions?.shiftTypes.length}
+          >
+            <option value="all" className="bg-slate-800">Tous</option>
+            {filterOptions?.shiftTypes.map((st) => (
+              <option key={st.id} value={st.id} className="bg-slate-800">{st.label}</option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="Shift" className="min-w-[160px] flex-1">
+          <select
+            value={filters.shiftId}
+            onChange={(e) => set({ shiftId: e.target.value })}
+            className={SELECT_CLS}
+            disabled={!filterOptions?.shifts.length}
+          >
+            <option value="all" className="bg-slate-800">Tous les shifts</option>
+            {filterOptions?.shifts.map((sh) => (
+              <option key={sh.id} value={sh.id} className="bg-slate-800">
+                {sh.label}
               </option>
             ))}
           </select>
         </Field>
 
-        {/* Action buttons */}
-        <div className="flex gap-2 self-end">
-          <button
-            onClick={onReset}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-600 px-3 py-2 text-xs font-semibold text-slate-400 transition-colors hover:border-slate-500 hover:bg-slate-700 hover:text-white"
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-            Réinitialiser
-          </button>
-          <button
-            disabled
-            title="Export Excel bientôt disponible"
-            className="flex cursor-not-allowed items-center gap-1.5 rounded-xl bg-blue-600/30 px-3 py-2 text-xs font-semibold text-blue-400/40"
-          >
-            <FileDown className="h-3.5 w-3.5" />
-            Export Excel
-          </button>
-        </div>
-
-        {/* Loading spinner */}
-        {loading && (
-          <div className="self-end pb-2">
-            <RefreshCw className="h-4 w-4 animate-spin text-slate-500" />
+        <div className="flex flex-col gap-1">
+          <span className={LABEL_CLS}>Graphique</span>
+          <div className="flex gap-1">
+            {CHART_PERIODS.map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => set({ chartPeriod: key })}
+                className={`rounded-lg px-2.5 py-1.5 text-xs font-bold transition-colors ${
+                  filters.chartPeriod === key
+                    ? 'bg-blue-600 text-white'
+                    : 'border border-slate-600 text-slate-500 hover:bg-slate-700 hover:text-slate-300'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
-        )}
+        </div>
       </div>
 
-      {/* ── Custom period time inputs ──────────────────────────────────────── */}
+      {/* ── Row 4 (conditional): Custom time range ─────────────────────────────── */}
       {isCustom && (
-        <div className="flex flex-wrap gap-3 border-t border-slate-700/60 pt-3">
-          <Field label="Heure début">
+        <div className="flex flex-wrap gap-3 border-t border-slate-700/60 pt-2">
+          <Field label="Heure début" className="w-[120px]">
             <input
               type="time"
               value={filters.periodStart ?? ''}
@@ -155,7 +314,7 @@ export function DashboardFilters({ filters, onChange, onReset, loading }: Props)
               className={INPUT_CLS}
             />
           </Field>
-          <Field label="Heure fin">
+          <Field label="Heure fin" className="w-[120px]">
             <input
               type="time"
               value={filters.periodEnd ?? ''}
@@ -165,26 +324,6 @@ export function DashboardFilters({ filters, onChange, onReset, loading }: Props)
           </Field>
         </div>
       )}
-
-      {/* ── Chart period tabs ──────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-2 border-t border-slate-700/60 pt-3">
-        <span className={LABEL_CLS}>Graphique :</span>
-        <div className="flex gap-1">
-          {CHART_PERIODS.map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => set({ chartPeriod: key })}
-              className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
-                filters.chartPeriod === key
-                  ? 'bg-blue-600 text-white'
-                  : 'text-slate-500 hover:bg-slate-700 hover:text-slate-300'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

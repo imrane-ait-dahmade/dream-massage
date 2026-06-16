@@ -40,6 +40,9 @@ const IDS = {
   bonusRuleSoir:  '00000000-0000-0000-0005-000000000002',
   // ── Example commission rule (inactive until owner confirms) ──
   commRule30: '00000000-0000-0000-0006-000000000001',
+  // ── Real staff members (no login, no User record) ──
+  fille1: '00000000-0000-0000-0001-000000000002',
+  fille2: '00000000-0000-0000-0001-000000000003',
 } as const;
 
 // ── Prisma client (standalone, not the shared server/prisma.ts) ────────────────
@@ -52,8 +55,46 @@ const CLEAN_RUNTIME =
   process.argv.includes('--clean-runtime') ||
   process.env.CLEAN_RUNTIME_DATA === 'true';
 
-const IS_PRODUCTION = (process.env.NODE_ENV ?? 'development') === 'production';
-const FORCE_CLEAN   = process.env.FORCE_CLEAN === 'true';
+const IS_PRODUCTION    = (process.env.NODE_ENV ?? 'development') === 'production';
+const FORCE_CLEAN      = process.env.FORCE_CLEAN === 'true';
+const SEED_SHIFT_TABLE = process.env.SEED_SHIFT_TABLE === 'true';
+
+// ── Initial weekly shift planning ──────────────────────────────────────────────
+// Edit this table to change the seeded planning.
+// Day numbers: 1=Lundi, 2=Mardi, 3=Mercredi, 4=Jeudi, 5=Vendredi, 6=Samedi, 7=Dimanche
+// shiftTypeName must be null when isOff=true.
+
+const INITIAL_WEEKLY_SHIFT_TABLE: Array<{
+  staffName:     string;
+  dayOfWeek:     number;
+  shiftTypeName: 'MATIN' | 'SOIR' | 'JOURNEE' | null;
+  isOff:         boolean;
+}> = [
+  // ── Fille 1 ─────────────────────────────────────────────────────────────────
+  { staffName: 'Fille 1', dayOfWeek: 1, shiftTypeName: 'SOIR',    isOff: false },
+  { staffName: 'Fille 1', dayOfWeek: 2, shiftTypeName: 'JOURNEE', isOff: false },
+  { staffName: 'Fille 1', dayOfWeek: 3, shiftTypeName: 'MATIN',   isOff: false },
+  { staffName: 'Fille 1', dayOfWeek: 4, shiftTypeName: null,      isOff: true  },
+  { staffName: 'Fille 1', dayOfWeek: 5, shiftTypeName: 'SOIR',    isOff: false },
+  { staffName: 'Fille 1', dayOfWeek: 6, shiftTypeName: 'MATIN',   isOff: false },
+  { staffName: 'Fille 1', dayOfWeek: 7, shiftTypeName: 'SOIR',    isOff: false },
+  // ── Fille 2 ─────────────────────────────────────────────────────────────────
+  { staffName: 'Fille 2', dayOfWeek: 1, shiftTypeName: 'MATIN',   isOff: false },
+  { staffName: 'Fille 2', dayOfWeek: 2, shiftTypeName: null,      isOff: true  },
+  { staffName: 'Fille 2', dayOfWeek: 3, shiftTypeName: 'SOIR',    isOff: false },
+  { staffName: 'Fille 2', dayOfWeek: 4, shiftTypeName: 'JOURNEE', isOff: false },
+  { staffName: 'Fille 2', dayOfWeek: 5, shiftTypeName: 'MATIN',   isOff: false },
+  { staffName: 'Fille 2', dayOfWeek: 6, shiftTypeName: 'SOIR',    isOff: false },
+  { staffName: 'Fille 2', dayOfWeek: 7, shiftTypeName: 'MATIN',   isOff: false },
+];
+
+// Maps the human-readable shiftTypeName above to the fixed DB UUID.
+// These IDs must match what seedPrimeData inserts.
+const SHIFT_TYPE_IDS: Record<'MATIN' | 'SOIR' | 'JOURNEE', string> = {
+  MATIN:   IDS.shiftTypeMatin,
+  SOIR:    IDS.shiftTypeSoir,
+  JOURNEE: IDS.shiftTypeJournee,
+};
 
 // ── Clean runtime data ─────────────────────────────────────────────────────────
 
@@ -369,49 +410,26 @@ async function seedPrimeData(): Promise<void> {
   console.log('── Seeding prime/commission data ─────────────────────────────────');
 
   // ── Shift types ─────────────────────────────────────────────────────────────
+  // update clause corrects old lowercase names and the SOIR label in existing DBs.
   await prisma.shiftType.upsert({
     where:  { id: IDS.shiftTypeMatin },
-    update: {},
-    create: {
-      id:        IDS.shiftTypeMatin,
-      name:      'matin',
-      label:     'Matin',
-      startTime: '10:00',
-      endTime:   '15:00',
-      isActive:  true,
-      sortOrder: 1,
-    },
+    update: { name: 'MATIN', label: 'Matin',      startTime: '10:00', endTime: '15:00', isActive: true, sortOrder: 1 },
+    create: { id: IDS.shiftTypeMatin,   name: 'MATIN',   label: 'Matin',      startTime: '10:00', endTime: '15:00', isActive: true, sortOrder: 1 },
   });
 
   await prisma.shiftType.upsert({
     where:  { id: IDS.shiftTypeSoir },
-    update: {},
-    create: {
-      id:        IDS.shiftTypeSoir,
-      name:      'soir',
-      label:     'Soir',
-      startTime: '15:00',
-      endTime:   '22:00',
-      isActive:  true,
-      sortOrder: 2,
-    },
+    update: { name: 'SOIR', label: 'Après-midi', startTime: '15:00', endTime: '22:00', isActive: true, sortOrder: 2 },
+    create: { id: IDS.shiftTypeSoir,    name: 'SOIR',    label: 'Après-midi', startTime: '15:00', endTime: '22:00', isActive: true, sortOrder: 2 },
   });
 
   await prisma.shiftType.upsert({
     where:  { id: IDS.shiftTypeJournee },
-    update: {},
-    create: {
-      id:        IDS.shiftTypeJournee,
-      name:      'journee',
-      label:     'Journée',
-      startTime: '10:00',
-      endTime:   '22:00',
-      isActive:  true,
-      sortOrder: 3,
-    },
+    update: { name: 'JOURNEE', label: 'Journée', startTime: '10:00', endTime: '22:00', isActive: true, sortOrder: 3 },
+    create: { id: IDS.shiftTypeJournee, name: 'JOURNEE', label: 'Journée',    startTime: '10:00', endTime: '22:00', isActive: true, sortOrder: 3 },
   });
 
-  console.log('  ✓ Shift types  : Matin (10:00–15:00), Soir (15:00–22:00), Journée (10:00–22:00)');
+  console.log('  ✓ Shift types  : MATIN (10:00–15:00), SOIR/Après-midi (15:00–22:00), JOURNEE (10:00–22:00)');
 
   // ── Target bonus rules ───────────────────────────────────────────────────────
   // isActive=true — these are reasonable business defaults.
@@ -494,6 +512,12 @@ async function applyRawSqlConstraints(): Promise<void> {
       sql: `CREATE UNIQUE INDEX IF NOT EXISTS unique_active_staff_schedule_per_day
               ON staff_schedules (staff_member_id, day_of_week) WHERE is_active = true`,
     },
+    {
+      name: 'unique_auto_shift_per_schedule_day',
+      sql: `CREATE UNIQUE INDEX IF NOT EXISTS unique_auto_shift_per_schedule_day
+              ON shifts (staff_schedule_id, business_date)
+              WHERE staff_schedule_id IS NOT NULL AND business_date IS NOT NULL`,
+    },
   ];
 
   for (const idx of indexes) {
@@ -513,6 +537,112 @@ async function applyRawSqlConstraints(): Promise<void> {
   }
 
   console.log('── Constraints done ──────────────────────────────────────────────');
+}
+
+// ── Weekly shift planning seed (opt-in, controlled by SEED_SHIFT_TABLE=true) ───
+
+async function seedShiftTable(): Promise<void> {
+  console.log('── Seeding weekly shift planning ─────────────────────────────────');
+
+  // ── Staff members (real employees, no login) ─────────────────────────────────
+  const fille1 = await prisma.staffMember.upsert({
+    where:  { id: IDS.fille1 },
+    update: { isActive: true },
+    create: { id: IDS.fille1, name: 'Fille 1', isActive: true },
+  });
+  const fille2 = await prisma.staffMember.upsert({
+    where:  { id: IDS.fille2 },
+    update: { isActive: true },
+    create: { id: IDS.fille2, name: 'Fille 2', isActive: true },
+  });
+  console.log(`  ✓ Staff : ${fille1.name} (id: …${fille1.id.slice(-8)}) — no login`);
+  console.log(`  ✓ Staff : ${fille2.name} (id: …${fille2.id.slice(-8)}) — no login`);
+
+  // ── Verify shift types exist (seeded by seedPrimeData) ──────────────────────
+  const stCount = await prisma.shiftType.count({
+    where: { id: { in: Object.values(SHIFT_TYPE_IDS) } },
+  });
+  if (stCount < 3) {
+    console.error(
+      `  ✗ Only ${stCount}/3 shift types found by ID. ` +
+      `Run base seed first (seedPrimeData seeds them).`,
+    );
+    return;
+  }
+
+  // Build name → ID map from fixed IDs (avoids any name-casing issues)
+  const staffIdMap: Record<string, string> = {
+    'Fille 1': fille1.id,
+    'Fille 2': fille2.id,
+  };
+
+  const DAY_LABELS: Record<number, string> = {
+    1: 'Lundi', 2: 'Mardi', 3: 'Mercredi',
+    4: 'Jeudi', 5: 'Vendredi', 6: 'Samedi', 7: 'Dimanche',
+  };
+
+  let deactivated = 0;
+  let created     = 0;
+  let skipped     = 0;
+
+  for (const entry of INITIAL_WEEKLY_SHIFT_TABLE) {
+    // ── Validate ────────────────────────────────────────────────────────────
+    if (entry.dayOfWeek < 1 || entry.dayOfWeek > 7) {
+      console.warn(`  ⚠ Invalid dayOfWeek=${entry.dayOfWeek} for ${entry.staffName} — skipped`);
+      skipped++;
+      continue;
+    }
+
+    const staffId = staffIdMap[entry.staffName];
+    if (!staffId) {
+      console.warn(`  ⚠ Unknown staffName="${entry.staffName}" — skipped`);
+      skipped++;
+      continue;
+    }
+
+    if (!entry.isOff && entry.shiftTypeName === null) {
+      console.warn(
+        `  ⚠ shiftTypeName required when isOff=false ` +
+        `(${entry.staffName} / ${DAY_LABELS[entry.dayOfWeek]}) — skipped`,
+      );
+      skipped++;
+      continue;
+    }
+
+    const shiftTypeId = entry.shiftTypeName ? SHIFT_TYPE_IDS[entry.shiftTypeName] : null;
+
+    // ── Deactivate existing active schedule for same staff + day ─────────────
+    const { count } = await prisma.staffSchedule.updateMany({
+      where: { staffMemberId: staffId, dayOfWeek: entry.dayOfWeek, isActive: true },
+      data:  { isActive: false },
+    });
+    deactivated += count;
+
+    // ── Create new active row ────────────────────────────────────────────────
+    await prisma.staffSchedule.create({
+      data: {
+        staffMemberId: staffId,
+        shiftTypeId:   shiftTypeId ?? null,
+        dayOfWeek:     entry.dayOfWeek,
+        isOff:         entry.isOff,
+        isActive:      true,
+        notes:         'Planification initiale — généré par le seed',
+      },
+    });
+    created++;
+
+    const shiftLabel = entry.isOff ? 'OFF' : entry.shiftTypeName ?? '?';
+    console.log(`  · ${entry.staffName} ${DAY_LABELS[entry.dayOfWeek]}: ${shiftLabel}`);
+  }
+
+  if (deactivated > 0) {
+    console.log(`  · Deactivated ${deactivated} previous active schedule row(s)`);
+  }
+  if (skipped > 0) {
+    console.log(`  ⚠ Skipped ${skipped} invalid entr${skipped === 1 ? 'y' : 'ies'}`);
+  }
+  console.log(`  ✓ Created ${created} schedule entries`);
+  console.log('── Shift planning seed done ──────────────────────────────────────');
 }
 
 // ── Demo schedule (opt-in, never overwrites) ───────────────────────────────────
@@ -551,6 +681,9 @@ async function main(): Promise<void> {
   console.log('  dreamMassage seed');
   console.log(`  mode: ${CLEAN_RUNTIME ? 'CLEAN-RUNTIME + seed' : 'seed only'}`);
   console.log(`  env : ${IS_PRODUCTION ? 'production' : 'development'}`);
+  if (SEED_SHIFT_TABLE) {
+    console.log('  SEED_SHIFT_TABLE=true — weekly planning will be seeded');
+  }
   console.log('');
 
   if (!process.env.DATABASE_URL) {
@@ -569,6 +702,11 @@ async function main(): Promise<void> {
   console.log('');
   await applyRawSqlConstraints();
   console.log('');
+
+  if (SEED_SHIFT_TABLE) {
+    await seedShiftTable();
+    console.log('');
+  }
 
   if (process.env.SEED_DEMO_SCHEDULE === 'true') {
     await seedDemoSchedule();

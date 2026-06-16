@@ -275,25 +275,53 @@ export interface TodayShiftSuggestion {
 // ── Home Dashboard ─────────────────────────────────────────────────────────────
 
 export interface HomeDashboardFilters {
-  from: string;
-  to: string;
-  period: 'all' | 'matin' | 'soir' | 'journee' | 'custom';
-  periodStart?: string;
-  periodEnd?: string;
-  chair: string;
-  chartPeriod: 'day' | 'week' | 'month' | 'year';
+  preset:        string;   // today | yesterday | week | month | year | custom
+  from:          string;
+  to:            string;
+  period:       'all' | 'matin' | 'soir' | 'journee' | 'custom';
+  periodStart?:  string;
+  periodEnd?:    string;
+  chair:         string;
+  staffMemberId: string;
+  shiftTypeId:   string;
+  shiftId:       string;
+  status:        string;   // all | ACTIVE | COMPLETED | PENDING | CORRECTED | ANOMALY
+  chartPeriod:  'day' | 'week' | 'month' | 'year';
+}
+
+export interface DashboardFilterOptions {
+  chairs:       Array<{ id: string; name: string; displayName: string | null }>;
+  staffMembers: Array<{ id: string; name: string }>;
+  shiftTypes:   Array<{ id: string; label: string }>;
+  shifts:       Array<{
+    id: string; label: string; staffMemberName: string | null;
+    shiftTypeLabel: string | null; status: string;
+  }>;
+}
+
+export interface DashboardCurrentShift {
+  id:              string;
+  staffMemberName: string | null;
+  shiftTypeLabel:  string | null;
+  startedAt:       string;
+  scheduledEndAt:  string | null;
+  grossRevenue:    number;
+  totalPrime:      number;
+  netRevenue:      number;
 }
 
 export interface HomeSummary {
-  grossRevenue: number;
-  netRevenue: number;
-  sessionsCount: number;
+  grossRevenue:           number;
+  netRevenue:             number;
+  sessionsCount:          number;
   completedSessionsCount: number;
-  activeSessionsCount: number;
+  activeSessionsCount:    number;
+  pendingSessionsCount:   number;
+  correctedSessionsCount: number;
   outOfRuleSessionsCount: number;
-  activeChairs: number;
-  offlineChairs: number;
-  totalPrime: number;
+  activeChairs:           number;
+  offlineChairs:          number;
+  totalPrime:             number;
 }
 
 export interface HomeLiveChair {
@@ -338,24 +366,75 @@ export interface HomeRevenueChart {
 }
 
 export interface HomeRecentSession {
+  id:               string;
+  chairName:        string;
+  staffMemberName:  string | null;
+  shiftTypeLabel:   string | null;
+  startedAt:        string;
+  endedAt:          string | null;
+  durationSeconds:  number | null;
+  status:           string;
+  matchedPlanName:  string | null;
+  amount:           number;   // finalAmount for backward compat
+  finalAmount:      number;
+  expectedAmount:   number | null;
+  correctedAmount:  number | null;
+  correctionReason: string | null;
+  anomalyType:      string | null;
+  billingStatus:    string;
+}
+
+// ── Session detail (from GET /api/sessions/:id) ────────────────────────────────
+
+export interface SessionDetail {
   id: string;
+  chairId: string;
   chairName: string;
+  chairDisplayName: string | null;
+  status: string;
   startedAt: string;
   endedAt: string | null;
   durationSeconds: number | null;
-  status: string;
   matchedPlanName: string | null;
-  amount: number;
-  anomalyType: string | null;
+  matchedPlanId: string | null;
+  expectedAmount: number | null;
+  correctedAmount: number | null;
+  finalAmount: number;
   billingStatus: string;
+  anomalyType: string | null;
+  correctionReason: string | null;
+  correctedAt: string | null;
+  notes: string | null;
+}
+
+// ── Session settings (from GET /api/settings/session) ─────────────────────────
+
+export interface SessionSettings {
+  minimumBillableSeconds: number;
+  graceSeconds: number;
+  roundingMode: 'NEAREST_PLAN' | 'NEXT_PLAN' | 'EXACT_MINUTES';
+  overtimePolicy: 'NEXT_PLAN' | 'EXTRA_MINUTE' | 'ANOMALY';
+  minimumPlanId: string | null;
+  minimumPlan: { id: string; name: string; durationSeconds: number; priceAmount: number } | null;
+  allowManualSessionCorrection: boolean;
+  correctionReasonRequired: boolean;
+}
+
+export interface SessionCorrectionPayload {
+  correctedAmount?: number;
+  correctionReason?: string;
+  notes?: string;
+  clearCorrection?: boolean;
 }
 
 export interface HomeDashboardResponse {
-  filters: HomeDashboardFilters;
-  summary: HomeSummary;
-  liveChairs: HomeLiveChair[];
-  totalsByChair: HomeTotalsByChair[];
-  primeRevenue: HomePrimeRevenue;
-  revenueChart: HomeRevenueChart;
+  filters:        HomeDashboardFilters;
+  filterOptions:  DashboardFilterOptions;
+  currentShift:   DashboardCurrentShift | null;
+  summary:        HomeSummary;
+  liveChairs:     HomeLiveChair[];
+  totalsByChair:  HomeTotalsByChair[];
+  primeRevenue:   HomePrimeRevenue;
+  revenueChart:   HomeRevenueChart;
   recentSessions: HomeRecentSession[];
 }

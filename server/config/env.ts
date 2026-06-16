@@ -34,6 +34,19 @@ const envSchema = z.object({
     .string()
     .default('5000')
     .transform((v) => parseInt(v, 10)),
+  // ── Auto-shift job ────────────────────────────────────────────────────────────
+  AUTO_SHIFT_ENABLED: z
+    .string()
+    .default('false')
+    .transform((v) => v === 'true'),
+  AUTO_SHIFT_CHECK_INTERVAL_MS: z
+    .string()
+    .default('60000')
+    .transform((v) => parseInt(v, 10)),
+  ALLOW_MULTIPLE_OPEN_SHIFTS: z
+    .string()
+    .default('false')
+    .transform((v) => v === 'true'),
   // Shelly Cloud — optional; server starts without them but Shelly endpoints return 400
   SHELLY_AUTH_KEY: z.string().optional(),
   SHELLY_SERVER_URL: z.string().optional(),

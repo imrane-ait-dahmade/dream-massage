@@ -1,7 +1,10 @@
 'use client';
 
+import { useState } from 'react';
+import { Pencil } from 'lucide-react';
 import type { HomeRecentSession } from '@/lib/types';
 import { formatDH, formatElapsed, formatTime } from '@/lib/format';
+import { SessionCorrectionModal } from './SessionCorrectionModal';
 
 // ── Label maps ────────────────────────────────────────────────────────────────
 
@@ -22,110 +25,165 @@ const STATUS_CLASS: Record<string, string> = {
 };
 
 const ANOMALY_LABEL: Record<string, string> = {
-  TOO_SHORT:     'Trop court',
-  TOO_LONG:      'Trop long',
-  OUT_OF_HOURS:  'Hors horaires',
-  NO_PLAN_MATCH: 'Aucun plan',
+  TOO_SHORT:     'Court',
+  TOO_LONG:      'Long',
+  OUT_OF_HOURS:  'Hors h.',
+  NO_PLAN_MATCH: 'Sans plan',
+};
+
+const BILLING_BADGE: Record<string, { label: string; cls: string }> = {
+  CALCULATED: { label: 'AUTO',       cls: 'bg-slate-600/40 text-slate-400' },
+  CORRECTED:  { label: 'CORRIGÉ',    cls: 'bg-blue-500/20 text-blue-300' },
+  PENDING:    { label: 'EN ATTENTE', cls: 'bg-amber-500/20 text-amber-400' },
+  DISPUTED:   { label: 'LITIGE',     cls: 'bg-red-500/20 text-red-400' },
 };
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: string }) {
   return (
-    <span
-      className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-        STATUS_CLASS[status] ?? 'bg-slate-600/40 text-slate-400'
-      }`}
-    >
+    <span className={`inline-flex rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${STATUS_CLASS[status] ?? 'bg-slate-600/40 text-slate-400'}`}>
       {STATUS_LABEL[status] ?? status}
     </span>
   );
 }
 
-const COLS = ['Fauteuil', 'Début', 'Fin', 'Durée', 'Plan', 'Prix', 'Statut', 'Anomalie'];
+function BillingBadge({ billingStatus, anomalyType }: { billingStatus: string; anomalyType: string | null }) {
+  if (anomalyType) {
+    return (
+      <span className="inline-flex rounded-full bg-orange-500/20 px-1.5 py-0.5 text-[9px] font-semibold text-orange-400">
+        {ANOMALY_LABEL[anomalyType] ?? 'ANOMALIE'}
+      </span>
+    );
+  }
+  const b = BILLING_BADGE[billingStatus];
+  if (!b) return null;
+  return (
+    <span className={`inline-flex rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${b.cls}`}>
+      {b.label}
+    </span>
+  );
+}
+
+// ── Column headers ─────────────────────────────────────────────────────────────
+
+const COLS = ['Fauteuil', 'Fille', 'Shift', 'Début', 'Fin', 'Durée', 'Classe', 'Prix', 'Statut', ''];
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 interface Props {
-  sessions: HomeRecentSession[] | undefined;
-  loading: boolean;
+  sessions:   HomeRecentSession[] | undefined;
+  loading:    boolean;
+  onCorrect?: () => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function RecentSessionsTable({ sessions, loading }: Props) {
+export function RecentSessionsTable({ sessions, loading, onCorrect }: Props) {
+  const [correcting, setCorrecting] = useState<HomeRecentSession | null>(null);
+
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800">
-      <div className="border-b border-slate-700 px-4 py-3">
-        <h3 className="text-sm font-bold text-white">Sessions récentes</h3>
-        <p className="mt-0.5 text-xs text-slate-500">Tous fauteuils — 20 dernières de la période</p>
-      </div>
+    <>
+      <div className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800">
+        <div className="border-b border-slate-700 px-4 py-3">
+          <h3 className="text-sm font-bold text-white">Sessions récentes</h3>
+          <p className="mt-0.5 text-xs text-slate-500">20 dernières — tous fauteuils</p>
+        </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[700px] text-sm">
-          <thead>
-            <tr className="border-b border-slate-700 bg-slate-700/30">
-              {COLS.map((c) => (
-                <th
-                  key={c}
-                  className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500"
-                >
-                  {c}
-                </th>
-              ))}
-            </tr>
-          </thead>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[860px] text-sm">
+            <thead>
+              <tr className="border-b border-slate-700 bg-slate-700/30">
+                {COLS.map((c) => (
+                  <th key={c} className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                    {c}
+                  </th>
+                ))}
+              </tr>
+            </thead>
 
-          <tbody className="divide-y divide-slate-700/40">
-            {/* Skeleton rows during initial load */}
-            {loading && !sessions &&
-              Array.from({ length: 5 }).map((_, i) => (
+            <tbody className="divide-y divide-slate-700/40">
+              {/* Skeleton rows during initial load */}
+              {loading && !sessions && Array.from({ length: 5 }).map((_, i) => (
                 <tr key={i}>
                   {Array.from({ length: COLS.length }).map((__, j) => (
-                    <td key={j} className="px-4 py-3">
-                      <div className="h-3 w-16 animate-pulse rounded bg-slate-700" />
+                    <td key={j} className="px-3 py-2.5">
+                      <div className="h-2.5 w-14 animate-pulse rounded bg-slate-700" />
                     </td>
                   ))}
                 </tr>
               ))}
 
-            {/* Empty state */}
-            {!loading && (!sessions || sessions.length === 0) && (
-              <tr>
-                <td colSpan={COLS.length} className="px-4 py-10 text-center">
-                  <p className="text-sm text-slate-600">Aucune session pour cette période</p>
-                </td>
-              </tr>
-            )}
+              {/* Empty state */}
+              {!loading && (!sessions || sessions.length === 0) && (
+                <tr>
+                  <td colSpan={COLS.length} className="px-4 py-10 text-center">
+                    <p className="text-sm text-slate-600">Aucune session pour cette période</p>
+                  </td>
+                </tr>
+              )}
 
-            {/* Data rows */}
-            {sessions?.map((s) => (
-              <tr key={s.id} className="transition-colors hover:bg-slate-700/20">
-                <td className="px-4 py-3 font-semibold text-white">{s.chairName}</td>
-                <td className="px-4 py-3 text-xs text-slate-400">{formatTime(s.startedAt)}</td>
-                <td className="px-4 py-3 text-xs text-slate-400">{formatTime(s.endedAt)}</td>
-                <td className="px-4 py-3 text-xs text-slate-400">
-                  {s.durationSeconds !== null ? formatElapsed(s.durationSeconds) : '—'}
-                </td>
-                <td className="px-4 py-3 text-xs text-slate-400">
-                  {s.matchedPlanName ?? '—'}
-                </td>
-                <td className="px-4 py-3 text-xs font-semibold text-white">
-                  {s.amount > 0 ? formatDH(s.amount) : '—'}
-                </td>
-                <td className="px-4 py-3">
-                  <StatusBadge status={s.status} />
-                </td>
-                <td className="px-4 py-3 text-xs text-orange-400">
-                  {s.anomalyType
-                    ? (ANOMALY_LABEL[s.anomalyType] ?? s.anomalyType)
-                    : <span className="text-slate-600">—</span>}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+              {/* Data rows */}
+              {sessions?.map((s) => (
+                <tr key={s.id} className="transition-colors hover:bg-slate-700/20">
+                  <td className="px-3 py-2.5 font-semibold text-white">{s.chairName}</td>
+                  <td className="px-3 py-2.5 text-xs text-slate-400">
+                    {s.staffMemberName ?? <span className="text-slate-600">—</span>}
+                  </td>
+                  <td className="px-3 py-2.5 text-xs text-slate-500">
+                    {s.shiftTypeLabel ?? <span className="text-slate-600">—</span>}
+                  </td>
+                  <td className="px-3 py-2.5 text-xs text-slate-400 tabular-nums">{formatTime(s.startedAt)}</td>
+                  <td className="px-3 py-2.5 text-xs text-slate-400 tabular-nums">{formatTime(s.endedAt)}</td>
+                  <td className="px-3 py-2.5 text-xs text-slate-400 tabular-nums">
+                    {s.durationSeconds !== null ? formatElapsed(s.durationSeconds) : '—'}
+                  </td>
+                  <td className="px-3 py-2.5 text-xs text-slate-400">
+                    {s.matchedPlanName ?? <span className="text-slate-600">—</span>}
+                  </td>
+                  {/* Prix: show finalAmount + billing/anomaly badge */}
+                  <td className="px-3 py-2.5">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-xs font-semibold text-white">
+                        {(s.finalAmount ?? s.amount) > 0 ? formatDH(s.finalAmount ?? s.amount) : '—'}
+                      </span>
+                      <BillingBadge billingStatus={s.billingStatus} anomalyType={s.anomalyType} />
+                    </div>
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <StatusBadge status={s.status} />
+                  </td>
+                  {/* Correction action */}
+                  <td className="px-2 py-2.5">
+                    {s.status !== 'ACTIVE' && (
+                      <button
+                        onClick={() => setCorrecting(s)}
+                        title="Corriger le prix"
+                        className="flex items-center gap-1 rounded-lg border border-slate-600 px-2 py-1 text-[10px] font-semibold text-slate-400 hover:border-blue-500/50 hover:bg-blue-500/10 hover:text-blue-300"
+                      >
+                        <Pencil className="h-2.5 w-2.5" />
+                        Corriger
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+
+      {/* Correction modal */}
+      {correcting && (
+        <SessionCorrectionModal
+          session={correcting}
+          onClose={() => setCorrecting(null)}
+          onSuccess={() => {
+            setCorrecting(null);
+            onCorrect?.();
+          }}
+        />
+      )}
+    </>
   );
 }

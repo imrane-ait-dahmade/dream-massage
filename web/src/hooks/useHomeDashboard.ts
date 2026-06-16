@@ -10,7 +10,18 @@ function todayISO(): string {
 
 export function defaultFilters(): HomeDashboardFilters {
   const today = todayISO();
-  return { from: today, to: today, period: 'all', chair: 'all', chartPeriod: 'day' };
+  return {
+    preset:        'today',
+    from:          today,
+    to:            today,
+    period:        'all',
+    chair:         'all',
+    staffMemberId: 'all',
+    shiftTypeId:   'all',
+    shiftId:       'all',
+    status:        'all',
+    chartPeriod:   'day',
+  };
 }
 
 export function useHomeDashboard() {
@@ -56,5 +67,20 @@ export function useHomeDashboard() {
     setFilters(defaultFilters());
   }, [setFilters]);
 
-  return { data, loading, error, filters, setFilters, reset };
+  // Refetch with the current filters — safe to call from event handlers
+  const refetch = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    getHomeDashboard(filters)
+      .then((res) => {
+        setData(res);
+        setLoading(false);
+      })
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : 'Erreur de chargement');
+        setLoading(false);
+      });
+  }, [filters]);
+
+  return { data, loading, error, filters, setFilters, reset, refetch };
 }

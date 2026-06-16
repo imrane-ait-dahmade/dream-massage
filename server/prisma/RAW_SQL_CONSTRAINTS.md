@@ -71,6 +71,21 @@ entry for the same `(staffMemberId, dayOfWeek)` pair before inserting a new one.
 This index is the database-level safety net — it prevents race conditions if two
 concurrent requests slip past the service-layer check.
 
+### 6. No duplicate auto-shift for same schedule and business date
+
+Prevents the auto-shift job from opening two shifts for the same weekly schedule
+entry on the same calendar day (e.g., if the job runs while the server restarts).
+
+```sql
+CREATE UNIQUE INDEX unique_auto_shift_per_schedule_day
+  ON shifts (staff_schedule_id, business_date)
+  WHERE staff_schedule_id IS NOT NULL
+    AND business_date IS NOT NULL;
+```
+
+**Enforcement order**: `auto-shift.service.ts` checks for an existing row before
+inserting. This index is the database-level safety net against concurrent opens.
+
 ---
 
 ## When to apply
@@ -85,6 +100,6 @@ a unique violation error if duplicates are present).
 ```sql
 SELECT indexname, indexdef
 FROM pg_indexes
-WHERE tablename IN ('chair_sessions', 'chair_detection_configs', 'pricing_rules', 'shifts')
+WHERE tablename IN ('chair_sessions', 'chair_detection_configs', 'pricing_rules', 'shifts', 'staff_schedules')
   AND indexname LIKE 'unique_%';
 ```

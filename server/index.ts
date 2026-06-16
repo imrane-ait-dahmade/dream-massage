@@ -16,6 +16,7 @@ import {
   getLastShellySyncAt,
   getSimulationTick,
 } from './jobs/mock-realtime.job';
+import { startAutoShiftJob, stopAutoShiftJob } from './jobs/auto-shift.job';
 import { processSimulationTick } from './jobs/fake-power-simulation.job';
 import { shellyService, isShellyConfigured, getMissingFields } from './modules/shelly/shelly.service';
 import { corsOriginFn } from './config/cors';
@@ -24,6 +25,7 @@ import authRouter from './modules/auth/auth.controller';
 import chairRouter from './modules/chairs/chair.controller';
 import settingsRouter from './modules/settings/settings.controller';
 import shiftRouter from './modules/shifts/shift.controller';
+import sessionRouter from './modules/sessions/session.controller';
 
 const app = express();
 
@@ -74,13 +76,18 @@ app.get('/api/dashboard/home', (req, res) => {
   const str = (k: string) => (typeof q[k] === 'string' ? (q[k] as string) : undefined);
   homeDashboardService
     .get({
-      from:        str('from'),
-      to:          str('to'),
-      period:      str('period') as never,
-      periodStart: str('periodStart'),
-      periodEnd:   str('periodEnd'),
-      chair:       str('chair'),
-      chartPeriod: str('chartPeriod') as never,
+      preset:       str('preset'),
+      from:         str('from'),
+      to:           str('to'),
+      period:       str('period'),
+      periodStart:  str('periodStart'),
+      periodEnd:    str('periodEnd'),
+      chair:        str('chair'),
+      staffMemberId: str('staffMemberId'),
+      shiftTypeId:   str('shiftTypeId'),
+      shiftId:       str('shiftId'),
+      status:        str('status'),
+      chartPeriod:   str('chartPeriod'),
     })
     .then((data) => res.json(data))
     .catch((err: unknown) => {
@@ -215,6 +222,10 @@ app.use('/api/settings', requireAuth, settingsRouter);
 
 app.use('/api/shifts', requireAuth, shiftRouter);
 
+// ── Sessions (protected) ───────────────────────────────────────────────────────
+
+app.use('/api/sessions', requireAuth, sessionRouter);
+
 // ── 404 ────────────────────────────────────────────────────────────────────────
 
 app.use((_req, res) => {
@@ -241,13 +252,20 @@ httpServer.listen(PORT, '0.0.0.0', () => {
   if (activeSource === 'shelly') {
     logger.info(`  shellyPollMs      : ${env.SHELLY_POLL_INTERVAL_MS}`);
   }
+  logger.info(`  autoShiftEnabled  : ${env.AUTO_SHIFT_ENABLED}`);
+  if (env.AUTO_SHIFT_ENABLED) {
+    logger.info(`  autoShiftInterval : ${env.AUTO_SHIFT_CHECK_INTERVAL_MS}ms`);
+    logger.info(`  multipleOpenShifts: ${env.ALLOW_MULTIPLE_OPEN_SHIFTS}`);
+  }
   logger.info('─────────────────────────────────────────');
   startRealtimeJob(io);
+  startAutoShiftJob();
 });
 
 function shutdown(signal: string): void {
   logger.info(`[server] ${signal} — shutting down`);
   stopRealtimeJob();
+  stopAutoShiftJob();
   httpServer.close(() => {
     logger.info('[server] HTTP server closed');
     process.exit(0);

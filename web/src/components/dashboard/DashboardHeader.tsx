@@ -55,24 +55,6 @@ export function DashboardHeader({ user, connStatus, lastUpdated, onLogout }: Pro
         </div>
       </header>
 
-      {/* Hero banner with shop background */}
-      <div
-        className="relative h-36 overflow-hidden"
-        style={{
-          backgroundImage: 'url(/feuteuille.jpg)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center 40%',
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-900/80 to-slate-900/20" />
-        <div className="relative mx-auto flex h-full max-w-6xl flex-col justify-center px-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
-            Dream Care
-          </p>
-          <h2 className="mt-0.5 text-2xl font-bold text-white">Tableau de bord</h2>
-          <p className="mt-1 text-sm text-white/55">Suivi temps réel des fauteuils</p>
-        </div>
-      </div>
     </>
   );
 }

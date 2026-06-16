@@ -18,6 +18,9 @@ import type {
   TodayShiftSuggestion,
   HomeDashboardFilters,
   HomeDashboardResponse,
+  SessionDetail,
+  SessionSettings,
+  SessionCorrectionPayload,
 } from './types';
 
 const BASE =
@@ -427,14 +430,55 @@ export async function getRevenueStats(period: 'day' | 'week' | 'month' | 'year')
 
 export async function getHomeDashboard(filters: Partial<HomeDashboardFilters>): Promise<HomeDashboardResponse> {
   const qs = new URLSearchParams();
-  if (filters.from)        qs.set('from', filters.from);
-  if (filters.to)          qs.set('to', filters.to);
-  if (filters.period)      qs.set('period', filters.period);
-  if (filters.periodStart) qs.set('periodStart', filters.periodStart);
-  if (filters.periodEnd)   qs.set('periodEnd', filters.periodEnd);
-  if (filters.chair)       qs.set('chair', filters.chair);
-  if (filters.chartPeriod) qs.set('chartPeriod', filters.chartPeriod);
+  if (filters.preset)        qs.set('preset',        filters.preset);
+  if (filters.from)          qs.set('from',           filters.from);
+  if (filters.to)            qs.set('to',             filters.to);
+  if (filters.period)        qs.set('period',         filters.period);
+  if (filters.periodStart)   qs.set('periodStart',    filters.periodStart);
+  if (filters.periodEnd)     qs.set('periodEnd',      filters.periodEnd);
+  if (filters.chair)         qs.set('chair',          filters.chair);
+  if (filters.staffMemberId) qs.set('staffMemberId',  filters.staffMemberId);
+  if (filters.shiftTypeId)   qs.set('shiftTypeId',    filters.shiftTypeId);
+  if (filters.shiftId)       qs.set('shiftId',        filters.shiftId);
+  if (filters.status)        qs.set('status',         filters.status);
+  if (filters.chartPeriod)   qs.set('chartPeriod',    filters.chartPeriod);
   return apiRequest<HomeDashboardResponse>(`${BASE}/api/dashboard/home?${qs.toString()}`);
+}
+
+// ── Sessions ───────────────────────────────────────────────────────────────────
+
+export async function getSession(sessionId: string): Promise<SessionDetail> {
+  return apiRequest<SessionDetail>(`${BASE}/api/sessions/${encodeURIComponent(sessionId)}`);
+}
+
+export async function correctSession(
+  sessionId: string,
+  payload: SessionCorrectionPayload,
+): Promise<{ ok: boolean; session: SessionDetail }> {
+  return apiRequest<{ ok: boolean; session: SessionDetail }>(
+    `${BASE}/api/sessions/${encodeURIComponent(sessionId)}/correction`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+// ── Session settings ───────────────────────────────────────────────────────────
+
+export async function getSessionSettings(): Promise<SessionSettings> {
+  return apiRequest<SessionSettings>(`${BASE}/api/settings/session`);
+}
+
+export async function updateSessionSettings(
+  payload: Partial<Omit<SessionSettings, 'minimumPlan'>>,
+): Promise<SessionSettings> {
+  return apiRequest<SessionSettings>(`${BASE}/api/settings/session`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
 }
 
 // ── Chair sessions (existing, kept below) ─────────────────────────────────────

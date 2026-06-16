@@ -9,9 +9,10 @@ import { formatElapsed } from '@/lib/format';
 
 interface Props {
   chair: ChairCardData;
+  compact?: boolean;
 }
 
-export function ChairCard({ chair }: Props) {
+export function ChairCard({ chair, compact = false }: Props) {
   const style = getDarkStatusStyle(chair.status);
   const label = getStatusLabel(chair.status);
   const isRunning = chair.status === 'ACTIVE' || chair.status === 'MAYBE_FINISHED';
@@ -32,6 +33,43 @@ export function ChairCard({ chair }: Props) {
   }, [isRunning, sessionStartedAtMs]);
 
   const timerValue = isRunning ? displayElapsed : chair.elapsedSeconds;
+
+  if (compact) {
+    return (
+      <Link href={`/chairs/${chair.id}`} className="block select-none transition-opacity active:opacity-75">
+        <div className={`relative rounded-xl border border-slate-700 border-l-[3px] bg-slate-800/80 px-3 py-2.5 transition-colors hover:bg-slate-800 ${style.accent}`}>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${style.dot} ${style.pulse ? 'animate-pulse' : ''}`} />
+              <span className="text-base font-bold leading-none text-white">{chair.name}</span>
+            </div>
+            {isRunning && (
+              <span className="shrink-0 font-mono text-xs font-bold tabular-nums text-blue-400">
+                {formatElapsed(timerValue)}
+              </span>
+            )}
+          </div>
+          <div className="mt-1.5 flex items-center justify-between gap-2">
+            <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${style.badge}`}>{label}</span>
+            <div className="flex shrink-0 items-center gap-1.5">
+              <span className="text-[10px] text-slate-600">{chair.powerWatts.toFixed(0)}W</span>
+              {chair.isOnline ? (
+                <Wifi className="h-2.5 w-2.5 text-emerald-400" />
+              ) : (
+                <WifiOff className="h-2.5 w-2.5 text-red-400" />
+              )}
+            </div>
+          </div>
+          {chair.warning && (
+            <div className="mt-1 flex items-center gap-1">
+              <AlertTriangle className="h-2.5 w-2.5 shrink-0 text-orange-400" />
+              <span className="truncate text-[9px] font-medium text-orange-400">{chair.warning}</span>
+            </div>
+          )}
+        </div>
+      </Link>
+    );
+  }
 
   return (
     <Link
