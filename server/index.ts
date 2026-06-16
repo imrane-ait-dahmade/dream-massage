@@ -30,7 +30,13 @@ import devDemoRouter from './modules/dev/dev.controller';
 
 const app = express();
 
-app.use(cors({ origin: corsOriginFn, credentials: true }));
+app.use(cors({
+  origin: corsOriginFn,
+  credentials: true,
+  // Explicitly allow Authorization so Safari's strict OPTIONS preflight accepts it.
+  // Without this, the cors package reflects request headers which Safari may reject.
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(express.json());
 app.use(cookieParser());
 

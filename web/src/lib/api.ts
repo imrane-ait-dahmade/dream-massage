@@ -112,6 +112,9 @@ export async function login(email: string, password: string): Promise<AuthUser> 
   });
   const body = (await res.json()) as { ok: boolean; token?: string; user?: AuthUser; error?: string };
   if (!res.ok || !body.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[auth] login response: token', body.token ? 'present' : 'absent');
+  }
   // Store token for Bearer fallback (Safari cross-origin — cookie may be blocked)
   if (body.token) storeToken(body.token);
   return body.user!;

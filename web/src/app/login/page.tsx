@@ -18,11 +18,20 @@ export default function LoginPage() {
     try {
       await login(email, password);
       // Verify session is reachable before navigating — login() already stored
-      // the Bearer token so this request succeeds even when cookies are blocked.
+      // the Bearer token so this succeeds even when Safari blocks the cross-site cookie.
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[auth] login ok — verifying session via GET /api/auth/me');
+      }
       try {
         await getMe();
-      } catch {
-        setError('Session non initialisée. Vérifiez la connexion réseau et réessayez.');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[auth] /api/auth/me ok — redirecting to dashboard');
+        }
+      } catch (meErr) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[auth] /api/auth/me failed:', (meErr as Error).message);
+        }
+        setError('Connexion réussie mais session non vérifiée. Réessayez.');
         return;
       }
       router.replace('/');
