@@ -107,10 +107,12 @@ export class PricingService {
       const overtimePolicy = rule.overtimePolicy;
 
       if (overtimePolicy === 'ANOMALY') {
+        // billingStatus = CALCULATED so commission still applies.
+        // The TOO_LONG anomaly badge remains for display/audit purposes.
         return {
           matchedPlanId: lastPlan.id,
           expectedAmount: Number(lastPlan.priceAmount),
-          billingStatus: 'PENDING',
+          billingStatus: 'CALCULATED',
           anomalyType: 'TOO_LONG',
           pricingSnapshot: {
             ...snapshotBase,
@@ -142,11 +144,11 @@ export class PricingService {
 
       // EXTRA_MINUTE — out of scope for MVP; safe fallback to avoid crash
       // TODO: implement EXTRA_MINUTE billing when added to scope
-      logger.warn('[pricing] EXTRA_MINUTE policy not implemented — using last plan, PENDING');
+      logger.warn('[pricing] EXTRA_MINUTE policy not implemented — using last plan, CALCULATED');
       return {
         matchedPlanId: lastPlan.id,
         expectedAmount: Number(lastPlan.priceAmount),
-        billingStatus: 'PENDING',
+        billingStatus: 'CALCULATED',
         anomalyType: 'TOO_LONG',
         pricingSnapshot: {
           ...snapshotBase,

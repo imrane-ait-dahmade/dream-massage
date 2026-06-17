@@ -649,21 +649,29 @@ export class HomeDashboardService {
 
       if (finalAmount <= 0) { excludedCommissionSessionsCount++; continue; }
 
-      // TOO_SHORT always excluded from commission
+      // TOO_SHORT always excluded from commission (amount=0, no valid plan).
       if (s.anomalyType?.split(',').includes('TOO_SHORT')) {
         excludedCommissionSessionsCount++;
         continue;
       }
 
-      // PENDING → not yet validated, count as pending
-      if (s.billingStatus === 'PENDING') {
-        pendingSessionsCount++;
+      // DISPUTED requires explicit owner resolution before commission.
+      if (s.billingStatus === 'DISPUTED') {
         excludedCommissionSessionsCount++;
         continue;
       }
 
-      // Must be CALCULATED or CORRECTED
-      if (s.billingStatus !== 'CALCULATED' && s.billingStatus !== 'CORRECTED') {
+      // PENDING + TOO_LONG: valid plan/price exists — eligible, same as CALCULATED.
+      // PENDING without TOO_LONG anomaly means pricing genuinely failed → exclude.
+      if (s.billingStatus === 'PENDING') {
+        const isTooLong = s.anomalyType?.split(',').includes('TOO_LONG') ?? false;
+        if (!isTooLong) {
+          pendingSessionsCount++;
+          excludedCommissionSessionsCount++;
+          continue;
+        }
+        // fall through — TOO_LONG PENDING is treated as CALCULATED below
+      } else if (s.billingStatus !== 'CALCULATED' && s.billingStatus !== 'CORRECTED') {
         excludedCommissionSessionsCount++;
         continue;
       }
@@ -753,13 +761,14 @@ export class HomeDashboardService {
         s.expectedAmount  !== null ? Number(s.expectedAmount)  : 0;
       grossRevenue += amt;
 
-      // Commission eligibility (same rules as inline prime calc)
+      // Commission eligibility (mirrors buildPrimeRevenueInline logic)
       if (s.status !== 'COMPLETED')  continue;
       if (!s.matchedPlanId)          continue;
       if (amt <= 0)                  continue;
       if (s.anomalyType?.split(',').includes('TOO_SHORT')) continue;
-      if (s.billingStatus === 'PENDING') continue;
-      if (s.billingStatus !== 'CALCULATED' && s.billingStatus !== 'CORRECTED') continue;
+      if (s.billingStatus === 'DISPUTED') continue;
+      // PENDING+TOO_LONG is eligible (valid plan/price); plain PENDING is not.
+      if (s.billingStatus === 'PENDING' && !s.anomalyType?.split(',').includes('TOO_LONG')) continue;
 
       const rule = commRules.find((r) => r.pricingPlanId === s.matchedPlanId);
       if (!rule) continue;

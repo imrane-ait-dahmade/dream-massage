@@ -88,12 +88,17 @@ function isEligibleForCommission(
 ): boolean {
   if (finalAmount.isZero() || finalAmount.isNegative()) return false;
   if (!matchedPlanId) return false;
-  // Only fully-billed or owner-corrected sessions generate commission.
-  // PENDING sessions (TOO_LONG anomaly, uncorrected) are excluded until corrected.
-  if (billingStatus !== 'CALCULATED' && billingStatus !== 'CORRECTED') return false;
-  // TOO_SHORT sessions have expectedAmount=0 but guard defensively with anomaly check.
+  // TOO_SHORT sessions have amount=0 and no valid plan — never eligible.
   if (anomalyType && anomalyType.split(',').includes('TOO_SHORT')) return false;
-  return true;
+  // DISPUTED sessions require explicit owner review before commission.
+  if (billingStatus === 'DISPUTED') return false;
+  // CALCULATED or CORRECTED → always eligible.
+  if (billingStatus === 'CALCULATED' || billingStatus === 'CORRECTED') return true;
+  // PENDING + TOO_LONG: session has a valid plan and price (billed at last-plan rate).
+  // The anomaly badge remains for display; commission still applies.
+  // This handles sessions created before the PricingService was updated.
+  if (billingStatus === 'PENDING' && anomalyType?.split(',').includes('TOO_LONG')) return true;
+  return false;
 }
 
 // Returns the most recently valid commission rule for a plan at a given date.
