@@ -45,9 +45,8 @@ function resolvePresetDates(preset: string, today: string): { from: string; to: 
       return { from: y, to: y };
     }
     case 'week': {
-      // Monday → Sunday of current week
       const d   = new Date(today + 'T12:00:00Z');
-      const dow = d.getUTCDay(); // 0=Sun … 6=Sat
+      const dow = d.getUTCDay();
       const mon = addDays(today, -((dow + 6) % 7));
       return { from: mon, to: addDays(mon, 6) };
     }
@@ -82,18 +81,18 @@ type StatusFilter = (typeof VALID_STATUSES)[number];
 // ── Param type ─────────────────────────────────────────────────────────────────
 
 export interface HomeDashboardParams {
-  preset?:       string;
-  from?:         string;
-  to?:           string;
-  period?:       string;
-  periodStart?:  string;
-  periodEnd?:    string;
-  chair?:        string;
+  preset?:        string;
+  from?:          string;
+  to?:            string;
+  period?:        string;
+  periodStart?:   string;
+  periodEnd?:     string;
+  chair?:         string;
   staffMemberId?: string;
-  shiftTypeId?:  string;
-  shiftId?:      string;
-  status?:       string;
-  chartPeriod?:  string;
+  shiftTypeId?:   string;
+  shiftId?:       string;
+  status?:        string;
+  chartPeriod?:   string;
 }
 
 // ── Prisma select ──────────────────────────────────────────────────────────────
@@ -125,7 +124,42 @@ const SESSION_SELECT = {
 
 type SessionRow = Prisma.ChairSessionGetPayload<{ select: typeof SESSION_SELECT }>;
 
-// Revenue for one session — ACTIVE sessions are never counted as revenue
+// ── Light query types for prime data ───────────────────────────────────────────
+
+type CommRuleLight = {
+  pricingPlanId: string;
+  type:          string;
+  value:         Prisma.Decimal;
+};
+
+type TargetBonusLight = {
+  shiftTypeId:  string;
+  targetAmount: Prisma.Decimal;
+  bonusAmount:  Prisma.Decimal;
+};
+
+type ShiftLight = {
+  id:          string;
+  shiftTypeId: string | null;
+  status:      string;
+};
+
+type BonusAdjLight = {
+  shiftId: string;
+  amount:  Prisma.Decimal;
+};
+
+type OpenShiftSessionLight = {
+  expectedAmount:  Prisma.Decimal | null;
+  correctedAmount: Prisma.Decimal | null;
+  status:          string;
+  matchedPlanId:   string | null;
+  billingStatus:   string;
+  anomalyType:     string | null;
+};
+
+// ── Session helpers ────────────────────────────────────────────────────────────
+
 function sessionRevenue(s: SessionRow): number {
   if (s.status === 'ACTIVE') return 0;
   const val = s.correctedAmount ?? s.expectedAmount;
@@ -134,7 +168,7 @@ function sessionRevenue(s: SessionRow): number {
 
 function isOutOfRule(s: SessionRow): boolean {
   return (
-    s.anomalyType  !== null ||
+    s.anomalyType   !== null ||
     s.billingStatus === 'PENDING' ||
     s.status        === 'UNCERTAIN' ||
     s.status        === 'ERROR'
@@ -155,7 +189,7 @@ export class HomeDashboardService {
     const tz    = getTimezone();
     const today = todayInTz(tz);
 
-    // ── Resolve preset → date range ────────────────────────────────────────────
+    // ── Resolve preset → date range ───────────────────────────────────────────
     const preset = (VALID_PRESETS.includes(raw.preset as Preset) ? raw.preset : 'custom') as Preset;
     let from: string;
     let to:   string;
@@ -166,7 +200,7 @@ export class HomeDashboardService {
       to   = raw.to   || today;
     }
 
-    // ── Normalize other params ─────────────────────────────────────────────────
+    // ── Normalize other params ────────────────────────────────────────────────
     const period        = (VALID_PERIODS.includes(raw.period as Period) ? raw.period : 'all') as Period;
     const chair         = raw.chair         || 'all';
     const staffMemberId = raw.staffMemberId || 'all';
@@ -175,25 +209,24 @@ export class HomeDashboardService {
     const statusFilter  = (VALID_STATUSES.includes(raw.status as StatusFilter) ? raw.status : 'all') as StatusFilter;
     const chartPeriod   = (VALID_CHART_P.includes(raw.chartPeriod as ChartPeriod) ? raw.chartPeriod : 'day') as ChartPeriod;
 
-    // ── Date range → UTC ───────────────────────────────────────────────────────
+    // ── Date range → UTC ──────────────────────────────────────────────────────
     const utcStart = localMidnightUTC(from, tz);
     const utcEnd   = localMidnightUTC(addDays(to, 1), tz);
 
-    // ── Time-of-day window ─────────────────────────────────────────────────────
+    // ── Time-of-day window ────────────────────────────────────────────────────
     const periodWindow = await this.resolvePeriodWindow(period, raw.periodStart, raw.periodEnd);
 
-    // ── Chair filter ───────────────────────────────────────────────────────────
+    // ── Chair filter ──────────────────────────────────────────────────────────
     let chairDbId: string | undefined;
     if (chair !== 'all') {
       const dbChair = await prisma.chair.findFirst({
-        where: { OR: [{ name: chair }, { id: chair }] },
+        where:  { OR: [{ name: chair }, { id: chair }] },
         select: { id: true },
       });
       chairDbId = dbChair?.id ?? undefined;
     }
 
-    // ── Shift/staff WHERE fragment ─────────────────────────────────────────────
-    // Only used when shiftId='all' — a specific shiftId takes full precedence.
+    // ── Shift/staff WHERE fragment ────────────────────────────────────────────
     const shiftRelFilter =
       staffMemberId !== 'all' || shiftTypeId !== 'all'
         ? {
@@ -202,7 +235,7 @@ export class HomeDashboardService {
           }
         : undefined;
 
-    // ── Status WHERE condition ─────────────────────────────────────────────────
+    // ── Status WHERE condition ────────────────────────────────────────────────
     let statusCond: Prisma.ChairSessionWhereInput;
     switch (statusFilter) {
       case 'ACTIVE':
@@ -228,12 +261,10 @@ export class HomeDashboardService {
         break;
     }
 
-    // ── Session WHERE clause ───────────────────────────────────────────────────
-    // shiftId is the dominant filter: when set, skip staff/type constraints
-    // (they would conflict if the user changed staff after picking a shift).
+    // ── Session WHERE clause ──────────────────────────────────────────────────
     const sessionWhere: Prisma.ChairSessionWhereInput = {
       startedAt: { gte: utcStart, lt: utcEnd },
-      ...(chairDbId     ? { chairId: chairDbId } : {}),
+      ...(chairDbId ? { chairId: chairDbId } : {}),
       ...(shiftId !== 'all'
         ? { shiftId }
         : shiftRelFilter
@@ -242,69 +273,44 @@ export class HomeDashboardService {
       ...statusCond,
     };
 
-    // ── Shift filter options WHERE (respects staffMemberId + shiftTypeId) ───────
+    // ── Shift filter options WHERE ─────────────────────────────────────────────
     const rangeShiftsWhere: Prisma.ShiftWhereInput = {
       startedAt: { gte: utcStart, lt: utcEnd },
       ...(staffMemberId !== 'all' ? { staffMemberId } : {}),
       ...(shiftTypeId   !== 'all' ? { shiftTypeId }   : {}),
     };
 
-    // ── Closed-shift prime WHERE (must match the same staff/type/shift scope) ──
-    const closedShiftsWhere: Prisma.ShiftWhereInput = {
-      startedAt: { gte: utcStart, lt: utcEnd },
-      status: { in: ['CLOSED', 'REVIEWED'] },
-      ...(shiftId !== 'all'
-        ? { id: shiftId }
-        : {
-            ...(staffMemberId !== 'all' ? { staffMemberId } : {}),
-            ...(shiftTypeId   !== 'all' ? { shiftTypeId }   : {}),
-          }),
-    };
-
-    // ── Parallel DB fetches ────────────────────────────────────────────────────
+    // ── Batch 1: core data + lookup tables + commission rule tables ────────────
     const [
       dbChairs,
       sessions,
-      closedShifts,
       allStaff,
       allShiftTypes,
       rangeShifts,
       currentShiftRow,
+      allActiveCommRules,
+      allTargetBonusRules,
     ] = await Promise.all([
-      // All enabled chairs (for live grid + filterOptions)
       prisma.chair.findMany({
         where:   { isEnabled: true },
         orderBy: { name: 'asc' },
         select:  { id: true, name: true, displayName: true, status: true, currentPowerWatts: true, isOnline: true },
       }),
-      // Filtered sessions
       prisma.chairSession.findMany({
         where:   sessionWhere,
         select:  SESSION_SELECT,
         orderBy: { startedAt: 'desc' },
       }),
-      // Closed shifts in range → prime snapshots (filtered to same scope as sessions)
-      prisma.shift.findMany({
-        where:  closedShiftsWhere,
-        select: {
-          grossRevenue: true, planCommission: true,
-          targetBonus:  true, manualBonus:    true,
-          totalPrime:   true, netRevenue:     true,
-        },
-      }),
-      // All active staff members → filter dropdown
       prisma.staffMember.findMany({
         where:   { isActive: true },
         orderBy: { name: 'asc' },
         select:  { id: true, name: true },
       }),
-      // All active shift types → filter dropdown
       prisma.shiftType.findMany({
         where:   { isActive: true },
         orderBy: { sortOrder: 'asc' },
         select:  { id: true, name: true, label: true },
       }),
-      // Shift filter dropdown — filtered by staffMemberId + shiftTypeId
       prisma.shift.findMany({
         where:   rangeShiftsWhere,
         orderBy: { startedAt: 'desc' },
@@ -315,7 +321,7 @@ export class HomeDashboardService {
           shiftType:   { select: { label: true } },
         },
       }),
-      // Current open shift (most recent)
+      // Current OPEN shift for the shift-summary card
       prisma.shift.findFirst({
         where:   { status: 'OPEN' },
         orderBy: { startedAt: 'desc' },
@@ -323,16 +329,26 @@ export class HomeDashboardService {
           id:             true,
           startedAt:      true,
           scheduledEndAt: true,
-          grossRevenue:   true,
-          totalPrime:     true,
-          netRevenue:     true,
           staffMember: { select: { name: true } },
           shiftType:   { select: { label: true } },
         },
       }),
+      // All currently active commission rules (small table — no date-validity check
+      // here because the home dashboard is in estimation mode; historical accuracy
+      // is handled by PrimeCalculationService used in the shift detail view)
+      prisma.commissionRule.findMany({
+        where:  { isActive: true },
+        select: { pricingPlanId: true, type: true, value: true },
+      }) as Promise<CommRuleLight[]>,
+      // All active target-bonus rules sorted desc so first match = highest threshold
+      prisma.shiftTargetBonusRule.findMany({
+        where:   { isActive: true },
+        orderBy: { targetAmount: 'desc' },
+        select:  { shiftTypeId: true, targetAmount: true, bonusAmount: true },
+      }) as Promise<TargetBonusLight[]>,
     ]);
 
-    // ── Time-of-day filter ─────────────────────────────────────────────────────
+    // ── Time-of-day filter ────────────────────────────────────────────────────
     const filtered: SessionRow[] = periodWindow
       ? sessions.filter((s) => {
           const local    = toLocalDate(s.startedAt, tz);
@@ -341,15 +357,60 @@ export class HomeDashboardService {
         })
       : sessions;
 
-    // ── Assemble response ──────────────────────────────────────────────────────
+    // ── Batch 2: shift context for prime + open-shift live sessions ────────────
+    const uniqueShiftIdsFromFiltered: string[] = [
+      ...new Set(
+        filtered
+          .map((s) => s.shiftId)
+          .filter((id): id is string => id !== null),
+      ),
+    ];
+
+    const [shiftsForPrime, bonusAdjustments, openShiftSessions] = await Promise.all([
+      uniqueShiftIdsFromFiltered.length > 0
+        ? (prisma.shift.findMany({
+            where:  { id: { in: uniqueShiftIdsFromFiltered } },
+            select: { id: true, shiftTypeId: true, status: true },
+          }) as Promise<ShiftLight[]>)
+        : Promise.resolve([] as ShiftLight[]),
+      uniqueShiftIdsFromFiltered.length > 0
+        ? (prisma.shiftBonusAdjustment.findMany({
+            where:  { shiftId: { in: uniqueShiftIdsFromFiltered } },
+            select: { shiftId: true, amount: true },
+          }) as Promise<BonusAdjLight[]>)
+        : Promise.resolve([] as BonusAdjLight[]),
+      // All sessions in the currently OPEN shift (unfiltered — for the shift card)
+      currentShiftRow
+        ? (prisma.chairSession.findMany({
+            where:  { shiftId: currentShiftRow.id, status: { not: 'CANCELLED' } },
+            select: {
+              expectedAmount:  true,
+              correctedAmount: true,
+              status:          true,
+              matchedPlanId:   true,
+              billingStatus:   true,
+              anomalyType:     true,
+            },
+          }) as Promise<OpenShiftSessionLight[]>)
+        : Promise.resolve([] as OpenShiftSessionLight[]),
+    ]);
+
+    // ── Assemble sections ─────────────────────────────────────────────────────
     const summary    = this.buildSummary(filtered, dbChairs);
-    const prime      = this.buildPrimeRevenue(closedShifts, summary.grossRevenue);
+    const prime      = this.buildPrimeRevenueInline(
+      filtered,
+      allActiveCommRules,
+      allTargetBonusRules,
+      shiftsForPrime,
+      bonusAdjustments,
+      summary.grossRevenue,
+    );
     const liveChairs = this.buildLiveChairs(dbChairs);
     const byChair    = this.buildTotalsByChair(filtered, dbChairs);
     const chart      = this.buildChart(filtered, chartPeriod, from, tz);
     const recent     = this.buildRecentSessions(filtered);
 
-    // Deduplicate shift options by id (guards against any duplicate rows)
+    // ── Filter options ────────────────────────────────────────────────────────
     const seenShiftIds = new Set<string>();
     const uniqueRangeShifts = rangeShifts.filter((sh) => {
       if (seenShiftIds.has(sh.id)) return false;
@@ -358,9 +419,7 @@ export class HomeDashboardService {
     });
 
     const filterOptions = {
-      chairs: dbChairs.map((c) => ({
-        id: c.id, name: c.name, displayName: c.displayName,
-      })),
+      chairs:       dbChairs.map((c) => ({ id: c.id, name: c.name, displayName: c.displayName })),
       staffMembers: allStaff.map((s) => ({ id: s.id, name: s.name })),
       shiftTypes:   allShiftTypes.map((st) => ({ id: st.id, label: st.label ?? st.name })),
       shifts: uniqueRangeShifts.map((sh) => ({
@@ -376,17 +435,16 @@ export class HomeDashboardService {
       })),
     };
 
+    // ── Current shift — live numbers from open-shift sessions ─────────────────
+    // Reads the snapshot columns for CLOSED shifts only when the UI explicitly
+    // navigates to them. For the OPEN shift we always calculate live so the
+    // owner sees real-time revenue as sessions complete throughout the day.
     const currentShift = currentShiftRow
-      ? {
-          id:              currentShiftRow.id,
-          staffMemberName: currentShiftRow.staffMember.name,
-          shiftTypeLabel:  currentShiftRow.shiftType?.label ?? null,
-          startedAt:       currentShiftRow.startedAt.toISOString(),
-          scheduledEndAt:  currentShiftRow.scheduledEndAt?.toISOString() ?? null,
-          grossRevenue:    Number(currentShiftRow.grossRevenue  ?? 0),
-          totalPrime:      Number(currentShiftRow.totalPrime    ?? 0),
-          netRevenue:      Number(currentShiftRow.netRevenue    ?? 0),
-        }
+      ? this.buildCurrentShiftLive(
+          currentShiftRow,
+          openShiftSessions,
+          allActiveCommRules,
+        )
       : null;
 
     return {
@@ -417,7 +475,7 @@ export class HomeDashboardService {
     };
   }
 
-  // ── Period window resolution ───────────────────────────────────────────────────
+  // ── Period window ──────────────────────────────────────────────────────────────
 
   private async resolvePeriodWindow(
     period: Period,
@@ -476,11 +534,11 @@ export class HomeDashboardService {
     for (const s of sessions) {
       sessionsCount++;
       grossRevenue += sessionRevenue(s);
-      if (s.status    === 'ACTIVE')    activeSessionsCount++;
-      if (s.status    === 'COMPLETED') completedSessionsCount++;
-      if (s.billingStatus === 'PENDING')   pendingSessionsCount++;
+      if (s.status      === 'ACTIVE')    activeSessionsCount++;
+      if (s.status      === 'COMPLETED') completedSessionsCount++;
+      if (s.billingStatus === 'PENDING')  pendingSessionsCount++;
       if (s.billingStatus === 'CORRECTED' || s.correctedAmount !== null) correctedSessionsCount++;
-      if (isOutOfRule(s))              outOfRuleSessionsCount++;
+      if (isOutOfRule(s)) outOfRuleSessionsCount++;
     }
 
     return {
@@ -503,25 +561,22 @@ export class HomeDashboardService {
     chairs: Array<{ id: string; name: string; displayName: string | null }>,
   ) {
     type ChairAccum = {
-      sessionsCount: number;
+      sessionsCount:          number;
       completedSessionsCount: number;
-      activeSessionsCount: number;
+      activeSessionsCount:    number;
       outOfRuleSessionsCount: number;
-      revenue: number;
-      durationTotalSeconds: number;
+      revenue:                number;
+      durationTotalSeconds:   number;
       plans: Map<string, { label: string; count: number; revenue: number }>;
     };
 
     const byChair = new Map<string, ChairAccum>(
-      chairs.map((c) => [
-        c.id,
-        {
-          sessionsCount: 0, completedSessionsCount: 0,
-          activeSessionsCount: 0, outOfRuleSessionsCount: 0,
-          revenue: 0, durationTotalSeconds: 0,
-          plans: new Map(),
-        },
-      ]),
+      chairs.map((c) => [c.id, {
+        sessionsCount: 0, completedSessionsCount: 0,
+        activeSessionsCount: 0, outOfRuleSessionsCount: 0,
+        revenue: 0, durationTotalSeconds: 0,
+        plans: new Map(),
+      }]),
     );
 
     for (const s of sessions) {
@@ -560,45 +615,172 @@ export class HomeDashboardService {
     });
   }
 
-  // ── Prime revenue ──────────────────────────────────────────────────────────────
+  // ── Prime revenue — inline estimation ─────────────────────────────────────────
+  // Applies currently active rules to filtered sessions WITHOUT the validFrom/validTo
+  // date check used by PrimeCalculationService. This gives the owner an accurate
+  // estimate of what the commission looks like under the current ruleset, even when
+  // sessions predate today's rule activation.
+  //
+  // isEstimated = true whenever any shift in the filtered set is still OPEN.
+  // The shift detail view (PrimeCalculationService) uses the stricter historical check.
 
-  private buildPrimeRevenue(
-    shifts: Array<{
-      grossRevenue:   Prisma.Decimal | null;
-      planCommission: Prisma.Decimal | null;
-      targetBonus:    Prisma.Decimal | null;
-      manualBonus:    Prisma.Decimal | null;
-      totalPrime:     Prisma.Decimal | null;
-      netRevenue:     Prisma.Decimal | null;
-    }>,
+  private buildPrimeRevenueInline(
+    sessions:         SessionRow[],
+    commRules:        CommRuleLight[],
+    targetBonusRules: TargetBonusLight[],  // sorted desc by targetAmount
+    shifts:           ShiftLight[],
+    bonusAdj:         BonusAdjLight[],
     sessionGrossRevenue: number,
   ) {
-    if (shifts.length === 0) {
-      return {
-        grossRevenue:   d2(sessionGrossRevenue),
-        planCommission: 0,
-        targetBonus:    0,
-        manualBonus:    0,
-        totalPrime:     0,
-        netRevenue:     d2(sessionGrossRevenue),
-      };
+    // ── Plan commission ───────────────────────────────────────────────────────
+    let planCommission                    = 0;
+    let eligibleCommissionSessionsCount   = 0;
+    let excludedCommissionSessionsCount   = 0;
+    let pendingSessionsCount              = 0;
+
+    for (const s of sessions) {
+      // Only COMPLETED sessions generate commission
+      if (s.status !== 'COMPLETED') continue;
+      if (!s.matchedPlanId) continue;
+
+      const finalAmount =
+        s.correctedAmount !== null ? Number(s.correctedAmount) :
+        s.expectedAmount  !== null ? Number(s.expectedAmount)  : 0;
+
+      if (finalAmount <= 0) { excludedCommissionSessionsCount++; continue; }
+
+      // TOO_SHORT always excluded from commission
+      if (s.anomalyType?.split(',').includes('TOO_SHORT')) {
+        excludedCommissionSessionsCount++;
+        continue;
+      }
+
+      // PENDING → not yet validated, count as pending
+      if (s.billingStatus === 'PENDING') {
+        pendingSessionsCount++;
+        excludedCommissionSessionsCount++;
+        continue;
+      }
+
+      // Must be CALCULATED or CORRECTED
+      if (s.billingStatus !== 'CALCULATED' && s.billingStatus !== 'CORRECTED') {
+        excludedCommissionSessionsCount++;
+        continue;
+      }
+
+      // Find active rule for this plan (no date-validity check — estimation mode)
+      const rule = commRules.find((r) => r.pricingPlanId === s.matchedPlanId);
+      if (!rule) continue;  // no rule for this plan → 0 commission (correct)
+
+      const commission =
+        rule.type === 'PERCENTAGE'
+          ? d2(finalAmount * Number(rule.value) / 100)
+          : Number(rule.value);
+
+      planCommission += commission;
+      eligibleCommissionSessionsCount++;
     }
-    let grossRevenue = 0, planCommission = 0, targetBonus = 0, manualBonus = 0, totalPrime = 0, netRevenue = 0;
-    for (const s of shifts) {
-      grossRevenue   += Number(s.grossRevenue   ?? 0);
-      planCommission += Number(s.planCommission ?? 0);
-      targetBonus    += Number(s.targetBonus    ?? 0);
-      manualBonus    += Number(s.manualBonus    ?? 0);
-      totalPrime     += Number(s.totalPrime     ?? 0);
-      netRevenue     += Number(s.netRevenue     ?? 0);
+    planCommission = d2(planCommission);
+
+    // ── Target bonus — per shift, based on sessions in the filter ─────────────
+    // Build shift → filtered-session gross revenue map
+    const shiftGrossMap = new Map<string, number>();
+    for (const s of sessions) {
+      if (!s.shiftId) continue;
+      const rev = sessionRevenue(s);
+      shiftGrossMap.set(s.shiftId, (shiftGrossMap.get(s.shiftId) ?? 0) + rev);
     }
+
+    let targetBonus = 0;
+    for (const shift of shifts) {
+      if (!shift.shiftTypeId) continue;
+      const shiftGross = shiftGrossMap.get(shift.id) ?? 0;
+      if (shiftGross <= 0) continue;
+      // Highest matching threshold (rules sorted desc)
+      const bonusRule = targetBonusRules.find(
+        (r) => r.shiftTypeId === shift.shiftTypeId && Number(r.targetAmount) <= shiftGross,
+      );
+      if (bonusRule) targetBonus += Number(bonusRule.bonusAmount);
+    }
+    targetBonus = d2(targetBonus);
+
+    // ── Manual bonus — sum of adjustments on shifts in this filter ────────────
+    let manualBonus = 0;
+    for (const adj of bonusAdj) {
+      manualBonus += Number(adj.amount);
+    }
+    manualBonus = d2(manualBonus);
+
+    const totalPrime = d2(planCommission + targetBonus + manualBonus);
+
     return {
-      grossRevenue:   d2(grossRevenue),
-      planCommission: d2(planCommission),
-      targetBonus:    d2(targetBonus),
-      manualBonus:    d2(manualBonus),
-      totalPrime:     d2(totalPrime),
-      netRevenue:     d2(netRevenue),
+      grossRevenue:                    d2(sessionGrossRevenue),
+      planCommission,
+      targetBonus,
+      manualBonus,
+      totalPrime,
+      netRevenue:                      d2(sessionGrossRevenue - totalPrime),
+      isEstimated:                     shifts.some((sh) => sh.status === 'OPEN'),
+      eligibleCommissionSessionsCount,
+      excludedCommissionSessionsCount,
+      pendingSessionsCount,
+    };
+  }
+
+  // ── Current shift — live from its actual sessions ─────────────────────────────
+  // The Shift table's grossRevenue/totalPrime/netRevenue snapshot columns are only
+  // written at close time. For OPEN shifts we compute them live so the card always
+  // shows real-time values.
+
+  private buildCurrentShiftLive(
+    row: {
+      id:             string;
+      startedAt:      Date;
+      scheduledEndAt: Date | null;
+      staffMember:    { name: string };
+      shiftType:      { label: string | null } | null;
+    },
+    sessions: OpenShiftSessionLight[],
+    commRules: CommRuleLight[],
+  ) {
+    let grossRevenue   = 0;
+    let planCommission = 0;
+
+    for (const s of sessions) {
+      if (s.status === 'ACTIVE') continue;
+      const amt =
+        s.correctedAmount !== null ? Number(s.correctedAmount) :
+        s.expectedAmount  !== null ? Number(s.expectedAmount)  : 0;
+      grossRevenue += amt;
+
+      // Commission eligibility (same rules as inline prime calc)
+      if (s.status !== 'COMPLETED')  continue;
+      if (!s.matchedPlanId)          continue;
+      if (amt <= 0)                  continue;
+      if (s.anomalyType?.split(',').includes('TOO_SHORT')) continue;
+      if (s.billingStatus === 'PENDING') continue;
+      if (s.billingStatus !== 'CALCULATED' && s.billingStatus !== 'CORRECTED') continue;
+
+      const rule = commRules.find((r) => r.pricingPlanId === s.matchedPlanId);
+      if (!rule) continue;
+
+      planCommission +=
+        rule.type === 'PERCENTAGE'
+          ? d2(amt * Number(rule.value) / 100)
+          : Number(rule.value);
+    }
+
+    const totalPrime = d2(planCommission);
+
+    return {
+      id:              row.id,
+      staffMemberName: row.staffMember.name,
+      shiftTypeLabel:  row.shiftType?.label ?? null,
+      startedAt:       row.startedAt.toISOString(),
+      scheduledEndAt:  row.scheduledEndAt?.toISOString() ?? null,
+      grossRevenue:    d2(grossRevenue),
+      totalPrime,
+      netRevenue:      d2(grossRevenue - totalPrime),
     };
   }
 
@@ -672,13 +854,13 @@ export class HomeDashboardService {
       return {
         id:               s.id,
         chairName:        s.chair.name,
-        staffMemberName:  s.shift?.staffMember?.name  ?? null,
-        shiftTypeLabel:   s.shift?.shiftType?.label   ?? null,
+        staffMemberName:  s.shift?.staffMember?.name ?? null,
+        shiftTypeLabel:   s.shift?.shiftType?.label  ?? null,
         startedAt:        s.startedAt.toISOString(),
-        endedAt:          s.endedAt?.toISOString()    ?? null,
+        endedAt:          s.endedAt?.toISOString()   ?? null,
         durationSeconds:  s.durationSeconds,
         status:           s.status,
-        matchedPlanName:  s.matchedPlan?.name         ?? null,
+        matchedPlanName:  s.matchedPlan?.name        ?? null,
         amount:           sessionRevenue(s),
         finalAmount,
         expectedAmount:   s.expectedAmount  != null ? Number(s.expectedAmount)  : null,

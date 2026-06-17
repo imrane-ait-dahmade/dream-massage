@@ -348,12 +348,16 @@ export interface HomeTotalsByChair {
 }
 
 export interface HomePrimeRevenue {
-  grossRevenue: number;
-  planCommission: number;
-  targetBonus: number;
-  manualBonus: number;
-  totalPrime: number;
-  netRevenue: number;
+  grossRevenue:                    number;
+  planCommission:                  number;
+  targetBonus:                     number;
+  manualBonus:                     number;
+  totalPrime:                      number;
+  netRevenue:                      number;
+  isEstimated:                     boolean;
+  eligibleCommissionSessionsCount: number;
+  excludedCommissionSessionsCount: number;
+  pendingSessionsCount:            number;
 }
 
 export interface HomeRevenueChart {
