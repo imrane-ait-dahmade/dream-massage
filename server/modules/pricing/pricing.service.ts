@@ -104,6 +104,10 @@ export class PricingService {
       }
 
       // ── 3. TOO_LONG: duration > lastPlan.durationSeconds + grace ─────────────
+      // MVP: bill at the last available plan rate and keep a TOO_LONG badge for display.
+      // The badge is informational — it does NOT block commission or count as "hors règle".
+      // TODO: future — bill long sessions as multiple consecutive plan blocks to handle
+      // back-to-back customers whose power-off gap never triggered a session split.
       const overtimePolicy = rule.overtimePolicy;
 
       if (overtimePolicy === 'ANOMALY') {

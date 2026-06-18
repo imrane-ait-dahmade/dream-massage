@@ -176,9 +176,10 @@ function DashboardContent() {
         {/* ── 9. Totaux par fauteuil ──────────────────────────────────────── */}
         <TotalsByChairTable data={data?.totalsByChair} loading={loading} />
 
-        {/* ── 10. Recent sessions ─────────────────────────────────────────── */}
+        {/* ── 10. Sessions table ──────────────────────────────────────────── */}
         <RecentSessionsTable
-          sessions={data?.recentSessions}
+          sessions={data?.sessionsTable?.items}
+          total={data?.sessionsTable?.total}
           loading={loading}
           onCorrect={refetch}
         />

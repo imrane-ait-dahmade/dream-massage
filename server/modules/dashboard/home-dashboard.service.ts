@@ -166,13 +166,48 @@ function sessionRevenue(s: SessionRow): number {
   return val ? Number(val) : 0;
 }
 
+// Anomaly types that are real billing problems requiring owner attention.
+const BLOCKING_ANOMALIES = new Set([
+  'TOO_SHORT',
+  'NO_PLAN_MATCH',
+  'NO_OPEN_SHIFT',
+  'OFFLINE_DURING_SESSION',
+  'DEVICE_ERROR',
+  'POWER_NOT_FOUND',
+  'SESSION_PENDING',
+  'MANUAL_REVIEW_REQUIRED',
+]);
+
+// Anomaly types that are informational duration badges — the session is still
+// priced correctly and should not be treated as a billing problem.
+// TODO: future option — bill long continuous sessions as multiple consecutive
+// plan blocks (e.g., two 30-min slots at 100 DH) to handle the case where two
+// customers use the chair back-to-back without a power-off gap. MVP uses last plan.
+const INFORMATIONAL_ANOMALIES = new Set(['TOO_LONG', 'LONG', 'DURATION_EXCEEDED']);
+
 function isOutOfRule(s: SessionRow): boolean {
-  return (
-    s.anomalyType   !== null ||
-    s.billingStatus === 'PENDING' ||
-    s.status        === 'UNCERTAIN' ||
-    s.status        === 'ERROR'
-  );
+  // Technical session errors always require attention.
+  if (s.status === 'UNCERTAIN' || s.status === 'ERROR') return true;
+  // DISPUTED billing requires explicit owner resolution.
+  if (s.billingStatus === 'DISPUTED') return true;
+
+  const anomalies = s.anomalyType?.split(',').map((a) => a.trim()) ?? [];
+  const isBilled  = s.billingStatus === 'CALCULATED' || s.billingStatus === 'CORRECTED';
+
+  // PENDING: out of rule unless the ONLY anomaly is a duration badge (TOO_LONG).
+  // TOO_LONG+PENDING is legacy data — PricingService now writes CALCULATED for this.
+  if (s.billingStatus === 'PENDING') {
+    const isOnlyDurationBadge =
+      anomalies.length > 0 && anomalies.every((a) => INFORMATIONAL_ANOMALIES.has(a));
+    return !isOnlyDurationBadge;
+  }
+
+  // Billed sessions: only flag if a real blocking anomaly is present.
+  // TOO_LONG/LONG with a calculated price are informational — not rule violations.
+  if (isBilled) return anomalies.some((a) => BLOCKING_ANOMALIES.has(a));
+
+  // Any other unexpected billing state is flagged for safety.
+  return true;
 }
 
 function warningFor(status: string): string | null {
@@ -408,7 +443,7 @@ export class HomeDashboardService {
     const liveChairs = this.buildLiveChairs(dbChairs);
     const byChair    = this.buildTotalsByChair(filtered, dbChairs);
     const chart      = this.buildChart(filtered, chartPeriod, from, tz);
-    const recent     = this.buildRecentSessions(filtered);
+    const sessionsTable = this.buildSessionsTable(filtered);
 
     // ── Filter options ────────────────────────────────────────────────────────
     const seenShiftIds = new Set<string>();
@@ -471,7 +506,7 @@ export class HomeDashboardService {
       totalsByChair:  byChair,
       primeRevenue:   prime,
       revenueChart:   chart,
-      recentSessions: recent,
+      sessionsTable,
     };
   }
 
@@ -851,10 +886,12 @@ export class HomeDashboardService {
     };
   }
 
-  // ── Recent sessions ────────────────────────────────────────────────────────────
+  // ── Sessions table ─────────────────────────────────────────────────────────────
+  // Returns ALL sessions matching the applied filters, ordered by startedAt DESC.
+  // No row cap — the client displays the full list and scrolls the page.
 
-  private buildRecentSessions(sessions: SessionRow[]) {
-    return sessions.slice(0, 20).map((s) => {
+  private buildSessionsTable(sessions: SessionRow[]) {
+    const items = sessions.map((s) => {
       const finalAmount =
         s.status === 'ACTIVE'           ? 0 :
         s.correctedAmount !== null       ? Number(s.correctedAmount) :
@@ -877,8 +914,10 @@ export class HomeDashboardService {
         correctionReason: s.correctionReason ?? null,
         anomalyType:      s.anomalyType,
         billingStatus:    s.billingStatus,
+        isOutOfRule:      isOutOfRule(s),
       };
     });
+    return { items, total: items.length };
   }
 }
 

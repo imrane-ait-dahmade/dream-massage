@@ -386,6 +386,7 @@ export interface HomeRecentSession {
   correctionReason: string | null;
   anomalyType:      string | null;
   billingStatus:    string;
+  isOutOfRule:      boolean;
 }
 
 // ── Session detail (from GET /api/sessions/:id) ────────────────────────────────
@@ -432,6 +433,11 @@ export interface SessionCorrectionPayload {
   clearCorrection?: boolean;
 }
 
+export interface HomeSessionsTable {
+  items: HomeRecentSession[];
+  total: number;
+}
+
 export interface HomeDashboardResponse {
   filters:        HomeDashboardFilters;
   filterOptions:  DashboardFilterOptions;
@@ -441,5 +447,5 @@ export interface HomeDashboardResponse {
   totalsByChair:  HomeTotalsByChair[];
   primeRevenue:   HomePrimeRevenue;
   revenueChart:   HomeRevenueChart;
-  recentSessions: HomeRecentSession[];
+  sessionsTable:  HomeSessionsTable;
 }

@@ -25,11 +25,18 @@ const STATUS_CLASS: Record<string, string> = {
 };
 
 const ANOMALY_LABEL: Record<string, string> = {
-  TOO_SHORT:     'Court',
-  TOO_LONG:      'Long',
-  OUT_OF_HOURS:  'Hors h.',
-  NO_PLAN_MATCH: 'Sans plan',
+  TOO_SHORT:              'Court',
+  TOO_LONG:               'Long',
+  DURATION_EXCEEDED:      'Long',
+  OUT_OF_HOURS:           'Hors h.',
+  NO_PLAN_MATCH:          'Sans plan',
+  NO_OPEN_SHIFT:          'Sans shift',
+  OFFLINE_DURING_SESSION: 'Hors ligne',
+  DEVICE_ERROR:           'Erreur',
 };
+
+// TOO_LONG and its aliases are informational duration badges — not billing problems.
+const INFORMATIONAL_ANOMALIES = new Set(['TOO_LONG', 'LONG', 'DURATION_EXCEEDED']);
 
 const BILLING_BADGE: Record<string, { label: string; cls: string }> = {
   CALCULATED: { label: 'AUTO',       cls: 'bg-slate-600/40 text-slate-400' },
@@ -50,9 +57,23 @@ function StatusBadge({ status }: { status: string }) {
 
 function BillingBadge({ billingStatus, anomalyType }: { billingStatus: string; anomalyType: string | null }) {
   if (anomalyType) {
+    const parts     = anomalyType.split(',').map((a) => a.trim());
+    const label     = ANOMALY_LABEL[parts[0] ?? ''] ?? parts[0] ?? 'Anomalie';
+    const isBilled  = billingStatus === 'CALCULATED' || billingStatus === 'CORRECTED';
+    const isInfoOnly = parts.every((a) => INFORMATIONAL_ANOMALIES.has(a));
+
+    if (isInfoOnly && isBilled) {
+      // Duration badge — informational, session is correctly billed.
+      return (
+        <span className="inline-flex rounded-full bg-blue-500/15 px-2 py-0.5 text-[10px] font-semibold text-blue-400">
+          {label}
+        </span>
+      );
+    }
+    // Real billing anomaly — warning color.
     return (
       <span className="inline-flex rounded-full bg-orange-500/20 px-2 py-0.5 text-[10px] font-semibold text-orange-400">
-        {ANOMALY_LABEL[anomalyType] ?? 'ANOMALIE'}
+        {label}
       </span>
     );
   }
@@ -73,21 +94,26 @@ const COLS = ['Fauteuil', 'Fille', 'Shift', 'Début', 'Fin', 'Durée', 'Plan', '
 
 interface Props {
   sessions:   HomeRecentSession[] | undefined;
+  total:      number | undefined;
   loading:    boolean;
   onCorrect?: () => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function RecentSessionsTable({ sessions, loading, onCorrect }: Props) {
+export function RecentSessionsTable({ sessions, total, loading, onCorrect }: Props) {
   const [correcting, setCorrecting] = useState<HomeRecentSession | null>(null);
 
   return (
     <>
       <div className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800">
         <div className="border-b border-slate-700 px-4 py-3">
-          <h3 className="text-sm font-bold text-white">Sessions récentes</h3>
-          <p className="mt-0.5 text-xs text-slate-500">20 dernières — tous fauteuils</p>
+          <h3 className="text-sm font-bold text-white">Sessions de la période</h3>
+          <p className="mt-0.5 text-xs text-slate-500">
+            {total !== undefined
+              ? `${total} session${total !== 1 ? 's' : ''}`
+              : 'Chargement…'}
+          </p>
         </div>
 
         {/* Horizontal scroll — allow full vertical expansion (no max-height cap) */}
