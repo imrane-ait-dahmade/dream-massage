@@ -1,13 +1,20 @@
 name: Fly - Stop night
 
-# Stops the dream-massage Fly machine(s) after closing.
+# Stops the dream-massage Fly machine(s) after closing, and re-stops it
+# periodically overnight in case `auto_start_machines = true` (fly.toml)
+# let it wake back up from incoming traffic. Fly.io only bills while a
+# machine is running, so these extra stops cut overnight cost.
 # GitHub Actions cron is always UTC. Morocco is UTC+1 year-round (no DST
 # since 2018), except for a fixed clock pause during Ramadan when it aligns
-# with UTC+0. This schedule targets 23:45 Morocco standard time (UTC+1).
-# 23:45 UTC+1 = 22:45 UTC
+# with UTC+0.
+# 23:45 Morocco = 22:45 UTC
+# 02:00 Morocco = 01:00 UTC
+# 04:00 Morocco = 03:00 UTC
 on:
   schedule:
     - cron: "45 22 * * *"
+    - cron: "0 1 * * *"
+    - cron: "0 3 * * *"
   workflow_dispatch: {}
 
 env:
