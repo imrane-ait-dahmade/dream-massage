@@ -32,3 +32,7 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Claude folder
+.claude/
+
