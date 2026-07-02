@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { z } from 'zod';
-import { authService } from './auth.service';
+import { authService, ASSISTANT_INACTIVE_MSG } from './auth.service';
 import { requireAuth } from '../../middleware/auth.middleware';
 import type { AuthRequest } from '../../middleware/auth.middleware';
 import { env } from '../../config/env';
@@ -51,8 +51,12 @@ router.post('/login', (req: Request, res: Response) => {
   authService
     .login(email, password)
     .then((result) => {
-      if (!result) {
+      if (result.status === 'invalid_credentials') {
         res.status(401).json({ ok: false, error: 'Email ou mot de passe incorrect' });
+        return;
+      }
+      if (result.status === 'assistant_inactive') {
+        res.status(403).json({ ok: false, error: ASSISTANT_INACTIVE_MSG });
         return;
       }
       setCookie(res, result.token);

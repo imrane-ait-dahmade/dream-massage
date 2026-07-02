@@ -23,10 +23,11 @@ export default function LoginPage() {
         console.log('[auth] login ok — verifying session via GET /api/auth/me');
       }
       try {
-        await getMe();
+        const user = await getMe();
         if (process.env.NODE_ENV === 'development') {
-          console.log('[auth] /api/auth/me ok — redirecting to dashboard');
+          console.log('[auth] /api/auth/me ok — redirecting by role');
         }
+        router.replace(user.role === 'ASSISTANT' ? '/assistant' : '/');
       } catch (meErr) {
         if (process.env.NODE_ENV === 'development') {
           console.warn('[auth] /api/auth/me failed:', (meErr as Error).message);
@@ -34,7 +35,6 @@ export default function LoginPage() {
         setError('Connexion réussie mais session non vérifiée. Réessayez.');
         return;
       }
-      router.replace('/');
     } catch (err) {
       setError((err as Error).message || 'Connexion échouée');
     } finally {
@@ -48,7 +48,7 @@ export default function LoginPage() {
         {/* Branding */}
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold text-stone-900">Dream Massage</h1>
-          <p className="mt-1 text-sm text-stone-500">Connexion propriétaire</p>
+          <p className="mt-1 text-sm text-stone-500">Connexion Dream Care</p>
         </div>
 
         {/* Card */}

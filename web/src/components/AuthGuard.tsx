@@ -2,17 +2,40 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getMe } from '@/lib/api';
+import { getMe, type AuthUser, type UserRole } from '@/lib/api';
 
-export function AuthGuard({ children }: { children: React.ReactNode }) {
+interface AuthGuardProps {
+  children: React.ReactNode;
+  /** Roles allowed on this route. Defaults to OWNER + ADMIN. */
+  allowedRoles?: UserRole[];
+  /** Where to send users with the wrong role (defaults by role). */
+  wrongRolePath?: string;
+}
+
+export function AuthGuard({
+  children,
+  allowedRoles = ['OWNER', 'ADMIN'],
+  wrongRolePath,
+}: AuthGuardProps) {
   const router = useRouter();
   const [ready, setReady] = useState(false);
 
+  const rolesKey = allowedRoles.join(',');
+
   useEffect(() => {
     getMe()
-      .then(() => setReady(true))
+      .then((user) => {
+        if (!allowedRoles.includes(user.role)) {
+          const dest =
+            wrongRolePath ??
+            (user.role === 'ASSISTANT' ? '/assistant' : '/');
+          router.replace(dest);
+          return;
+        }
+        setReady(true);
+      })
       .catch(() => router.replace('/login'));
-  }, [router]);
+  }, [router, rolesKey, wrongRolePath, allowedRoles]);
 
   if (!ready) {
     return (
@@ -24,3 +47,5 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   return <>{children}</>;
 }
+
+export type { AuthUser };

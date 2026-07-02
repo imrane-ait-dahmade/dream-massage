@@ -1,0 +1,38 @@
+name: Fly - Start morning
+
+# Starts the dream-massage Fly machine(s) before opening.
+# Schedule is in UTC (GitHub Actions cron does not support timezones).
+# Target: 08:50 Morocco time.
+# Morocco is UTC+1 year-round, except during Ramadan when it reverts to UTC+0
+# (in that case the effective local start time shifts to 09:50 until Ramadan ends).
+# 08:50 UTC+1 = 07:50 UTC
+on:
+  schedule:
+    - cron: "50 7 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  start:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Start Fly machine(s)
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          APP="dream-massage"
+
+          MACHINE_IDS=$(flyctl machines list -a "$APP" --json | jq -r '.[].id')
+
+          if [ -z "$MACHINE_IDS" ]; then
+            echo "No machines found for app $APP"
+            exit 1
+          fi
+
+          for ID in $MACHINE_IDS; do
+            echo "Starting machine $ID"
+            flyctl machine start "$ID" -a "$APP"
+          done

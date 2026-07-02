@@ -21,6 +21,11 @@ import type {
   SessionDetail,
   SessionSettings,
   SessionCorrectionPayload,
+  AssistantMeResponse,
+  AssistantDashboardResponse,
+  AssistantSessionsListResponse,
+  SettingsUser,
+  SettingsUserRole,
 } from './types';
 
 const BASE =
@@ -95,11 +100,14 @@ export async function getChairOverview(chairIdOrName: string): Promise<ChairOver
 
 // ── Auth ───────────────────────────────────────────────────────────────────────
 
+export type UserRole = 'OWNER' | 'ADMIN' | 'ASSISTANT';
+
 export interface AuthUser {
   id: string;
   name: string;
   email: string;
-  role: 'OWNER' | 'ADMIN';
+  role: UserRole;
+  staffMemberId?: string | null;
 }
 
 export async function login(email: string, password: string): Promise<AuthUser> {
@@ -273,6 +281,61 @@ export async function updateStaffMember(
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
+  });
+}
+
+// ── Settings — users & access ───────────────────────────────────────────────────
+
+export async function getSettingsUsers(): Promise<{ items: SettingsUser[] }> {
+  return apiRequest(`${BASE}/api/settings/users`);
+}
+
+export async function createSettingsUser(payload: {
+  name: string;
+  email: string;
+  password: string;
+  role: SettingsUserRole;
+  staffMemberId?: string | null;
+  isActive?: boolean;
+}): Promise<SettingsUser> {
+  return apiRequest(`${BASE}/api/settings/users`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateSettingsUser(
+  userId: string,
+  payload: Partial<{
+    name: string;
+    email: string;
+    role: SettingsUserRole;
+    staffMemberId: string | null;
+    isActive: boolean;
+  }>,
+): Promise<SettingsUser> {
+  return apiRequest(`${BASE}/api/settings/users/${encodeURIComponent(userId)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function resetSettingsUserPassword(
+  userId: string,
+  password: string,
+): Promise<{ ok: boolean }> {
+  return apiRequest(`${BASE}/api/settings/users/${encodeURIComponent(userId)}/password`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password }),
+  });
+}
+
+export async function disableSettingsUser(userId: string): Promise<SettingsUser> {
+  return apiRequest(`${BASE}/api/settings/users/${encodeURIComponent(userId)}/disable`, {
+    method: 'PATCH',
   });
 }
 
@@ -542,4 +605,41 @@ export async function getChairSessions(
   if (res.status === 404) throw new Error('CHAIR_NOT_FOUND');
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json() as Promise<ChairSessionsResponse>;
+}
+
+// ── Assistant (read-only) ──────────────────────────────────────────────────────
+
+export async function getAssistantMe(): Promise<AssistantMeResponse> {
+  return apiRequest(`${BASE}/api/assistant/me`);
+}
+
+export async function getAssistantToday(params?: {
+  date?: string;
+  shiftId?: string;
+  staffMemberId?: string;
+}): Promise<AssistantDashboardResponse> {
+  const qs = new URLSearchParams();
+  if (params?.date) qs.set('date', params.date);
+  if (params?.shiftId) qs.set('shiftId', params.shiftId);
+  if (params?.staffMemberId) qs.set('staffMemberId', params.staffMemberId);
+  const suffix = qs.toString() ? `?${qs}` : '';
+  return apiRequest(`${BASE}/api/assistant/today${suffix}`);
+}
+
+export async function getAssistantSessions(params?: {
+  date?: string;
+  shiftId?: string;
+  staffMemberId?: string;
+  status?: string;
+  page?: number;
+  limit?: number;
+}): Promise<AssistantSessionsListResponse> {
+  const qs = new URLSearchParams();
+  if (params?.date) qs.set('date', params.date);
+  if (params?.shiftId) qs.set('shiftId', params.shiftId);
+  if (params?.staffMemberId) qs.set('staffMemberId', params.staffMemberId);
+  if (params?.status) qs.set('status', params.status);
+  if (params?.page !== undefined) qs.set('page', String(params.page));
+  if (params?.limit !== undefined) qs.set('limit', String(params.limit));
+  return apiRequest(`${BASE}/api/assistant/sessions?${qs}`);
 }

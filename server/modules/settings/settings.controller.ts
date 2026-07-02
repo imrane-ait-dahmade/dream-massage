@@ -15,6 +15,7 @@ import type { AuthRequest } from '../../middleware/auth.middleware';
 import primeSettingsRouter from './prime-settings.controller';
 import shiftSettingsRouter from './shift-settings.controller';
 import sessionSettingsRouter from './session-settings.controller';
+import userSettingsRouter from './user-settings.controller';
 
 const router = Router();
 
@@ -22,6 +23,7 @@ const router = Router();
 router.use('/prime',   primeSettingsRouter);
 router.use('/shifts',  shiftSettingsRouter);
 router.use('/session', sessionSettingsRouter);
+router.use('/users',   userSettingsRouter);
 
 function userId(req: Request): string | undefined {
   return (req as AuthRequest).user?.id;

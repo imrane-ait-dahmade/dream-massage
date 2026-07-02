@@ -13,7 +13,9 @@
     "prisma:seed": "tsx prisma/seed.ts",
     "prisma:seed:clean": "tsx prisma/seed.ts --clean-runtime",
     "prisma:seed:shifts": "SEED_SHIFT_TABLE=true tsx prisma/seed.ts",
-    "db:push": "prisma db push"
+    "prisma:seed:demo": "DEMO_DATA_ENABLED=true tsx prisma/seed.ts",
+    "db:push": "prisma db push",
+    "backfill:staff-members": "tsx scripts/backfill-staff-members.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

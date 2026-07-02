@@ -16,11 +16,15 @@ model User {
   email        String    @unique @db.VarChar(150)
   passwordHash String    @map("password_hash") @db.VarChar(255)
   role         UserRole  @default(OWNER)
+  staffMemberId String?  @unique @map("staff_member_id")
   isActive     Boolean   @default(true) @map("is_active")
   lastLoginAt  DateTime? @map("last_login_at")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
+  // onDelete: SetNull — deleting a StaffMember must not delete the login account,
+  // it just unlinks it (account becomes inactive-for-ASSISTANT via auth.service checks).
+  staffMember             StaffMember?           @relation(fields: [staffMemberId], references: [id], onDelete: SetNull)
   createdDetectionConfigs ChairDetectionConfig[] @relation("DetectionConfigCreatedBy")
   createdPricingPlans     PricingPlan[]          @relation("PricingPlanCreatedBy")
   createdPricingRules     PricingRule[]          @relation("PricingRuleCreatedBy")
@@ -36,7 +40,7 @@ model User {
   @@map("users")
 }
 
-// Physical staff member assigned to shifts. No login, no app access.
+// Physical staff member assigned to shifts. May have an optional ASSISTANT login (read-only).
 model StaffMember {
   id        String   @id @default(uuid())
   name      String   @db.VarChar(100)
@@ -46,6 +50,7 @@ model StaffMember {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  user      User?
   shifts    Shift[]
   schedules StaffSchedule[]
 
@@ -92,7 +97,11 @@ model Shift {
   createdAt      DateTime    @default(now()) @map("created_at")
   updatedAt      DateTime    @updatedAt @map("updated_at")
 
-  staffMember      StaffMember            @relation(fields: [staffMemberId], references: [id])
+  // onDelete: Restrict, not SetNull — staffMemberId is required (a Shift must always
+  // belong to a StaffMember per business rules), so SetNull would violate the NOT NULL
+  // constraint. Restrict blocks deleting a StaffMember that still has shifts, which is
+  // the correct safeguard here (soft-delete via StaffMember.isActive instead).
+  staffMember      StaffMember            @relation(fields: [staffMemberId], references: [id], onDelete: Restrict)
   openedBy         User                   @relation("ShiftOpenedBy", fields: [openedByUserId], references: [id])
   closedBy         User?                  @relation("ShiftClosedBy", fields: [closedByUserId], references: [id])
   sessions         ChairSession[]
@@ -496,6 +505,7 @@ model StaffSchedule {
 enum UserRole {
   OWNER
   ADMIN
+  ASSISTANT
 }
 
 enum ChairStatus {

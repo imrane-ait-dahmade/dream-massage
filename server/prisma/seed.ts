@@ -1,9 +1,17 @@
 /**
  * Idempotent seed for the dreamMassage MVP.
- * Safe to run multiple times — uses upsert/findFirst guards.
+ * Safe to run multiple times — uses upsert/findFirst guards. Never deletes data
+ * outside of the explicit --clean-runtime path (see below).
  *
- *   npm run prisma:seed            ← upsert base data only
+ *   npm run prisma:seed            ← upsert essential data only (chairs, pricing,
+ *                                     settings, owner). No demo data, ever, by default.
  *   npm run prisma:seed:clean      ← clean runtime data first, then upsert
+ *
+ * Demo data must never run in production.
+ * Set DEMO_DATA_ENABLED=true (default: false) to also seed "Demo Staff", the
+ * example ASSISTANT login, and (with SEED_DEMO_SCHEDULE=true) a demo weekly
+ * schedule — used by /api/dev/demo/* scenario testing. This flag is a no-op when
+ * NODE_ENV=production: IS_PRODUCTION always wins, regardless of DEMO_DATA_ENABLED.
  *
  * The --clean-runtime flag (or CLEAN_RUNTIME_DATA=true) deletes:
  *   ChairEvent, DeviceLog, SettingsAuditLog, ChairSession, Shift
@@ -25,8 +33,10 @@ config({ path: join(process.cwd(), '..', '.env'), override: false });
 
 // ── Fixed IDs — must never change across runs for upsert stability ─────────────
 const IDS = {
-  owner:  '00000000-0000-0000-0000-000000000001',
-  staff:  '00000000-0000-0000-0001-000000000001',
+  owner:     '00000000-0000-0000-0000-000000000001',
+  // ── Demo-only records — gated by SEED_DEMO_DATA, never created in production ──
+  assistant: '00000000-0000-0000-0000-000000000002', // example ASSISTANT login
+  staff:     '00000000-0000-0000-0001-000000000001', // "Demo Staff" — test scenarios only
   plan20: '00000000-0000-0000-0002-000000000001',
   plan30: '00000000-0000-0000-0002-000000000002',
   plan40: '00000000-0000-0000-0002-000000000003',
@@ -40,7 +50,10 @@ const IDS = {
   bonusRuleSoir:  '00000000-0000-0000-0005-000000000002',
   // ── Example commission rule (inactive until owner confirms) ──
   commRule30: '00000000-0000-0000-0006-000000000001',
-  // ── Real staff members (no login, no User record) ──
+  // ── Real staff members for weekly-planning onboarding (seedShiftTable) ──
+  // fille1 is also the StaffMember the demo ASSISTANT login points to in
+  // seedDemoData() — do not repoint it, existing production logins already use
+  // this exact id.
   fille1: '00000000-0000-0000-0001-000000000002',
   fille2: '00000000-0000-0000-0001-000000000003',
 } as const;
@@ -58,6 +71,14 @@ const CLEAN_RUNTIME =
 const IS_PRODUCTION    = (process.env.NODE_ENV ?? 'development') === 'production';
 const FORCE_CLEAN      = process.env.FORCE_CLEAN === 'true';
 const SEED_SHIFT_TABLE = process.env.SEED_SHIFT_TABLE === 'true';
+
+// Demo data must never run in production.
+// DEMO_DATA_ENABLED defaults to false and is required IN ADDITION to a non-production
+// NODE_ENV — even if DEMO_DATA_ENABLED is accidentally left "true" in a production
+// .env, IS_PRODUCTION alone is enough to block it. This is the single gate for every
+// fake/example record (Demo Staff, the example assistant login, the demo schedule).
+const DEMO_DATA_ENABLED = process.env.DEMO_DATA_ENABLED === 'true';
+const SEED_DEMO_DATA    = !IS_PRODUCTION && DEMO_DATA_ENABLED;
 
 // ── Initial weekly shift planning ──────────────────────────────────────────────
 // Edit this table to change the seeded planning.
@@ -188,17 +209,9 @@ async function seedBaseData(): Promise<void> {
     console.log('');
   }
 
-  // ── Demo staff member ───────────────────────────────────────────────────────
-  const staff = await prisma.staffMember.upsert({
-    where:  { id: IDS.staff },
-    update: {},
-    create: {
-      id:       IDS.staff,
-      name:     'Demo Staff',
-      isActive: true,
-    },
-  });
-  console.log(`  ✓ Staff member : ${staff.name} (id: …${staff.id.slice(-8)})`);
+  // Demo Staff, the example ASSISTANT login, and the demo weekly schedule are seeded
+  // separately by seedDemoData() — gated by SEED_DEMO_DATA, never in production.
+  // See seedDemoData() below.
 
   // ── Chairs F1–F5 ────────────────────────────────────────────────────────────
   // Device ID priority:
@@ -404,6 +417,65 @@ async function seedBaseData(): Promise<void> {
   console.log('── Seed complete ─────────────────────────────────────────────────');
 }
 
+// ── Demo data ────────────────────────────────────────────────────────────────
+// Demo data must never run in production.
+// Gated by SEED_DEMO_DATA (= !IS_PRODUCTION && DEMO_DATA_ENABLED). IS_PRODUCTION
+// alone is enough to skip this entire function — DEMO_DATA_ENABLED can never
+// override that. Creates: "Demo Staff" (id: IDS.staff, consumed by
+// dev-scenarios.service.ts / DEMO_TESTING.md) and an example ASSISTANT login
+// (assistant@example.com) linked to a placeholder "Fille 1" staff member.
+// Real staff onboarding (Fille 1 / Fille 2 for actual weekly planning) is a
+// separate, non-demo path — see seedShiftTable() below.
+
+async function seedDemoData(): Promise<void> {
+  console.log('── Seeding demo data (SEED_DEMO_DATA=true) ────────────────────────');
+
+  const fille1 = await prisma.staffMember.upsert({
+    where:  { id: IDS.fille1 },
+    update: { isActive: true, name: 'Fille 1' },
+    create: { id: IDS.fille1, name: 'Fille 1', isActive: true },
+  });
+
+  const ASSISTANT_DEV_PASSWORD = 'assistant123';
+  const assistantHash = await bcrypt.hash(ASSISTANT_DEV_PASSWORD, 10);
+
+  const assistant = await prisma.user.upsert({
+    where:  { id: IDS.assistant },
+    update: { passwordHash: assistantHash, staffMemberId: fille1.id },
+    create: {
+      id:            IDS.assistant,
+      name:          fille1.name,
+      email:         'assistant@example.com',
+      passwordHash:  assistantHash,
+      role:          'ASSISTANT',
+      staffMemberId: fille1.id,
+      isActive:      true,
+    },
+  });
+  console.log(`  ✓ Assistant user: ${assistant.email} (${assistant.role}) → ${fille1.name}`);
+  console.log('');
+  console.log('  ┌─────────────────────────────────────────────────┐');
+  console.log('  │  Assistant login credentials (dev only)         │');
+  console.log('  │  email    : assistant@example.com               │');
+  console.log('  │  password : assistant123                        │');
+  console.log('  │  staff    : Fille 1 (read-only dashboard)       │');
+  console.log('  └─────────────────────────────────────────────────┘');
+  console.log('');
+
+  const staff = await prisma.staffMember.upsert({
+    where:  { id: IDS.staff },
+    update: {},
+    create: {
+      id:       IDS.staff,
+      name:     'Demo Staff',
+      isActive: true,
+    },
+  });
+  console.log(`  ✓ Staff member : ${staff.name} (id: …${staff.id.slice(-8)})`);
+
+  console.log('── Demo data seed complete ─────────────────────────────────────────');
+}
+
 // ── Prime / commission seed data ───────────────────────────────────────────────
 
 async function seedPrimeData(): Promise<void> {
@@ -555,7 +627,7 @@ async function seedShiftTable(): Promise<void> {
     update: { isActive: true },
     create: { id: IDS.fille2, name: 'Fille 2', isActive: true },
   });
-  console.log(`  ✓ Staff : ${fille1.name} (id: …${fille1.id.slice(-8)}) — no login`);
+  console.log(`  ✓ Staff : ${fille1.name} (id: …${fille1.id.slice(-8)})`);
   console.log(`  ✓ Staff : ${fille2.name} (id: …${fille2.id.slice(-8)}) — no login`);
 
   // ── Verify shift types exist (seeded by seedPrimeData) ──────────────────────
@@ -650,6 +722,14 @@ async function seedShiftTable(): Promise<void> {
 async function seedDemoSchedule(): Promise<void> {
   console.log('── Seeding demo schedule ─────────────────────────────────────────');
 
+  // Demo data must never run in production. Defense in depth: this assigns the
+  // "Demo Staff" row, which only exists when seedDemoData() has run.
+  if (!SEED_DEMO_DATA) {
+    console.log('  · SEED_DEMO_DATA is not enabled — skipping (see DEMO_DATA_ENABLED).');
+    console.log('── Demo schedule skipped ─────────────────────────────────────────');
+    return;
+  }
+
   // Only create entries if none exist at all (fully idempotent — never wipes data)
   const existingCount = await prisma.staffSchedule.count();
   if (existingCount > 0) {
@@ -684,6 +764,7 @@ async function main(): Promise<void> {
   if (SEED_SHIFT_TABLE) {
     console.log('  SEED_SHIFT_TABLE=true — weekly planning will be seeded');
   }
+  console.log(`  demo data : ${SEED_DEMO_DATA ? 'enabled (DEMO_DATA_ENABLED=true, non-production)' : 'disabled'}`);
   console.log('');
 
   if (!process.env.DATABASE_URL) {
@@ -698,6 +779,12 @@ async function main(): Promise<void> {
 
   await seedBaseData();
   console.log('');
+
+  if (SEED_DEMO_DATA) {
+    await seedDemoData();
+    console.log('');
+  }
+
   await seedPrimeData();
   console.log('');
   await applyRawSqlConstraints();
@@ -708,7 +795,7 @@ async function main(): Promise<void> {
     console.log('');
   }
 
-  if (process.env.SEED_DEMO_SCHEDULE === 'true') {
+  if (SEED_DEMO_DATA && process.env.SEED_DEMO_SCHEDULE === 'true') {
     await seedDemoSchedule();
     console.log('');
   }

@@ -22,12 +22,16 @@ Run all commands from the `server/` directory.
 | Category | Records | Behavior |
 |---|---|---|
 | **Owner user** | `owner@example.com`, role OWNER | Upsert by fixed ID — never duplicated |
-| **Demo staff** | `Demo Staff` | Upsert by fixed ID — existing staff untouched |
 | **Chairs F1–F5** | name, displayName, shellyChannel | Upsert by name — device IDs never overwritten with placeholders |
 | **Detection configs** | 7W start / 5W stop defaults | Created only if no active config exists for that chair |
 | **Pricing plans** | 20 min/20 MAD, 30 min/30 MAD, 40 min/40 MAD | Upsert by fixed ID |
 | **Pricing rule** | NEXT_PLAN, grace 120s, minimum = 20 min | Upsert by fixed ID — extra active rules are deactivated |
 | **App settings** | timezone, sync_interval_ms, default_currency | Upsert by key |
+
+**Demo data (Demo Staff, example ASSISTANT login, demo schedule) is not created by
+default.** Demo data must never run in production. Set `DEMO_DATA_ENABLED=true`
+(non-production only — see `.env.example`) or run `npm run prisma:seed:demo` to
+also seed it.
 
 ### Device ID priority (chairs)
 
@@ -105,6 +109,7 @@ Expected output:
   dreamMassage seed
   mode: CLEAN-RUNTIME + seed
   env : development
+  demo data : disabled
 
 ── Cleaning runtime data ─────────────────────────────────────────
   ✓ Deleted chair events      : 342
@@ -117,12 +122,15 @@ Expected output:
 
 ── Seeding base data ─────────────────────────────────────────────
   ✓ Owner user   : owner@example.com (OWNER)
-  ✓ Staff member : Demo Staff
   ✓ Chair        : F1 (updated) (device unchanged: f1b4***)
     └ Detection config exists (v1, 7W start / 5W stop)
   ...
 ── Seed complete ─────────────────────────────────────────────────
 ```
+
+Add `DEMO_DATA_ENABLED=true` (or run `npm run prisma:seed:demo`) to also see
+`✓ Assistant user: assistant@example.com (ASSISTANT) → Fille 1` and
+`✓ Staff member : Demo Staff` in the output — non-production only.
 
 ### Emergency production reset (never in normal use)
 
