@@ -168,6 +168,20 @@ export interface StaffMember {
   createdAt: string;
 }
 
+export type SettingsUserRole = 'OWNER' | 'ADMIN' | 'ASSISTANT';
+
+export interface SettingsUser {
+  id: string;
+  name: string;
+  email: string;
+  role: SettingsUserRole;
+  staffMemberId: string | null;
+  staffMember: { id: string; name: string; isActive: boolean } | null;
+  isActive: boolean;
+  lastLoginAt: string | null;
+  createdAt: string;
+}
+
 export interface ShellyDevice {
   chairName: string;
   deviceIdConfigured: boolean;

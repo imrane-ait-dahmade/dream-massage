@@ -24,6 +24,8 @@ import type {
   AssistantMeResponse,
   AssistantDashboardResponse,
   AssistantSessionsListResponse,
+  SettingsUser,
+  SettingsUserRole,
 } from './types';
 
 const BASE =
@@ -279,6 +281,61 @@ export async function updateStaffMember(
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
+  });
+}
+
+// ── Settings — users & access ───────────────────────────────────────────────────
+
+export async function getSettingsUsers(): Promise<{ items: SettingsUser[] }> {
+  return apiRequest(`${BASE}/api/settings/users`);
+}
+
+export async function createSettingsUser(payload: {
+  name: string;
+  email: string;
+  password: string;
+  role: SettingsUserRole;
+  staffMemberId?: string | null;
+  isActive?: boolean;
+}): Promise<SettingsUser> {
+  return apiRequest(`${BASE}/api/settings/users`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateSettingsUser(
+  userId: string,
+  payload: Partial<{
+    name: string;
+    email: string;
+    role: SettingsUserRole;
+    staffMemberId: string | null;
+    isActive: boolean;
+  }>,
+): Promise<SettingsUser> {
+  return apiRequest(`${BASE}/api/settings/users/${encodeURIComponent(userId)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function resetSettingsUserPassword(
+  userId: string,
+  password: string,
+): Promise<{ ok: boolean }> {
+  return apiRequest(`${BASE}/api/settings/users/${encodeURIComponent(userId)}/password`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password }),
+  });
+}
+
+export async function disableSettingsUser(userId: string): Promise<SettingsUser> {
+  return apiRequest(`${BASE}/api/settings/users/${encodeURIComponent(userId)}/disable`, {
+    method: 'PATCH',
   });
 }
 

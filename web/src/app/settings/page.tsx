@@ -4,12 +4,13 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, RefreshCw, Settings, LogOut } from 'lucide-react';
-import type { SettingsChair, PricingPlan, StaffMember, SystemSettings } from '@/lib/types';
+import type { SettingsChair, PricingPlan, StaffMember, SystemSettings, SettingsUser } from '@/lib/types';
 import {
   getSettingsChairs,
   getPricingPlans,
   getStaffMembers,
   getSystemSettings,
+  getSettingsUsers,
 } from '@/lib/api';
 import { ChairSettingsCard } from '@/components/settings/ChairSettingsCard';
 import { PricingPlansSettings } from '@/components/settings/PricingPlansSettings';
@@ -18,21 +19,23 @@ import { SystemSettingsPanel } from '@/components/settings/SystemSettings';
 import { PrimeBonusSettings } from '@/components/settings/PrimeBonusSettings';
 import { ShiftPlanningSettings } from '@/components/settings/ShiftPlanningSettings';
 import { SessionSettingsPanel } from '@/components/settings/SessionSettingsPanel';
+import { UsersAccessSection } from '@/components/settings/UsersAccessSection';
 import { AuthGuard } from '@/components/AuthGuard';
 import { logout } from '@/lib/api';
 
 // ── Tabs ───────────────────────────────────────────────────────────────────────
 
-type Tab = 'fauteuils' | 'prix' | 'staff' | 'systeme' | 'primes' | 'planning' | 'sessions';
+type Tab = 'fauteuils' | 'prix' | 'staff' | 'systeme' | 'primes' | 'planning' | 'sessions' | 'utilisateurs';
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'fauteuils', label: 'Fauteuils' },
-  { id: 'prix',      label: 'Prix & plans' },
-  { id: 'staff',     label: 'Staff' },
-  { id: 'systeme',   label: 'Système' },
-  { id: 'primes',    label: 'Primes & Bonus' },
-  { id: 'planning',  label: 'Shifts & Planning' },
-  { id: 'sessions',  label: 'Sessions' },
+  { id: 'fauteuils',    label: 'Fauteuils' },
+  { id: 'prix',         label: 'Prix & plans' },
+  { id: 'staff',        label: 'Staff' },
+  { id: 'systeme',      label: 'Système' },
+  { id: 'primes',       label: 'Primes & Bonus' },
+  { id: 'planning',     label: 'Shifts & Planning' },
+  { id: 'sessions',     label: 'Sessions' },
+  { id: 'utilisateurs', label: 'Utilisateurs & Accès' },
 ];
 
 // ── Data ───────────────────────────────────────────────────────────────────────
@@ -42,6 +45,7 @@ interface SettingsData {
   plans:  PricingPlan[];
   staff:  StaffMember[];
   system: SystemSettings;
+  users:  SettingsUser[];
 }
 
 // ── Loading / error screens ────────────────────────────────────────────────────
@@ -161,17 +165,19 @@ function SettingsContent() {
     setLoading(true);
     setError(null);
     try {
-      const [chairsRes, plansRes, staffRes, systemRes] = await Promise.all([
+      const [chairsRes, plansRes, staffRes, systemRes, usersRes] = await Promise.all([
         getSettingsChairs(),
         getPricingPlans(),
         getStaffMembers(),
         getSystemSettings(),
+        getSettingsUsers(),
       ]);
       setData({
         chairs: chairsRes.items,
         plans:  plansRes.items,
         staff:  staffRes.items,
         system: systemRes,
+        users:  usersRes.items,
       });
     } catch (e) {
       setError((e as Error).message || 'Impossible de charger les paramètres.');
@@ -254,6 +260,13 @@ function SettingsContent() {
         {activeTab === 'sessions' && (
           <Section title="Paramétrage sessions">
             <SessionSettingsPanel />
+          </Section>
+        )}
+
+        {/* ── Utilisateurs & Accès ───────────────────────────────────────────── */}
+        {activeTab === 'utilisateurs' && (
+          <Section title="Utilisateurs & Accès">
+            <UsersAccessSection users={data.users} staffMembers={data.staff} onSaved={() => void load()} />
           </Section>
         )}
       </main>
