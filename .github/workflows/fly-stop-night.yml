@@ -1,38 +1,111 @@
 name: Fly - Stop night
 
 # Stops the dream-massage Fly machine(s) after closing.
-# Schedule is in UTC (GitHub Actions cron does not support timezones).
-# Target: 23:45 Morocco time.
-# Morocco is UTC+1 year-round, except during Ramadan when it reverts to UTC+0
-# (in that case the effective local stop time shifts to 22:45 until Ramadan ends).
+# GitHub Actions cron is always UTC. Morocco is UTC+1 year-round (no DST
+# since 2018), except for a fixed clock pause during Ramadan when it aligns
+# with UTC+0. This schedule targets 23:45 Morocco standard time (UTC+1).
 # 23:45 UTC+1 = 22:45 UTC
 on:
   schedule:
     - cron: "45 22 * * *"
   workflow_dispatch: {}
 
+env:
+  FLY_APP: dream-massage
+  RUNNING_STATE: started
+
 jobs:
   stop:
     runs-on: ubuntu-latest
     steps:
+      - name: Verify FLY_API_TOKEN secret
+        run: |
+          if [ -z "${{ secrets.FLY_API_TOKEN }}" ]; then
+            echo "::error::FLY_API_TOKEN secret is missing. Add it under repo Settings > Secrets and variables > Actions, then re-run this workflow."
+            exit 1
+          fi
+          echo "FLY_API_TOKEN secret is present."
+
       - name: Install flyctl
         uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Ensure jq is available
+        run: |
+          if command -v jq >/dev/null 2>&1; then
+            echo "jq is already available: $(jq --version)"
+          else
+            echo "jq not found, installing..."
+            sudo apt-get update -y
+            sudo apt-get install -y jq
+          fi
 
       - name: Stop Fly machine(s)
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
-          set -euo pipefail
-          APP="dream-massage"
+          # Intentionally NOT using `set -e`: a single machine already being
+          # stopped must not abort the whole job. Every command that can
+          # legitimately fail is checked explicitly instead.
+          set +e
+          set -u
+          set -o pipefail
 
-          MACHINE_IDS=$(flyctl machines list -a "$APP" --json | jq -r '.[].id')
+          APP="$FLY_APP"
 
-          if [ -z "$MACHINE_IDS" ]; then
-            echo "No machines found for app $APP"
+          echo "flyctl version: $(flyctl version)"
+          echo "==> Listing machines for app: $APP"
+
+          MACHINES_JSON=$(flyctl machines list -a "$APP" --json)
+          LIST_STATUS=$?
+          if [ $LIST_STATUS -ne 0 ]; then
+            echo "::error::Failed to list machines for app $APP (exit $LIST_STATUS)."
+            echo "$MACHINES_JSON"
             exit 1
           fi
 
-          for ID in $MACHINE_IDS; do
-            echo "Stopping machine $ID"
-            flyctl machine stop "$ID" -a "$APP"
-          done
+          MACHINE_COUNT=$(echo "$MACHINES_JSON" | jq 'length')
+          if [ "$MACHINE_COUNT" -eq 0 ]; then
+            echo "No machines found for app $APP. Nothing to do."
+            exit 0
+          fi
+          echo "Found $MACHINE_COUNT machine(s)."
+
+          FAILED=0
+
+          while IFS=$'\t' read -r ID NAME STATE; do
+            echo "-------------------------------------------"
+            echo "Machine found : $ID ($NAME)"
+            echo "Current state : $STATE"
+
+            if [ "$STATE" != "$RUNNING_STATE" ]; then
+              echo "Action        : none (already stopped)"
+              echo "Final state   : $STATE"
+              continue
+            fi
+
+            echo "Action        : stopping..."
+            OUTPUT=$(flyctl machine stop "$ID" -a "$APP" 2>&1)
+            RC=$?
+
+            if [ $RC -eq 0 ]; then
+              echo "$OUTPUT"
+            elif echo "$OUTPUT" | grep -qi "already.*stopped"; then
+              echo "Machine reports it is already stopped (race condition) - treated as success."
+            else
+              echo "::error::Failed to stop machine $ID"
+              echo "$OUTPUT"
+              FAILED=1
+            fi
+
+            FINAL_STATE=$(flyctl machine status "$ID" -a "$APP" --json 2>/dev/null | jq -r '.state // "unknown"')
+            echo "Final state   : $FINAL_STATE"
+          done < <(echo "$MACHINES_JSON" | jq -r '.[] | [.id, .name, .state] | @tsv')
+
+          echo "-------------------------------------------"
+          if [ "$FAILED" -eq 1 ]; then
+            echo "::error::One or more machines failed to stop."
+            exit 1
+          fi
+
+          echo "==> Done. All machines are stopped."
+          exit 0

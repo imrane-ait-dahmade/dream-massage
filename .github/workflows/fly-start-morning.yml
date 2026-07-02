@@ -1,38 +1,111 @@
 name: Fly - Start morning
 
 # Starts the dream-massage Fly machine(s) before opening.
-# Schedule is in UTC (GitHub Actions cron does not support timezones).
-# Target: 08:50 Morocco time.
-# Morocco is UTC+1 year-round, except during Ramadan when it reverts to UTC+0
-# (in that case the effective local start time shifts to 09:50 until Ramadan ends).
+# GitHub Actions cron is always UTC. Morocco is UTC+1 year-round (no DST
+# since 2018), except for a fixed clock pause during Ramadan when it aligns
+# with UTC+0. This schedule targets 08:50 Morocco standard time (UTC+1).
 # 08:50 UTC+1 = 07:50 UTC
 on:
   schedule:
     - cron: "50 7 * * *"
   workflow_dispatch: {}
 
+env:
+  FLY_APP: dream-massage
+  TARGET_STATE: started
+
 jobs:
   start:
     runs-on: ubuntu-latest
     steps:
+      - name: Verify FLY_API_TOKEN secret
+        run: |
+          if [ -z "${{ secrets.FLY_API_TOKEN }}" ]; then
+            echo "::error::FLY_API_TOKEN secret is missing. Add it under repo Settings > Secrets and variables > Actions, then re-run this workflow."
+            exit 1
+          fi
+          echo "FLY_API_TOKEN secret is present."
+
       - name: Install flyctl
         uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Ensure jq is available
+        run: |
+          if command -v jq >/dev/null 2>&1; then
+            echo "jq is already available: $(jq --version)"
+          else
+            echo "jq not found, installing..."
+            sudo apt-get update -y
+            sudo apt-get install -y jq
+          fi
 
       - name: Start Fly machine(s)
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
-          set -euo pipefail
-          APP="dream-massage"
+          # Intentionally NOT using `set -e`: a single machine already being
+          # in the target state must not abort the whole job. Every command
+          # that can legitimately fail is checked explicitly instead.
+          set +e
+          set -u
+          set -o pipefail
 
-          MACHINE_IDS=$(flyctl machines list -a "$APP" --json | jq -r '.[].id')
+          APP="$FLY_APP"
 
-          if [ -z "$MACHINE_IDS" ]; then
-            echo "No machines found for app $APP"
+          echo "flyctl version: $(flyctl version)"
+          echo "==> Listing machines for app: $APP"
+
+          MACHINES_JSON=$(flyctl machines list -a "$APP" --json)
+          LIST_STATUS=$?
+          if [ $LIST_STATUS -ne 0 ]; then
+            echo "::error::Failed to list machines for app $APP (exit $LIST_STATUS)."
+            echo "$MACHINES_JSON"
             exit 1
           fi
 
-          for ID in $MACHINE_IDS; do
-            echo "Starting machine $ID"
-            flyctl machine start "$ID" -a "$APP"
-          done
+          MACHINE_COUNT=$(echo "$MACHINES_JSON" | jq 'length')
+          if [ "$MACHINE_COUNT" -eq 0 ]; then
+            echo "No machines found for app $APP. Nothing to do."
+            exit 0
+          fi
+          echo "Found $MACHINE_COUNT machine(s)."
+
+          FAILED=0
+
+          while IFS=$'\t' read -r ID NAME STATE; do
+            echo "-------------------------------------------"
+            echo "Machine found : $ID ($NAME)"
+            echo "Current state : $STATE"
+
+            if [ "$STATE" = "$TARGET_STATE" ]; then
+              echo "Action        : none (already started)"
+              echo "Final state   : $STATE"
+              continue
+            fi
+
+            echo "Action        : starting..."
+            OUTPUT=$(flyctl machine start "$ID" -a "$APP" 2>&1)
+            RC=$?
+
+            if [ $RC -eq 0 ]; then
+              echo "$OUTPUT"
+            elif echo "$OUTPUT" | grep -qi "already.*started"; then
+              echo "Machine reports it is already started (race condition) - treated as success."
+            else
+              echo "::error::Failed to start machine $ID"
+              echo "$OUTPUT"
+              FAILED=1
+            fi
+
+            FINAL_STATE=$(flyctl machine status "$ID" -a "$APP" --json 2>/dev/null | jq -r '.state // "unknown"')
+            echo "Final state   : $FINAL_STATE"
+          done < <(echo "$MACHINES_JSON" | jq -r '.[] | [.id, .name, .state] | @tsv')
+
+          echo "-------------------------------------------"
+          if [ "$FAILED" -eq 1 ]; then
+            echo "::error::One or more machines failed to start."
+            exit 1
+          fi
+
+          echo "==> Done. All machines are in the target state ($TARGET_STATE)."
+          exit 0
