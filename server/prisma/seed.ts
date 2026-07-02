@@ -25,8 +25,9 @@ config({ path: join(process.cwd(), '..', '.env'), override: false });
 
 // ── Fixed IDs — must never change across runs for upsert stability ─────────────
 const IDS = {
-  owner:  '00000000-0000-0000-0000-000000000001',
-  staff:  '00000000-0000-0000-0001-000000000001',
+  owner:     '00000000-0000-0000-0000-000000000001',
+  assistant: '00000000-0000-0000-0000-000000000002',
+  staff:     '00000000-0000-0000-0001-000000000001',
   plan20: '00000000-0000-0000-0002-000000000001',
   plan30: '00000000-0000-0000-0002-000000000002',
   plan40: '00000000-0000-0000-0002-000000000003',
@@ -184,6 +185,45 @@ async function seedBaseData(): Promise<void> {
     console.log('  │  email    : owner@example.com                   │');
     console.log('  │  password : changeme123                         │');
     console.log('  │  Change before production!                      │');
+    console.log('  └─────────────────────────────────────────────────┘');
+    console.log('');
+  }
+
+  // ── Demo assistant (read-only, linked to Fille 1) ───────────────────────────
+  const fille1 = await prisma.staffMember.upsert({
+    where:  { id: IDS.fille1 },
+    update: { isActive: true, name: 'Fille 1' },
+    create: { id: IDS.fille1, name: 'Fille 1', isActive: true },
+  });
+
+  const ASSISTANT_DEV_PASSWORD = 'assistant123';
+  const assistantHash = IS_PRODUCTION
+    ? '$2b$10$PLACEHOLDER_CHANGE_BEFORE_PRODUCTION_00000000000000001'
+    : await bcrypt.hash(ASSISTANT_DEV_PASSWORD, 10);
+
+  const assistant = await prisma.user.upsert({
+    where:  { id: IDS.assistant },
+    update: IS_PRODUCTION
+      ? { staffMemberId: fille1.id }
+      : { passwordHash: assistantHash, staffMemberId: fille1.id },
+    create: {
+      id:            IDS.assistant,
+      name:          fille1.name,
+      email:         'assistant@example.com',
+      passwordHash:  assistantHash,
+      role:          'ASSISTANT',
+      staffMemberId: fille1.id,
+      isActive:      true,
+    },
+  });
+  console.log(`  ✓ Assistant user: ${assistant.email} (${assistant.role}) → ${fille1.name}`);
+  if (!IS_PRODUCTION) {
+    console.log('');
+    console.log('  ┌─────────────────────────────────────────────────┐');
+    console.log('  │  Assistant login credentials (dev only)         │');
+    console.log('  │  email    : assistant@example.com               │');
+    console.log('  │  password : assistant123                        │');
+    console.log('  │  staff    : Fille 1 (read-only dashboard)       │');
     console.log('  └─────────────────────────────────────────────────┘');
     console.log('');
   }
@@ -555,7 +595,7 @@ async function seedShiftTable(): Promise<void> {
     update: { isActive: true },
     create: { id: IDS.fille2, name: 'Fille 2', isActive: true },
   });
-  console.log(`  ✓ Staff : ${fille1.name} (id: …${fille1.id.slice(-8)}) — no login`);
+  console.log(`  ✓ Staff : ${fille1.name} (id: …${fille1.id.slice(-8)})`);
   console.log(`  ✓ Staff : ${fille2.name} (id: …${fille2.id.slice(-8)}) — no login`);
 
   // ── Verify shift types exist (seeded by seedPrimeData) ──────────────────────

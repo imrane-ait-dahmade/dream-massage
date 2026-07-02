@@ -20,13 +20,14 @@ import { startAutoShiftJob, stopAutoShiftJob } from './jobs/auto-shift.job';
 import { processSimulationTick } from './jobs/fake-power-simulation.job';
 import { shellyService, isShellyConfigured, getMissingFields } from './modules/shelly/shelly.service';
 import { corsOriginFn } from './config/cors';
-import { requireAuth } from './middleware/auth.middleware';
+import { requireAuth, requireOwnerAdmin } from './middleware/auth.middleware';
 import authRouter from './modules/auth/auth.controller';
 import chairRouter from './modules/chairs/chair.controller';
 import settingsRouter from './modules/settings/settings.controller';
 import shiftRouter from './modules/shifts/shift.controller';
 import sessionRouter from './modules/sessions/session.controller';
 import devDemoRouter from './modules/dev/dev.controller';
+import assistantRouter from './modules/assistant/assistant.controller';
 
 const app = express();
 
@@ -55,9 +56,13 @@ app.get('/health', (_req, res) => {
 
 app.use('/api/auth', authRouter);
 
-// ── Protected routes ───────────────────────────────────────────────────────────
+// ── Assistant (read-only — scoped by role in assistant.controller) ─────────────
 
-app.use('/api/dashboard', requireAuth);
+app.use('/api/assistant', requireAuth, assistantRouter);
+
+// ── Protected owner/admin routes ───────────────────────────────────────────────
+
+app.use('/api/dashboard', requireAuth, requireOwnerAdmin);
 app.get('/api/dashboard/state', (_req, res) => {
   dashboardService
     .getState()
@@ -104,7 +109,7 @@ app.get('/api/dashboard/home', (req, res) => {
 
 // ── Shelly (protected) ─────────────────────────────────────────────────────────
 
-app.use('/api/shelly', requireAuth);
+app.use('/api/shelly', requireAuth, requireOwnerAdmin);
 
 app.get('/api/shelly/config', (_req, res) => {
   const devices = (['F1', 'F2', 'F3', 'F4', 'F5'] as const).map((name) => {
@@ -164,7 +169,7 @@ app.get('/api/shelly/test', (_req, res) => {
 // ── Dev-only endpoints (protected) ────────────────────────────────────────────
 
 if (env.NODE_ENV !== 'production') {
-  app.use('/api/dev', requireAuth);
+  app.use('/api/dev', requireAuth, requireOwnerAdmin);
 
   app.get('/api/dev/source-status', (_req, res) => {
     res.json({
@@ -221,25 +226,25 @@ if (env.NODE_ENV !== 'production') {
 // Routes live at /api/dev/demo/* to avoid path conflicts with simulation routes.
 
 if (env.NODE_ENV !== 'production' && env.DEMO_TOOLS_ENABLED) {
-  app.use('/api/dev/demo', requireAuth, devDemoRouter);
+  app.use('/api/dev/demo', requireAuth, requireOwnerAdmin, devDemoRouter);
   logger.info('[server] Demo tools enabled at /api/dev/demo/*');
 }
 
 // ── Chairs (protected) ─────────────────────────────────────────────────────────
 
-app.use('/api/chairs', requireAuth, chairRouter);
+app.use('/api/chairs', requireAuth, requireOwnerAdmin, chairRouter);
 
 // ── Settings (protected) ───────────────────────────────────────────────────────
 
-app.use('/api/settings', requireAuth, settingsRouter);
+app.use('/api/settings', requireAuth, requireOwnerAdmin, settingsRouter);
 
 // ── Shifts (protected) ─────────────────────────────────────────────────────────
 
-app.use('/api/shifts', requireAuth, shiftRouter);
+app.use('/api/shifts', requireAuth, requireOwnerAdmin, shiftRouter);
 
 // ── Sessions (protected) ───────────────────────────────────────────────────────
 
-app.use('/api/sessions', requireAuth, sessionRouter);
+app.use('/api/sessions', requireAuth, requireOwnerAdmin, sessionRouter);
 
 // ── 404 ────────────────────────────────────────────────────────────────────────
 

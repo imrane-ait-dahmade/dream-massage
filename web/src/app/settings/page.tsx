@@ -263,7 +263,7 @@ function SettingsContent() {
 
 export default function SettingsPage() {
   return (
-    <AuthGuard>
+    <AuthGuard allowedRoles={['OWNER', 'ADMIN']} wrongRolePath="/assistant">
       <SettingsContent />
     </AuthGuard>
   );

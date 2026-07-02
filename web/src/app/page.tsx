@@ -203,7 +203,7 @@ function DashboardContent() {
 
 export default function DashboardPage() {
   return (
-    <AuthGuard>
+    <AuthGuard allowedRoles={['OWNER', 'ADMIN']} wrongRolePath="/assistant">
       <DashboardContent />
     </AuthGuard>
   );

@@ -1,0 +1,38 @@
+name: Fly - Stop night
+
+# Stops the dream-massage Fly machine(s) after closing.
+# Schedule is in UTC (GitHub Actions cron does not support timezones).
+# Target: 23:45 Morocco time.
+# Morocco is UTC+1 year-round, except during Ramadan when it reverts to UTC+0
+# (in that case the effective local stop time shifts to 22:45 until Ramadan ends).
+# 23:45 UTC+1 = 22:45 UTC
+on:
+  schedule:
+    - cron: "45 22 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  stop:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Stop Fly machine(s)
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          APP="dream-massage"
+
+          MACHINE_IDS=$(flyctl machines list -a "$APP" --json | jq -r '.[].id')
+
+          if [ -z "$MACHINE_IDS" ]; then
+            echo "No machines found for app $APP"
+            exit 1
+          fi
+
+          for ID in $MACHINE_IDS; do
+            echo "Stopping machine $ID"
+            flyctl machine stop "$ID" -a "$APP"
+          done

@@ -542,7 +542,7 @@ function ChairDetailContent() {
 
 export default function ChairDetailPage() {
   return (
-    <AuthGuard>
+    <AuthGuard allowedRoles={['OWNER', 'ADMIN']} wrongRolePath="/assistant">
       <ChairDetailContent />
     </AuthGuard>
   );
