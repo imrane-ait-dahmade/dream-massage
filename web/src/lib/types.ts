@@ -277,13 +277,18 @@ export interface WeeklyScheduleDay {
   items: StaffScheduleItem[];
 }
 
+export type TodayShiftStatus = 'upcoming' | 'active' | 'completed' | 'rest';
+
 export interface TodayShiftSuggestion {
+  scheduleId: string;
   staffMemberId: string;
   staffMemberName: string;
   shiftTypeId: string | null;
   shiftTypeLabel: string | null;
   startTime: string | null;
   endTime: string | null;
+  status: TodayShiftStatus;
+  shiftId: string | null;
 }
 
 // ── Home Dashboard ─────────────────────────────────────────────────────────────

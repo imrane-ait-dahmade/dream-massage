@@ -71,6 +71,15 @@ export function requireOwnerAdmin(req: Request, res: Response, next: NextFunctio
   next();
 }
 
+/** Restricts route to OWNER only (e.g. manual shift open/close for troubleshooting). */
+export function requireOwner(req: Request, res: Response, next: NextFunction): void {
+  if ((req as AuthRequest).user?.role !== 'OWNER') {
+    res.status(403).json({ ok: false, error: 'Forbidden — OWNER role required' });
+    return;
+  }
+  next();
+}
+
 /** Restricts route to ASSISTANT role only (e.g. GET /api/assistant/me). */
 export function requireAssistant(req: Request, res: Response, next: NextFunction): void {
   if (!isAssistant((req as AuthRequest).user)) {

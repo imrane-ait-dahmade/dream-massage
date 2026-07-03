@@ -13,6 +13,7 @@ interface PlanningData {
   staff: StaffMember[];
   days: WeeklyScheduleDay[];
   todayLabel: string;
+  autoShiftEnabled: boolean;
   todaySuggestions: TodayShiftSuggestion[];
 }
 
@@ -47,6 +48,7 @@ export function ShiftPlanningSettings() {
         staff: staffRes.items,
         days: scheduleRes.days,
         todayLabel: todayRes.label,
+        autoShiftEnabled: todayRes.autoShiftEnabled,
         todaySuggestions: todayRes.suggestions,
       });
     } catch (e) {
@@ -57,6 +59,12 @@ export function ShiftPlanningSettings() {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+
+  // Refresh statuses as auto-shift opens/closes shifts throughout the day.
+  useEffect(() => {
+    const id = setInterval(() => { void load(); }, 60_000);
+    return () => clearInterval(id);
+  }, [load]);
 
   if (loading && !data) {
     return (
@@ -96,9 +104,10 @@ export function ShiftPlanningSettings() {
         </div>
       )}
 
-      <SubSection title="Suggestions du jour">
+      <SubSection title="Planning du jour">
         <TodayShiftSuggestions
           dayLabel={data.todayLabel}
+          autoShiftEnabled={data.autoShiftEnabled}
           suggestions={data.todaySuggestions}
         />
       </SubSection>

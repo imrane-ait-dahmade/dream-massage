@@ -174,7 +174,7 @@ function AddForm({ shiftTypes, staff, onCancel, onSaved, onError }: AddFormProps
       </label>
 
       <p className="text-[11px] text-stone-400">
-        Le planning sert à préparer qui travaille chaque jour. Le shift réel reste ouvert/fermé depuis la gestion des shifts.
+        Le planning définit qui travaille chaque jour. Les shifts réels s&apos;ouvrent et se ferment automatiquement selon ces horaires.
       </p>
 
       <div className="flex gap-2">
@@ -446,7 +446,7 @@ export function WeeklyScheduleSection({ shiftTypes, staff, days, onRefresh }: Pr
   return (
     <div className="space-y-3">
       <p className="text-xs text-stone-400">
-        Le planning sert à préparer qui travaille chaque jour. Le shift réel reste ouvert/fermé depuis la gestion des shifts.
+        Le planning définit qui travaille chaque jour. Les shifts réels s&apos;ouvrent et se ferment automatiquement selon ces horaires.
       </p>
 
       {success && (

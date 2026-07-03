@@ -5,6 +5,7 @@ import { primeCalculationService } from '../prime/prime-calculation.service';
 import { shiftService } from './shift.service';
 import { getAutoShiftStatus, runAutoShiftSyncJob } from '../../jobs/auto-shift.job';
 import type { AuthRequest } from '../../middleware/auth.middleware';
+import { requireOwner } from '../../middleware/auth.middleware';
 
 const router = Router();
 
@@ -77,9 +78,9 @@ router.get('/open', (_req: Request, res: Response) => {
 });
 
 // ── POST /api/shifts/open ─────────────────────────────────────────────────────
-// Opens a new shift. Only one shift can be OPEN at a time.
+// Manual open — OWNER-only troubleshooting. Production uses auto-shift from planning.
 
-router.post('/open', (req: Request, res: Response) => {
+router.post('/open', requireOwner, (req: Request, res: Response) => {
   const parsed = shiftOpenSchema.safeParse(req.body);
   if (!parsed.success) {
     const msg = parsed.error.issues
@@ -102,9 +103,9 @@ router.post('/open', (req: Request, res: Response) => {
 });
 
 // ── POST /api/shifts/:id/close ────────────────────────────────────────────────
-// Closes an open shift; optionally records the declared cash amount.
+// Manual close — OWNER-only troubleshooting. Production uses auto-shift from planning.
 
-router.post('/:id/close', (req: Request, res: Response) => {
+router.post('/:id/close', requireOwner, (req: Request, res: Response) => {
   const parsed = shiftCloseSchema.safeParse(req.body);
   if (!parsed.success) {
     const msg = parsed.error.issues

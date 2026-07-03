@@ -43,6 +43,58 @@ function todayDayOfWeek(tz: string): number {
   return map[short] ?? 1;
 }
 
+function getBusinessDate(tz: string): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: tz,
+    year:     'numeric',
+    month:    '2-digit',
+    day:      '2-digit',
+  }).formatToParts(new Date());
+  const y  = parts.find((p) => p.type === 'year')?.value  ?? '2000';
+  const mo = parts.find((p) => p.type === 'month')?.value ?? '01';
+  const d  = parts.find((p) => p.type === 'day')?.value   ?? '01';
+  return `${y}-${mo}-${d}`;
+}
+
+function buildScheduledDatetime(businessDate: string, hhmm: string, tz: string): Date {
+  const [hStr, mStr] = hhmm.split(':');
+  const h = parseInt(hStr ?? '0', 10);
+  const m = parseInt(mStr ?? '0', 10);
+  const probeUTC    = new Date(`${businessDate}T00:00:00Z`);
+  const local       = new Date(probeUTC.toLocaleString('en-US', { timeZone: tz }));
+  const offsetMs    = local.getTime() - probeUTC.getTime();
+  const midnightUTC = new Date(probeUTC.getTime() - offsetMs);
+  return new Date(midnightUTC.getTime() + (h * 60 + m) * 60_000);
+}
+
+export type TodayShiftStatus = 'upcoming' | 'active' | 'completed' | 'rest';
+
+function resolveTodayShiftStatus(
+  row: ScheduleRow,
+  now: Date,
+  businessDate: string,
+  tz: string,
+  shiftByScheduleId: Map<string, { id: string; status: string }>,
+): TodayShiftStatus {
+  if (row.isOff) return 'rest';
+
+  const startHHmm = row.startTime ?? row.shiftType?.startTime;
+  const endHHmm   = row.endTime   ?? row.shiftType?.endTime;
+  if (!startHHmm || !endHHmm) return 'upcoming';
+
+  const scheduledStartAt = buildScheduledDatetime(businessDate, startHHmm, tz);
+  const scheduledEndAt   = buildScheduledDatetime(businessDate, endHHmm, tz);
+
+  if (now < scheduledStartAt) return 'upcoming';
+  if (now >= scheduledEndAt) return 'completed';
+
+  const shift = shiftByScheduleId.get(row.id);
+  if (shift?.status === 'OPEN') return 'active';
+  if (shift) return 'completed';
+
+  return 'upcoming';
+}
+
 // ── Payload type ───────────────────────────────────────────────────────────────
 
 type ScheduleRow = Prisma.StaffScheduleGetPayload<{
@@ -459,42 +511,70 @@ class ShiftSettingsService {
   // ── B. Today suggestions ────────────────────────────────────────────────────
 
   /**
-   * Returns the active non-off schedule entries for today's weekday.
-   * Day-of-week is resolved from APP_TIMEZONE (env.APP_TIMEZONE).
-   * The frontend can use this to show a one-click "Open shift from schedule" UI.
+   * Returns today's schedule entries (including rest days) with live status.
+   * Status is derived from the planned window and any Shift row auto-created
+   * for (staffScheduleId, businessDate). Day-of-week uses APP_TIMEZONE.
    */
   async getTodaySuggestions(): Promise<{
     dayOfWeek: number;
     label: string;
+    autoShiftEnabled: boolean;
     suggestions: Array<{
+      scheduleId: string;
       staffMemberId: string;
       staffMemberName: string;
       shiftTypeId: string | null;
       shiftTypeLabel: string | null;
       startTime: string | null;
       endTime: string | null;
+      status: TodayShiftStatus;
+      shiftId: string | null;
     }>;
   }> {
-    const tz  = env.APP_TIMEZONE;
-    const dow = todayDayOfWeek(tz);
+    const tz           = env.APP_TIMEZONE;
+    const dow          = todayDayOfWeek(tz);
+    const businessDate = getBusinessDate(tz);
+    const now          = new Date();
 
-    const rows = await prisma.staffSchedule.findMany({
-      where: { dayOfWeek: dow, isActive: true, isOff: false },
-      include: SCHEDULE_INCLUDE,
-      orderBy: { staffMember: { name: 'asc' } },
-    });
+    const [rows, todayShifts] = await Promise.all([
+      prisma.staffSchedule.findMany({
+        where:   { dayOfWeek: dow, isActive: true },
+        include: SCHEDULE_INCLUDE,
+        orderBy: [{ isOff: 'asc' }, { staffMember: { name: 'asc' } }],
+      }),
+      prisma.shift.findMany({
+        where:  { businessDate },
+        select: { id: true, staffScheduleId: true, status: true },
+      }),
+    ]);
+
+    const shiftByScheduleId = new Map<string, { id: string; status: string }>();
+    for (const sh of todayShifts) {
+      if (sh.staffScheduleId) {
+        shiftByScheduleId.set(sh.staffScheduleId, { id: sh.id, status: sh.status });
+      }
+    }
 
     return {
       dayOfWeek: dow,
       label:     DAY_LABELS[dow] ?? `Jour ${dow}`,
-      suggestions: rows.map((s) => ({
-        staffMemberId:   s.staffMemberId,
-        staffMemberName: s.staffMember.name,
-        shiftTypeId:     s.shiftTypeId ?? null,
-        shiftTypeLabel:  s.shiftType?.label ?? s.shiftType?.name ?? null,
-        startTime:       s.startTime ?? s.shiftType?.startTime ?? null,
-        endTime:         s.endTime   ?? s.shiftType?.endTime   ?? null,
-      })),
+      autoShiftEnabled: env.AUTO_SHIFT_ENABLED,
+      suggestions: rows.map((s) => {
+        const shift = shiftByScheduleId.get(s.id);
+        return {
+          scheduleId:      s.id,
+          staffMemberId:   s.staffMemberId,
+          staffMemberName: s.staffMember.name,
+          shiftTypeId:     s.shiftTypeId ?? null,
+          shiftTypeLabel:  s.isOff
+            ? 'Repos'
+            : (s.shiftType?.label ?? s.shiftType?.name ?? null),
+          startTime: s.isOff ? null : (s.startTime ?? s.shiftType?.startTime ?? null),
+          endTime:   s.isOff ? null : (s.endTime   ?? s.shiftType?.endTime   ?? null),
+          status:    resolveTodayShiftStatus(s, now, businessDate, tz, shiftByScheduleId),
+          shiftId:   shift?.id ?? null,
+        };
+      }),
     };
   }
 }

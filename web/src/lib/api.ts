@@ -503,20 +503,10 @@ export async function deleteShiftSchedule(id: string): Promise<{ ok: boolean }> 
 export async function getTodayShiftSuggestions(): Promise<{
   dayOfWeek: number;
   label: string;
+  autoShiftEnabled: boolean;
   suggestions: TodayShiftSuggestion[];
 }> {
   return apiRequest(`${BASE}/api/settings/shifts/today-suggestions`);
-}
-
-export async function openShift(payload: {
-  staffMemberId: string;
-  shiftTypeId?: string;
-}): Promise<{ shift: unknown }> {
-  return apiRequest(`${BASE}/api/shifts/open`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
 }
 
 // ── Dashboard — revenue stats ──────────────────────────────────────────────────
