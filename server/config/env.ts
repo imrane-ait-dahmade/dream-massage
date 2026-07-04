@@ -41,7 +41,7 @@ const envSchema = z.object({
     .transform((v) => v === 'true'),
   AUTO_SHIFT_CHECK_INTERVAL_MS: z
     .string()
-    .default('60000')
+    .default('900000')
     .transform((v) => parseInt(v, 10)),
   ALLOW_MULTIPLE_OPEN_SHIFTS: z
     .string()

@@ -13,7 +13,9 @@ Automatically opens and closes `Shift` records based on the weekly `StaffSchedul
    - Which `ShiftType` (Matin 10:00–15:00, Soir 15:00–22:00, Journée 10:00–22:00)
    - Optional time overrides (`startTime`, `endTime` as HH:mm)
 
-2. The auto-shift job checks every `AUTO_SHIFT_CHECK_INTERVAL_MS` (default: 60 s).
+2. The auto-shift job checks every `AUTO_SHIFT_CHECK_INTERVAL_MS` (default: 15 min / 900000 ms).
+   A GitHub Actions workflow (`shift-verification.yml`) also triggers `POST /api/shifts/automation/run`
+   every 15 minutes (`*/15 * * * *`) when the Fly machine is running.
 
 3. **Opening**: if now is within a scheduled window and no shift has been created yet for that `(staffScheduleId, businessDate)`, a real `Shift` row is created with `status=OPEN`.
 
@@ -96,7 +98,7 @@ Add to `server/.env`:
 ```env
 # Auto-shift automation
 AUTO_SHIFT_ENABLED=true                  # false = job disabled, no shifts auto-opened/closed
-AUTO_SHIFT_CHECK_INTERVAL_MS=60000       # how often to check (ms), default 60 s
+AUTO_SHIFT_CHECK_INTERVAL_MS=900000       # how often to check (ms), default 15 min
 ALLOW_MULTIPLE_OPEN_SHIFTS=false         # true = multiple concurrent OPEN shifts allowed
 ```
 

@@ -1,0 +1,86 @@
+name: Shift verification
+
+# Closes stale OPEN shifts and opens due shifts via the existing auto-shift sync.
+# Runs every 15 minutes (GitHub Actions cron is UTC).
+# Idempotent: POST /api/shifts/automation/run is safe to call repeatedly.
+# Skips gracefully when the Fly machine is stopped overnight.
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+env:
+  FLY_APP: dream-massage
+  API_URL: https://dream-massage.fly.dev
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify secrets
+        run: |
+          if [ -z "${{ secrets.FLY_API_TOKEN }}" ]; then
+            echo "::error::FLY_API_TOKEN secret is missing."
+            exit 1
+          fi
+          if [ -z "${{ secrets.SHIFT_AUTOMATION_TOKEN }}" ]; then
+            echo "::error::SHIFT_AUTOMATION_TOKEN secret is missing (Owner JWT for /api/shifts/automation/run)."
+            exit 1
+          fi
+          echo "Required secrets are present."
+
+      - name: Install flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Ensure jq is available
+        run: |
+          if command -v jq >/dev/null 2>&1; then
+            echo "jq is already available: $(jq --version)"
+          else
+            sudo apt-get update -y
+            sudo apt-get install -y jq
+          fi
+
+      - name: Check if Fly machine is running
+        id: machine
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          RUNNING=$(flyctl machines list -a "$FLY_APP" --json | jq '[.[] | select(.state == "started")] | length')
+          echo "running_count=$RUNNING" >> "$GITHUB_OUTPUT"
+          if [ "$RUNNING" -eq 0 ]; then
+            echo "No started machines for $FLY_APP — skipping verification (expected when stopped overnight)."
+          else
+            echo "Found $RUNNING started machine(s) for $FLY_APP."
+          fi
+
+      - name: Run shift verification
+        if: steps.machine.outputs.running_count != '0'
+        env:
+          SHIFT_AUTOMATION_TOKEN: ${{ secrets.SHIFT_AUTOMATION_TOKEN }}
+        run: |
+          set +e
+          echo "==> POST $API_URL/api/shifts/automation/run"
+          HTTP=$(curl -sS -o /tmp/shift-verify.json -w "%{http_code}" -X POST \
+            -H "Authorization: Bearer $SHIFT_AUTOMATION_TOKEN" \
+            -H "Content-Type: application/json" \
+            "$API_URL/api/shifts/automation/run")
+          BODY=$(cat /tmp/shift-verify.json 2>/dev/null || echo "{}")
+          echo "HTTP status: $HTTP"
+          echo "Response: $BODY"
+
+          if [ "$HTTP" = "200" ]; then
+            OPEN_FOUND=$(echo "$BODY" | jq -r '.openFound // 0')
+            CLOSED=$(echo "$BODY" | jq -r '.closed // 0')
+            CLOSED_IDS=$(echo "$BODY" | jq -r '.closedIds // [] | join(", ")')
+            echo "openFound=$OPEN_FOUND closed=$CLOSED closedIds=[$CLOSED_IDS]"
+            echo "==> Shift verification completed."
+            exit 0
+          fi
+
+          echo "::warning::Shift verification returned HTTP $HTTP — treated as non-fatal."
+          exit 0
+
+      - name: No running machine
+        if: steps.machine.outputs.running_count == '0'
+        run: echo "==> Verification skipped — no action required."
