@@ -3,11 +3,11 @@ name: Fly - Start morning
 # Starts the dream-massage Fly machine(s) before opening.
 # GitHub Actions cron is always UTC. Morocco is UTC+1 year-round (no DST
 # since 2018), except for a fixed clock pause during Ramadan when it aligns
-# with UTC+0. This schedule targets 08:50 Morocco standard time (UTC+1).
-# 08:50 UTC+1 = 07:50 UTC
+# with UTC+0. This schedule targets 08:00 Morocco standard time (UTC+1).
+# 08:00 UTC+1 = 07:00 UTC
 on:
   schedule:
-    - cron: "50 7 * * *"
+    - cron: "0 7 * * *"
   workflow_dispatch: {}
 
 env:
@@ -109,3 +109,10 @@ jobs:
 
           echo "==> Done. All machines are in the target state ($TARGET_STATE)."
           exit 0
+
+      - name: Warm up app after start
+        run: |
+          echo "Waiting 10s for machines to become reachable..."
+          sleep 10
+          echo "==> HEAD request to https://dream-massage.fly.dev"
+          curl -I https://dream-massage.fly.dev || true
