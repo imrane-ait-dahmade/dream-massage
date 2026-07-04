@@ -42,7 +42,7 @@ export async function runAutoShiftSyncJob(): Promise<{
   } catch (err) {
     lastError = String(err);
     logger.error('[auto-shift-job] Sync error:', lastError);
-    return { opened: 0, closed: 0 };
+    return { opened: 0, closed: 0, closedIds: [], openFound: 0 };
   }
 }
 
