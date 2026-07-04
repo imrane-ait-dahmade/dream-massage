@@ -1,22 +1,15 @@
 import { prisma } from '../../prisma';
 import { env } from '../../config/env';
 import { logger } from '../../utils/logger';
+import { getBusinessDate, getDayBoundsUtc, getTimezone } from '../../utils/time';
 import { shiftService } from './shift.service';
+import {
+  evaluateShiftClose,
+  shouldForceCloseBeforeNewOpen,
+  type ShiftCloseCandidate,
+} from './shift-close.logic';
 
-// ── Timezone helpers ───────────────────────────────────────────────────────────
-
-function getBusinessDate(tz: string): string {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: tz,
-    year:     'numeric',
-    month:    '2-digit',
-    day:      '2-digit',
-  }).formatToParts(new Date());
-  const y  = parts.find((p) => p.type === 'year')?.value  ?? '2000';
-  const mo = parts.find((p) => p.type === 'month')?.value ?? '01';
-  const d  = parts.find((p) => p.type === 'day')?.value   ?? '01';
-  return `${y}-${mo}-${d}`;
-}
+// ── Timezone helpers (schedule windows) ────────────────────────────────────────
 
 function todayDayOfWeek(tz: string): number {
   const short =
@@ -29,8 +22,6 @@ function todayDayOfWeek(tz: string): number {
   return map[short] ?? 1;
 }
 
-// Converts a local HH:mm time on a given YYYY-MM-DD to a UTC Date.
-// DST-safe: probes the actual UTC offset for the specific date.
 function buildScheduledDatetime(businessDate: string, hhmm: string, tz: string): Date {
   const [hStr, mStr] = hhmm.split(':');
   const h = parseInt(hStr ?? '0', 10);
@@ -41,6 +32,31 @@ function buildScheduledDatetime(businessDate: string, hhmm: string, tz: string):
   const midnightUTC = new Date(probeUTC.getTime() - offsetMs);
   return new Date(midnightUTC.getTime() + (h * 60 + m) * 60_000);
 }
+
+function toCloseCandidate(row: {
+  id: string;
+  status: string;
+  businessDate: string | null;
+  scheduledEndAt: Date | null;
+  startedAt: Date;
+  staffMemberId: string;
+}): ShiftCloseCandidate {
+  return {
+    id:             row.id,
+    status:         row.status,
+    businessDate:   row.businessDate,
+    scheduledEndAt: row.scheduledEndAt,
+    startedAt:      row.startedAt,
+    staffMemberId:  row.staffMemberId,
+  };
+}
+
+export type AutoShiftSyncResult = {
+  opened: number;
+  closed: number;
+  closedIds: string[];
+  openFound: number;
+};
 
 // ── Service ────────────────────────────────────────────────────────────────────
 
@@ -59,14 +75,102 @@ class AutoShiftService {
   }
 
   /**
-   * Opens shifts that are due now according to the weekly schedule.
-   * Only creates a shift if:
-   *   1. now >= scheduledStartAt AND now < scheduledEndAt
-   *   2. No existing Shift for (staffScheduleId, businessDate)
-   *   3. ALLOW_MULTIPLE_OPEN_SHIFTS=false → no other OPEN shift exists
+   * Closes every OPEN shift that is eligible — no businessDate=today filter.
+   * Idempotent: already CLOSED rows are never selected.
    */
-  async openDueShifts(now: Date): Promise<number> {
-    const tz           = env.APP_TIMEZONE;
+  async closeEligibleOpenShifts(
+    now: Date,
+    opts?: { reasonOverride?: string; ownerId?: string | null },
+  ): Promise<{ closed: number; closedIds: string[]; openFound: number }> {
+    const tz                 = getTimezone();
+    const todayBusinessDate  = getBusinessDate(tz);
+    const { start: todayStartUtc } = getDayBoundsUtc(todayBusinessDate, tz);
+    const ownerId            = opts?.ownerId ?? await this.resolveOwnerUserId();
+
+    const openShifts = await shiftService.listOpenShifts();
+    const openFound  = openShifts.length;
+
+    if (openFound === 0) {
+      logger.info('[auto-shift] Close scan: openFound=0 closed=0');
+      return { closed: 0, closedIds: [], openFound: 0 };
+    }
+
+    logger.info(
+      `[auto-shift] Close scan: openFound=${openFound} ids=[${openShifts.map((s) => s.id).join(', ')}]`,
+    );
+
+    const closedIds: string[] = [];
+
+    for (const row of openShifts) {
+      const decision = evaluateShiftClose(
+        toCloseCandidate(row),
+        now,
+        todayBusinessDate,
+        todayStartUtc,
+      );
+      if (!decision.close) continue;
+
+      const reason = opts?.reasonOverride ?? decision.reason ?? 'AUTO_CLOSE';
+      const result = await shiftService.autoCloseShift(row.id, {
+        reason,
+        endedAt:        decision.endedAt ?? now,
+        closedByUserId: ownerId,
+      });
+
+      if (result.closed) {
+        closedIds.push(row.id);
+        logger.info(
+          `[auto-shift] Closed shift ${row.id} (${row.staffMember.name}) reason=${reason}`,
+        );
+      }
+    }
+
+    logger.info(
+      `[auto-shift] Close scan done: openFound=${openFound} closed=${closedIds.length} ` +
+      `closedIds=[${closedIds.join(', ')}]`,
+    );
+
+    return { closed: closedIds.length, closedIds, openFound };
+  }
+
+  /**
+   * Before opening a due shift, close any OPEN rows that would block creation.
+   * Shop-wide when ALLOW_MULTIPLE_OPEN_SHIFTS=false; per-staff otherwise.
+   */
+  private async closeBlockingOpenShiftsBeforeOpen(
+    now: Date,
+    staffMemberId: string,
+    ownerId: string | null,
+  ): Promise<number> {
+    const openShifts = await shiftService.listOpenShifts();
+    if (openShifts.length === 0) return 0;
+
+    const toClose = env.ALLOW_MULTIPLE_OPEN_SHIFTS
+      ? openShifts.filter((s) => s.staffMemberId === staffMemberId)
+      : openShifts.filter((s) => shouldForceCloseBeforeNewOpen(toCloseCandidate(s)));
+
+    let closed = 0;
+    for (const row of toClose) {
+      const result = await shiftService.autoCloseShift(row.id, {
+        reason:          'BEFORE_NEW_OPEN',
+        endedAt:         now,
+        closedByUserId: ownerId,
+      });
+      if (result.closed) {
+        closed++;
+        logger.info(
+          `[auto-shift] Pre-open cleanup: closed ${row.id} (${row.staffMember.name})`,
+        );
+      }
+    }
+    return closed;
+  }
+
+  /**
+   * Opens shifts that are due now according to the weekly schedule.
+   */
+  async openDueShifts(now: Date, ownerId: string | null): Promise<number> {
+    const tz           = getTimezone();
     const businessDate = getBusinessDate(tz);
     const dow          = todayDayOfWeek(tz);
 
@@ -95,34 +199,16 @@ class AutoShiftService {
       const scheduledStartAt = buildScheduledDatetime(businessDate, startHHmm, tz);
       const scheduledEndAt   = buildScheduledDatetime(businessDate, endHHmm, tz);
 
-      // Only open if we are within the scheduled window
       if (now < scheduledStartAt || now >= scheduledEndAt) continue;
 
-      // Guard: duplicate check for same schedule + business date
       const duplicate = await prisma.shift.findFirst({
         where:  { staffScheduleId: schedule.id, businessDate },
         select: { id: true },
       });
       if (duplicate) continue;
 
-      // Guard: only one OPEN shift allowed
-      if (!env.ALLOW_MULTIPLE_OPEN_SHIFTS) {
-        const openShift = await prisma.shift.findFirst({
-          where:  { status: 'OPEN' },
-          select: { id: true, staffMember: { select: { name: true } } },
-        });
-        if (openShift) {
-          logger.warn(
-            `[auto-shift] Cannot auto-open for ${schedule.staffMember.name} ` +
-            `(${businessDate}): another shift is already OPEN ` +
-            `(${openShift.staffMember.name}). ` +
-            `Set ALLOW_MULTIPLE_OPEN_SHIFTS=true to allow parallel shifts.`,
-          );
-          continue;
-        }
-      }
+      await this.closeBlockingOpenShiftsBeforeOpen(now, schedule.staffMemberId, ownerId);
 
-      const ownerId = await this.resolveOwnerUserId();
       if (!ownerId) {
         logger.error('[auto-shift] No active OWNER user found — cannot auto-open shift');
         continue;
@@ -155,61 +241,29 @@ class AutoShiftService {
   }
 
   /**
-   * Closes OPEN shifts whose scheduledEndAt has passed.
-   * Recalculates prime summary before closing.
-   * declaredCash is intentionally left null — requires Owner review.
+   * Full sync: close all eligible OPEN shifts (any date), then open due shifts.
+   * Idempotent — safe to run on every cron tick or after server restart.
    */
-  async closeExpiredShifts(now: Date): Promise<number> {
-    const expired = await prisma.shift.findMany({
-      where: { status: 'OPEN', scheduledEndAt: { lte: now } },
-      select: { id: true, scheduledEndAt: true },
-    });
+  async runAutoShiftSync(): Promise<AutoShiftSyncResult> {
+    const now     = new Date();
+    const ownerId = await this.resolveOwnerUserId();
 
-    let closed = 0;
+    const closeResult = await this.closeEligibleOpenShifts(now, { ownerId });
+    const opened      = await this.openDueShifts(now, ownerId);
 
-    for (const shift of expired) {
-      // Recalculate and persist prime snapshot before closing
-      try {
-        await shiftService.recalculateAndSaveShiftPrimeSummary(shift.id);
-      } catch (err) {
-        logger.warn(
-          `[auto-shift] Prime recalc failed for shift ${shift.id}: ${String(err)} — closing anyway`,
-        );
-      }
-
-      const ownerId = await this.resolveOwnerUserId();
-
-      await prisma.shift.update({
-        where: { id: shift.id },
-        data: {
-          status:              'CLOSED',
-          endedAt:             shift.scheduledEndAt ?? now,
-          closedByUserId:      ownerId,
-          closedAutomatically: true,
-          autoCloseReason:     'SCHEDULE_END',
-          // declaredCash intentionally null — Owner must review and enter cash later
-        },
-      });
-
-      logger.info(`[auto-shift] Auto-closed shift ${shift.id} (SCHEDULE_END)`);
-      closed++;
+    if (opened > 0 || closeResult.closed > 0) {
+      logger.info(
+        `[auto-shift] Sync: openFound=${closeResult.openFound} ` +
+        `closed=${closeResult.closed} opened=${opened}`,
+      );
     }
 
-    return closed;
-  }
-
-  /**
-   * Full sync: close expired shifts first, then open due shifts.
-   * Closing first ensures a just-expired shift does not block a new one from opening.
-   */
-  async runAutoShiftSync(): Promise<{ opened: number; closed: number }> {
-    const now    = new Date();
-    const closed = await this.closeExpiredShifts(now);
-    const opened = await this.openDueShifts(now);
-    if (opened > 0 || closed > 0) {
-      logger.info(`[auto-shift] Sync: opened=${opened} closed=${closed}`);
-    }
-    return { opened, closed };
+    return {
+      opened,
+      closed:    closeResult.closed,
+      closedIds: closeResult.closedIds,
+      openFound: closeResult.openFound,
+    };
   }
 }
 

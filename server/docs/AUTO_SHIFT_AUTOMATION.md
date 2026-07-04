@@ -17,7 +17,11 @@ Automatically opens and closes `Shift` records based on the weekly `StaffSchedul
 
 3. **Opening**: if now is within a scheduled window and no shift has been created yet for that `(staffScheduleId, businessDate)`, a real `Shift` row is created with `status=OPEN`.
 
-4. **Closing**: if an OPEN shift has a `scheduledEndAt` that has passed, the shift is automatically closed with `status=CLOSED`.
+4. **Closing**: any OPEN shift is closed when eligible — no `businessDate=today` filter:
+   - `scheduledEndAt` has passed (any past date)
+   - `businessDate` is before today's business date (`APP_TIMEZONE`)
+   - manual shift with no `businessDate` and `startedAt` before today
+   Before opening a new due shift, remaining blocking OPEN rows are closed (`BEFORE_NEW_OPEN`).
 
 5. Sessions that start during an OPEN shift are automatically linked to it (existing behavior, unchanged).
 

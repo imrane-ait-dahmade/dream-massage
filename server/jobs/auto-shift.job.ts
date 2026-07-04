@@ -26,7 +26,12 @@ export function getAutoShiftStatus() {
 
 // ── Run ────────────────────────────────────────────────────────────────────────
 
-export async function runAutoShiftSyncJob(): Promise<{ opened: number; closed: number }> {
+export async function runAutoShiftSyncJob(): Promise<{
+  opened: number;
+  closed: number;
+  closedIds: string[];
+  openFound: number;
+}> {
   try {
     const result   = await autoShiftService.runAutoShiftSync();
     lastRunAt      = new Date();

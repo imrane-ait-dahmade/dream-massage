@@ -1,4 +1,6 @@
 import { prisma } from '../../prisma';
+import { env } from '../../config/env';
+import { logger } from '../../utils/logger';
 import { primeCalculationService } from '../prime/prime-calculation.service';
 import type { ShiftPrimeSummary } from '../prime/prime-calculation.service';
 
@@ -12,11 +14,94 @@ const SHIFT_INCLUDE = {
   _count:      { select: { sessions: true } },
 } as const;
 
+const OPEN_SHIFT_SELECT = {
+  id:             true,
+  status:         true,
+  businessDate:   true,
+  scheduledEndAt: true,
+  startedAt:      true,
+  staffMemberId:  true,
+  staffMember:    { select: { name: true } },
+} as const;
+
+export type OpenShiftRow = {
+  id:             string;
+  status:         string;
+  businessDate:   string | null;
+  scheduledEndAt: Date | null;
+  startedAt:      Date;
+  staffMemberId:  string;
+  staffMember:    { name: string };
+};
+
+export type AutoCloseShiftResult = {
+  closed: boolean;
+  shiftId: string;
+};
+
+export type CloseOpenShiftsBatchResult = {
+  openFound: number;
+  closed: number;
+  closedIds: string[];
+};
+
 export class ShiftService {
   /**
+   * Returns every shift still OPEN (endedAt null). No business-date filter.
+   */
+  async listOpenShifts(): Promise<OpenShiftRow[]> {
+    return prisma.shift.findMany({
+      where:   { status: 'OPEN', endedAt: null },
+      orderBy: { startedAt: 'asc' },
+      select:  OPEN_SHIFT_SELECT,
+    });
+  }
+
+  /**
+   * Idempotent automatic close. Safe to call multiple times on the same shift.
+   * Only updates rows that are still OPEN with endedAt null.
+   */
+  async autoCloseShift(
+    shiftId: string,
+    opts: {
+      reason: string;
+      endedAt?: Date;
+      closedByUserId?: string | null;
+    },
+  ): Promise<AutoCloseShiftResult> {
+    const existing = await prisma.shift.findUnique({
+      where:  { id: shiftId },
+      select: { id: true, status: true, endedAt: true },
+    });
+    if (!existing || existing.status !== 'OPEN' || existing.endedAt !== null) {
+      return { closed: false, shiftId };
+    }
+
+    try {
+      await this.recalculateAndSaveShiftPrimeSummary(shiftId);
+    } catch (err) {
+      // Prime snapshot is best-effort for automatic closes.
+      logger.warn(`[shift] Prime recalc failed for ${shiftId}: ${String(err)} — closing anyway`);
+    }
+
+    const result = await prisma.shift.updateMany({
+      where: { id: shiftId, status: 'OPEN', endedAt: null },
+      data: {
+        status:              'CLOSED',
+        endedAt:             opts.endedAt ?? new Date(),
+        closedByUserId:      opts.closedByUserId ?? null,
+        closedAutomatically: true,
+        autoCloseReason:     opts.reason,
+      },
+    });
+
+    return { closed: result.count > 0, shiftId };
+  }
+
+  /**
    * Opens a new shift for a staff member.
-   * Only one OPEN shift is allowed at a time (enforced by the
-   * unique_open_shift partial index in RAW_SQL_CONSTRAINTS.md).
+   * Stale OPEN shifts are closed first; only one OPEN shift at a time (shop-wide
+   * when ALLOW_MULTIPLE_OPEN_SHIFTS=false).
    */
   async openShift(
     input: { staffMemberId: string; shiftTypeId?: string },
@@ -45,16 +130,26 @@ export class ShiftService {
       }
     }
 
-    // Guard: only one OPEN shift at a time
-    const existingOpen = await prisma.shift.findFirst({
-      where:  { status: 'OPEN' },
-      select: { id: true, staffMember: { select: { name: true } } },
-    });
-    if (existingOpen) {
-      throw Object.assign(
-        new Error(`Un shift est déjà ouvert (${existingOpen.staffMember.name})`),
-        { status: 409 },
-      );
+    // Close lingering OPEN shifts before creating a new one (troubleshooting path).
+    if (!env.ALLOW_MULTIPLE_OPEN_SHIFTS) {
+      const lingering = await this.listOpenShifts();
+      for (const open of lingering) {
+        await this.autoCloseShift(open.id, {
+          reason:          'BEFORE_MANUAL_OPEN',
+          closedByUserId: openedByUserId,
+        });
+      }
+    } else {
+      const sameStaffOpen = await prisma.shift.findFirst({
+        where:  { status: 'OPEN', endedAt: null, staffMemberId: input.staffMemberId },
+        select: { id: true },
+      });
+      if (sameStaffOpen) {
+        await this.autoCloseShift(sameStaffOpen.id, {
+          reason:          'BEFORE_MANUAL_OPEN_SAME_STAFF',
+          closedByUserId: openedByUserId,
+        });
+      }
     }
 
     return prisma.shift.create({
