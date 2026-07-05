@@ -47,6 +47,8 @@ const envSchema = z.object({
     .string()
     .default('false')
     .transform((v) => v === 'true'),
+  // Shared secret for POST /api/shifts/automation/run (GitHub Actions, cron).
+  SHIFT_AUTOMATION_SECRET: z.string().min(16).optional(),
   // ── Demo / dev testing tools ─────────────────────────────────────────────────
   // Enable only in non-production environments for manual scenario testing.
   DEMO_TOOLS_ENABLED: z

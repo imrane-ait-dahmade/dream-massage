@@ -16,11 +16,12 @@ import {
   getLastShellySyncAt,
   getSimulationTick,
 } from './jobs/mock-realtime.job';
-import { startAutoShiftJob, stopAutoShiftJob } from './jobs/auto-shift.job';
+import { startAutoShiftJob, stopAutoShiftJob, runAutoShiftSyncJob } from './jobs/auto-shift.job';
 import { processSimulationTick } from './jobs/fake-power-simulation.job';
 import { shellyService, isShellyConfigured, getMissingFields } from './modules/shelly/shelly.service';
 import { corsOriginFn } from './config/cors';
 import { requireAuth, requireOwnerAdmin } from './middleware/auth.middleware';
+import { requireShiftAutomationSecret } from './middleware/shift-automation.middleware';
 import authRouter from './modules/auth/auth.controller';
 import chairRouter from './modules/chairs/chair.controller';
 import settingsRouter from './modules/settings/settings.controller';
@@ -239,6 +240,16 @@ app.use('/api/chairs', requireAuth, requireOwnerAdmin, chairRouter);
 app.use('/api/settings', requireAuth, requireOwnerAdmin, settingsRouter);
 
 // ── Shifts (protected) ─────────────────────────────────────────────────────────
+
+// Automation run — secret header only (no JWT). Registered before the protected router.
+app.post('/api/shifts/automation/run', requireShiftAutomationSecret, (_req, res) => {
+  runAutoShiftSyncJob()
+    .then((result) => res.json({ ok: true, ...result }))
+    .catch((err: unknown) => {
+      logger.error('[auto-shift] Manual run via secret failed:', String(err));
+      res.status(500).json({ ok: false, error: 'Internal server error' });
+    });
+});
 
 app.use('/api/shifts', requireAuth, requireOwnerAdmin, shiftRouter);
 

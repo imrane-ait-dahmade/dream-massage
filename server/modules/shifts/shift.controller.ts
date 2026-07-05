@@ -3,7 +3,7 @@ import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { primeCalculationService } from '../prime/prime-calculation.service';
 import { shiftService } from './shift.service';
-import { getAutoShiftStatus, runAutoShiftSyncJob } from '../../jobs/auto-shift.job';
+import { getAutoShiftStatus } from '../../jobs/auto-shift.job';
 import type { AuthRequest } from '../../middleware/auth.middleware';
 import { requireOwner } from '../../middleware/auth.middleware';
 
@@ -56,15 +56,7 @@ router.get('/automation/status', (_req: Request, res: Response) => {
   res.json(getAutoShiftStatus());
 });
 
-// ── POST /api/shifts/automation/run ───────────────────────────────────────────
-// Manually triggers one auto-shift sync cycle. Useful for testing without waiting
-// for the scheduled interval.
-
-router.post('/automation/run', (_req: Request, res: Response) => {
-  runAutoShiftSyncJob()
-    .then((result) => res.json({ ok: true, ...result }))
-    .catch((err: unknown) => handleError(res, err));
-});
+// POST /api/shifts/automation/run is registered in index.ts (secret header auth).
 
 // ── GET /api/shifts/open ───────────────────────────────────────────────────────
 // Returns the currently open shift or { shift: null } if none is open.

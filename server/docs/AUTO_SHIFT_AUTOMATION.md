@@ -100,24 +100,27 @@ Add to `server/.env`:
 AUTO_SHIFT_ENABLED=true                  # false = job disabled, no shifts auto-opened/closed
 AUTO_SHIFT_CHECK_INTERVAL_MS=900000       # how often to check (ms), default 15 min
 ALLOW_MULTIPLE_OPEN_SHIFTS=false         # true = multiple concurrent OPEN shifts allowed
+SHIFT_AUTOMATION_SECRET=...              # min 16 chars — GitHub Actions / cron callers
 ```
 
-Safe defaults: all three default to off/conservative if not set.
+Set the same `SHIFT_AUTOMATION_SECRET` on Fly.io and in GitHub Actions secrets.
+
+Safe defaults: auto-shift flags default to off/conservative if not set.
 
 ---
 
 ## Monitoring Endpoints
 
-All endpoints are protected by auth middleware.
-
 ### `GET /api/shifts/automation/status`
+
+Owner/Admin JWT required (same as other `/api/shifts/*` routes).
 
 Returns current job state:
 
 ```json
 {
   "autoShiftEnabled": true,
-  "intervalMs": 60000,
+  "intervalMs": 900000,
   "allowMultipleOpenShifts": false,
   "lastRunAt": "2026-06-16T09:05:00.000Z",
   "lastOpenCount": 1,
@@ -128,13 +131,15 @@ Returns current job state:
 
 ### `POST /api/shifts/automation/run`
 
-Manually triggers one sync cycle. Returns:
+Protected by header `x-shift-automation-secret` (no JWT). Compares against `SHIFT_AUTOMATION_SECRET`.
+
+Returns:
 
 ```json
-{ "ok": true, "opened": 1, "closed": 0 }
+{ "ok": true, "opened": 1, "closed": 0, "closedIds": [], "openFound": 0 }
 ```
 
-Useful during testing without waiting for the next interval tick.
+Useful for GitHub Actions (`shift-verification.yml`) and manual testing.
 
 ---
 
@@ -164,7 +169,8 @@ curl -b cookies.txt http://localhost:4001/api/shifts/automation/status
 ### 3. Run manually
 
 ```bash
-curl -X POST -b cookies.txt http://localhost:4001/api/shifts/automation/run
+curl -X POST http://localhost:4001/api/shifts/automation/run \
+  -H "x-shift-automation-secret: YOUR_SHIFT_AUTOMATION_SECRET"
 ```
 
 ### 4. Create a schedule for today and trigger

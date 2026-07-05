@@ -23,8 +23,8 @@ jobs:
             echo "::error::FLY_API_TOKEN secret is missing."
             exit 1
           fi
-          if [ -z "${{ secrets.SHIFT_AUTOMATION_TOKEN }}" ]; then
-            echo "::error::SHIFT_AUTOMATION_TOKEN secret is missing (Owner JWT for /api/shifts/automation/run)."
+          if [ -z "${{ secrets.SHIFT_AUTOMATION_SECRET }}" ]; then
+            echo "::error::SHIFT_AUTOMATION_SECRET secret is missing."
             exit 1
           fi
           echo "Required secrets are present."
@@ -57,12 +57,12 @@ jobs:
       - name: Run shift verification
         if: steps.machine.outputs.running_count != '0'
         env:
-          SHIFT_AUTOMATION_TOKEN: ${{ secrets.SHIFT_AUTOMATION_TOKEN }}
+          SHIFT_AUTOMATION_SECRET: ${{ secrets.SHIFT_AUTOMATION_SECRET }}
         run: |
           set +e
           echo "==> POST $API_URL/api/shifts/automation/run"
           HTTP=$(curl -sS -o /tmp/shift-verify.json -w "%{http_code}" -X POST \
-            -H "Authorization: Bearer $SHIFT_AUTOMATION_TOKEN" \
+            -H "x-shift-automation-secret: $SHIFT_AUTOMATION_SECRET" \
             -H "Content-Type: application/json" \
             "$API_URL/api/shifts/automation/run")
           BODY=$(cat /tmp/shift-verify.json 2>/dev/null || echo "{}")
