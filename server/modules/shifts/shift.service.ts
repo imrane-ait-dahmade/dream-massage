@@ -165,13 +165,45 @@ export class ShiftService {
   }
 
   /**
-   * Returns the currently OPEN shift, or null if none is open.
+   * Returns the currently active OPEN shift (endedAt must be null).
    */
   async getOpenShift() {
     return prisma.shift.findFirst({
-      where:   { status: 'OPEN' },
+      where:   { status: 'OPEN', endedAt: null },
       include: SHIFT_INCLUDE,
+      orderBy: { startedAt: 'desc' },
     });
+  }
+
+  /**
+   * Re-opens a CLOSED scheduled shift inside the same business-day window.
+   * Idempotent when the row is already OPEN.
+   */
+  async reopenScheduledShift(
+    shiftId: string,
+    opts: {
+      ownerId: string;
+      scheduledStartAt: Date;
+      scheduledEndAt: Date;
+      businessDate: string;
+    },
+  ): Promise<boolean> {
+    const result = await prisma.shift.updateMany({
+      where: { id: shiftId, status: 'CLOSED' },
+      data: {
+        status:              'OPEN',
+        endedAt:             null,
+        closedByUserId:      null,
+        closedAutomatically: false,
+        autoCloseReason:     null,
+        scheduledStartAt:    opts.scheduledStartAt,
+        scheduledEndAt:      opts.scheduledEndAt,
+        businessDate:        opts.businessDate,
+        openedAutomatically: true,
+        notes:               'Ré-ouvert automatiquement dans la fenêtre planifiée',
+      },
+    });
+    return result.count > 0;
   }
 
   /**

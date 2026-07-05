@@ -5,7 +5,7 @@ import { getBusinessDate, getDayBoundsUtc, getTimezone } from '../../utils/time'
 import { shiftService } from './shift.service';
 import {
   evaluateShiftClose,
-  shouldForceCloseBeforeNewOpen,
+  shouldCloseBeforeHandoff,
   type ShiftCloseCandidate,
 } from './shift-close.logic';
 
@@ -108,7 +108,13 @@ class AutoShiftService {
         todayBusinessDate,
         todayStartUtc,
       );
-      if (!decision.close) continue;
+      if (!decision.close) {
+        logger.info(
+          `[auto-shift] Keeping shift ${row.id} (${row.staffMember.name}) open ` +
+          `(businessDate=${row.businessDate ?? 'null'})`,
+        );
+        continue;
+      }
 
       const reason = opts?.reasonOverride ?? decision.reason ?? 'AUTO_CLOSE';
       const result = await shiftService.autoCloseShift(row.id, {
@@ -141,13 +147,21 @@ class AutoShiftService {
     now: Date,
     staffMemberId: string,
     ownerId: string | null,
+    todayBusinessDate: string,
+    todayStartUtc: Date,
   ): Promise<number> {
     const openShifts = await shiftService.listOpenShifts();
     if (openShifts.length === 0) return 0;
 
     const toClose = env.ALLOW_MULTIPLE_OPEN_SHIFTS
-      ? openShifts.filter((s) => s.staffMemberId === staffMemberId)
-      : openShifts.filter((s) => shouldForceCloseBeforeNewOpen(toCloseCandidate(s)));
+      ? openShifts.filter(
+          (s) =>
+            s.staffMemberId === staffMemberId &&
+            shouldCloseBeforeHandoff(toCloseCandidate(s), now, todayBusinessDate, todayStartUtc),
+        )
+      : openShifts.filter((s) =>
+          shouldCloseBeforeHandoff(toCloseCandidate(s), now, todayBusinessDate, todayStartUtc),
+        );
 
     let closed = 0;
     for (const row of toClose) {
@@ -201,16 +215,43 @@ class AutoShiftService {
 
       if (now < scheduledStartAt || now >= scheduledEndAt) continue;
 
-      const duplicate = await prisma.shift.findFirst({
+      const existing = await prisma.shift.findFirst({
         where:  { staffScheduleId: schedule.id, businessDate },
-        select: { id: true },
+        select: { id: true, status: true, endedAt: true },
       });
-      if (duplicate) continue;
 
-      await this.closeBlockingOpenShiftsBeforeOpen(now, schedule.staffMemberId, ownerId);
+      if (existing?.status === 'OPEN' && existing.endedAt === null) {
+        continue;
+      }
+
+      const { start: todayStartUtc } = getDayBoundsUtc(businessDate, tz);
+      await this.closeBlockingOpenShiftsBeforeOpen(
+        now,
+        schedule.staffMemberId,
+        ownerId,
+        businessDate,
+        todayStartUtc,
+      );
 
       if (!ownerId) {
         logger.error('[auto-shift] No active OWNER user found — cannot auto-open shift');
+        continue;
+      }
+
+      if (existing?.status === 'CLOSED') {
+        const reopened = await shiftService.reopenScheduledShift(existing.id, {
+          ownerId,
+          scheduledStartAt,
+          scheduledEndAt,
+          businessDate,
+        });
+        if (reopened) {
+          logger.info(
+            `[auto-shift] Re-opened shift ${existing.id} for ${schedule.staffMember.name} ` +
+            `(${startHHmm}–${endHHmm}, ${businessDate})`,
+          );
+          opened++;
+        }
         continue;
       }
 

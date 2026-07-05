@@ -358,7 +358,7 @@ export class HomeDashboardService {
       }),
       // Current OPEN shift for the shift-summary card
       prisma.shift.findFirst({
-        where:   { status: 'OPEN' },
+        where:   { status: 'OPEN', endedAt: null },
         orderBy: { startedAt: 'desc' },
         select: {
           id:             true,

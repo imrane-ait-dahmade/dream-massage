@@ -3,6 +3,9 @@
  * Timezone-aware dates use APP_TIMEZONE (business calendar), not UTC midnight.
  */
 
+/** Safety cap for OPEN shifts without a scheduled end (manual / legacy rows). */
+export const DEFAULT_MAX_OPEN_SHIFT_MS = 14 * 60 * 60 * 1000;
+
 export type ShiftCloseCandidate = {
   id: string;
   status: string;
@@ -18,14 +21,27 @@ export type ShiftCloseDecision = {
   endedAt: Date | null;
 };
 
-/** OPEN shifts that must be closed regardless of business date filters. */
+/**
+ * Returns true when an OPEN shift should be auto-closed.
+ * Never closes a current-day shift that is still inside its scheduled window.
+ */
 export function evaluateShiftClose(
   shift: ShiftCloseCandidate,
   now: Date,
   todayBusinessDate: string,
   todayStartUtc: Date,
+  maxOpenMs: number = DEFAULT_MAX_OPEN_SHIFT_MS,
 ): ShiftCloseDecision {
   if (shift.status !== 'OPEN') {
+    return { close: false, reason: null, endedAt: null };
+  }
+
+  // Keep today's shift while still inside the planned end time.
+  if (
+    shift.businessDate === todayBusinessDate &&
+    shift.scheduledEndAt &&
+    shift.scheduledEndAt > now
+  ) {
     return { close: false, reason: null, endedAt: null };
   }
 
@@ -45,10 +61,20 @@ export function evaluateShiftClose(
     return { close: true, reason: 'STALE_STARTED_AT', endedAt: now };
   }
 
+  const openDurationMs = now.getTime() - shift.startedAt.getTime();
+  if (!shift.scheduledEndAt && openDurationMs > maxOpenMs) {
+    return { close: true, reason: 'MAX_DURATION', endedAt: now };
+  }
+
   return { close: false, reason: null, endedAt: null };
 }
 
-/** When opening a new shift, any remaining OPEN row must be closed first (shop-wide). */
-export function shouldForceCloseBeforeNewOpen(shift: ShiftCloseCandidate): boolean {
-  return shift.status === 'OPEN';
+/** Before opening a new due shift, only close OPEN rows that are already eligible. */
+export function shouldCloseBeforeHandoff(
+  shift: ShiftCloseCandidate,
+  now: Date,
+  todayBusinessDate: string,
+  todayStartUtc: Date,
+): boolean {
+  return evaluateShiftClose(shift, now, todayBusinessDate, todayStartUtc).close;
 }

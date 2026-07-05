@@ -291,7 +291,7 @@ export class ChairStateService {
     }
 
     const openShift = await prisma.shift.findFirst({
-      where: { status: 'OPEN' },
+      where: { status: 'OPEN', endedAt: null },
       orderBy: { startedAt: 'desc' },
     });
     const anomalyType: string | null = openShift ? null : 'NO_OPEN_SHIFT';

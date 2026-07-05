@@ -114,7 +114,7 @@ export class DashboardService {
 
     // ── Open shift ────────────────────────────────────────────────────────────
     const shiftRow = await prisma.shift.findFirst({
-      where: { status: 'OPEN' },
+      where: { status: 'OPEN', endedAt: null },
       include: { staffMember: true },
       orderBy: { startedAt: 'desc' },
     });

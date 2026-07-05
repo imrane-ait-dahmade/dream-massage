@@ -5,7 +5,7 @@
 import assert from 'node:assert/strict';
 import {
   evaluateShiftClose,
-  shouldForceCloseBeforeNewOpen,
+  shouldCloseBeforeHandoff,
   type ShiftCloseCandidate,
 } from './shift-close.logic';
 
@@ -34,6 +34,16 @@ test('ignores already CLOSED shifts', () => {
   const d = evaluateShiftClose(
     { ...base, status: 'CLOSED' },
     new Date('2026-07-03T20:00:00Z'),
+    '2026-07-03',
+    new Date('2026-07-03T00:00:00Z'),
+  );
+  assert.equal(d.close, false);
+});
+
+test('keeps today shift inside scheduled window', () => {
+  const d = evaluateShiftClose(
+    base,
+    new Date('2026-07-03T10:00:00Z'),
     '2026-07-03',
     new Date('2026-07-03T00:00:00Z'),
   );
@@ -75,36 +85,28 @@ test('closes manual shift without businessDate started before today', () => {
   assert.equal(d.reason, 'STALE_STARTED_AT');
 });
 
-test('keeps active in-window shift for today', () => {
-  const d = evaluateShiftClose(
-    base,
-    new Date('2026-07-03T10:00:00Z'),
-    '2026-07-03',
-    new Date('2026-07-03T00:00:00Z'),
+test('shouldCloseBeforeHandoff is false for active today shift', () => {
+  assert.equal(
+    shouldCloseBeforeHandoff(
+      base,
+      new Date('2026-07-03T10:00:00Z'),
+      '2026-07-03',
+      new Date('2026-07-03T00:00:00Z'),
+    ),
+    false,
   );
-  assert.equal(d.close, false);
 });
 
-test('idempotent re-run: still-open stale shift remains eligible', () => {
-  const d1 = evaluateShiftClose(
-    { ...base, businessDate: '2026-06-01', scheduledEndAt: null },
-    new Date('2026-07-04T10:00:00Z'),
-    '2026-07-04',
-    new Date('2026-07-04T00:00:00Z'),
+test('shouldCloseBeforeHandoff is true after scheduled end', () => {
+  assert.equal(
+    shouldCloseBeforeHandoff(
+      base,
+      new Date('2026-07-03T15:00:00Z'),
+      '2026-07-03',
+      new Date('2026-07-03T00:00:00Z'),
+    ),
+    true,
   );
-  const d2 = evaluateShiftClose(
-    { ...base, businessDate: '2026-06-01', scheduledEndAt: null },
-    new Date('2026-07-04T10:00:01Z'),
-    '2026-07-04',
-    new Date('2026-07-04T00:00:00Z'),
-  );
-  assert.equal(d1.close, true);
-  assert.equal(d2.close, true);
-});
-
-test('shouldForceCloseBeforeNewOpen targets any OPEN row', () => {
-  assert.equal(shouldForceCloseBeforeNewOpen(base), true);
-  assert.equal(shouldForceCloseBeforeNewOpen({ ...base, status: 'CLOSED' }), false);
 });
 
 console.log('All shift-close.logic tests passed.');
