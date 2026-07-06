@@ -1,23 +1,18 @@
 /**
- * Idempotent seed for the dreamMassage MVP.
- * Safe to run multiple times — uses upsert/findFirst guards. Never deletes data
- * outside of the explicit --clean-runtime path (see below).
+ * Idempotent seed for dreamMassage — driven by prisma/seed-data/dream-massage-seed-data.json.
  *
- *   npm run prisma:seed            ← upsert essential data only (chairs, pricing,
- *                                     settings, owner). No demo data, ever, by default.
- *   npm run prisma:seed:clean      ← clean runtime data first, then upsert
+ *   npm run prisma:seed            ← master data from JSON (no runtime history)
+ *   npm run prisma:seed:clean      ← clean runtime data first, then seed
+ *   npm run prisma:seed:staff-planning ← alias (staff/planning subset, same JSON)
  *
- * Demo data must never run in production.
- * Set DEMO_DATA_ENABLED=true (default: false) to also seed "Demo Staff", the
- * example ASSISTANT login, and (with SEED_DEMO_SCHEDULE=true) a demo weekly
- * schedule — used by /api/dev/demo/* scenario testing. This flag is a no-op when
- * NODE_ENV=production: IS_PRODUCTION always wins, regardless of DEMO_DATA_ENABLED.
+ * Optional env:
+ *   SEED_ASSISTANT_USERS=true      ← create ASSISTANT logins (dev placeholder passwords)
+ *   RESET_ASSISTANT_PASSWORDS=true ← overwrite assistant passwords (dev only)
+ *   DEMO_DATA_ENABLED=true         ← include Demo Staff in roster (non-production only)
+ *   CLEAN_RUNTIME_DATA=true        ← wipe sessions/shifts before seed
  *
- * The --clean-runtime flag (or CLEAN_RUNTIME_DATA=true) deletes:
- *   ChairEvent, DeviceLog, SettingsAuditLog, ChairSession, Shift
- * and resets chair runtime state before seeding base data.
- *
- * NEVER run --clean-runtime in production unless FORCE_CLEAN=true is also set.
+ * Never seeds: shifts, chair_sessions, chair_events, device_logs, settings_audit_logs,
+ * shift_bonus_adjustments.
  */
 
 import { config } from 'dotenv';
@@ -25,781 +20,64 @@ import { join } from 'path';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
-import bcrypt from 'bcryptjs';
+import { applyRawSqlConstraints, seedFromJson } from './seeds/seed-from-json';
+import { DEMO_STAFF_ID } from './seeds/seed-data.loader';
 
-// Load .env from server/ first, then fall back to project root
 config({ path: join(process.cwd(), '.env') });
 config({ path: join(process.cwd(), '..', '.env'), override: false });
 
-// ── Fixed IDs — must never change across runs for upsert stability ─────────────
-const IDS = {
-  owner:     '00000000-0000-0000-0000-000000000001',
-  // ── Demo-only records — gated by SEED_DEMO_DATA, never created in production ──
-  assistant: '00000000-0000-0000-0000-000000000002', // example ASSISTANT login
-  staff:     '00000000-0000-0000-0001-000000000001', // "Demo Staff" — test scenarios only
-  plan20: '00000000-0000-0000-0002-000000000001',
-  plan30: '00000000-0000-0000-0002-000000000002',
-  plan40: '00000000-0000-0000-0002-000000000003',
-  rule:   '00000000-0000-0000-0003-000000000001',
-  // ── Shift types ──
-  shiftTypeMatin:   '00000000-0000-0000-0004-000000000001',
-  shiftTypeSoir:    '00000000-0000-0000-0004-000000000002',
-  shiftTypeJournee: '00000000-0000-0000-0004-000000000003',
-  // ── Target bonus rules ──
-  bonusRuleMatin: '00000000-0000-0000-0005-000000000001',
-  bonusRuleSoir:  '00000000-0000-0000-0005-000000000002',
-  // ── Example commission rule (inactive until owner confirms) ──
-  commRule30: '00000000-0000-0000-0006-000000000001',
-  // ── Real staff members for weekly-planning onboarding (seedShiftTable) ──
-  // fille1 is also the StaffMember the demo ASSISTANT login points to in
-  // seedDemoData() — do not repoint it, existing production logins already use
-  // this exact id.
-  fille1: '00000000-0000-0000-0001-000000000002',
-  fille2: '00000000-0000-0000-0001-000000000003',
-} as const;
-
-// ── Prisma client (standalone, not the shared server/prisma.ts) ────────────────
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
-// ── Flags ──────────────────────────────────────────────────────────────────────
 const CLEAN_RUNTIME =
   process.argv.includes('--clean-runtime') ||
   process.env.CLEAN_RUNTIME_DATA === 'true';
 
 const IS_PRODUCTION    = (process.env.NODE_ENV ?? 'development') === 'production';
 const FORCE_CLEAN      = process.env.FORCE_CLEAN === 'true';
-const SEED_SHIFT_TABLE = process.env.SEED_SHIFT_TABLE === 'true';
-
-// Demo data must never run in production.
-// DEMO_DATA_ENABLED defaults to false and is required IN ADDITION to a non-production
-// NODE_ENV — even if DEMO_DATA_ENABLED is accidentally left "true" in a production
-// .env, IS_PRODUCTION alone is enough to block it. This is the single gate for every
-// fake/example record (Demo Staff, the example assistant login, the demo schedule).
 const DEMO_DATA_ENABLED = process.env.DEMO_DATA_ENABLED === 'true';
 const SEED_DEMO_DATA    = !IS_PRODUCTION && DEMO_DATA_ENABLED;
-
-// ── Initial weekly shift planning ──────────────────────────────────────────────
-// Edit this table to change the seeded planning.
-// Day numbers: 1=Lundi, 2=Mardi, 3=Mercredi, 4=Jeudi, 5=Vendredi, 6=Samedi, 7=Dimanche
-// shiftTypeName must be null when isOff=true.
-
-const INITIAL_WEEKLY_SHIFT_TABLE: Array<{
-  staffName:     string;
-  dayOfWeek:     number;
-  shiftTypeName: 'MATIN' | 'SOIR' | null;
-  isOff:         boolean;
-}> = [
-  // ── Fille 1 — Lundi Matin + Soir (journée complète = deux périodes) ────────
-  { staffName: 'Fille 1', dayOfWeek: 1, shiftTypeName: 'MATIN', isOff: false },
-  { staffName: 'Fille 1', dayOfWeek: 1, shiftTypeName: 'SOIR',  isOff: false },
-  { staffName: 'Fille 1', dayOfWeek: 2, shiftTypeName: 'MATIN', isOff: false },
-  { staffName: 'Fille 1', dayOfWeek: 2, shiftTypeName: 'SOIR',  isOff: false },
-  { staffName: 'Fille 1', dayOfWeek: 3, shiftTypeName: 'MATIN', isOff: false },
-  { staffName: 'Fille 1', dayOfWeek: 4, shiftTypeName: null,    isOff: true  },
-  { staffName: 'Fille 1', dayOfWeek: 5, shiftTypeName: 'SOIR',  isOff: false },
-  { staffName: 'Fille 1', dayOfWeek: 6, shiftTypeName: 'MATIN', isOff: false },
-  { staffName: 'Fille 1', dayOfWeek: 7, shiftTypeName: 'SOIR',  isOff: false },
-  // ── Fille 2 ─────────────────────────────────────────────────────────────────
-  { staffName: 'Fille 2', dayOfWeek: 1, shiftTypeName: 'MATIN', isOff: false },
-  { staffName: 'Fille 2', dayOfWeek: 2, shiftTypeName: null,    isOff: true  },
-  { staffName: 'Fille 2', dayOfWeek: 3, shiftTypeName: 'SOIR',  isOff: false },
-  { staffName: 'Fille 2', dayOfWeek: 4, shiftTypeName: 'MATIN', isOff: false },
-  { staffName: 'Fille 2', dayOfWeek: 4, shiftTypeName: 'SOIR',  isOff: false },
-  { staffName: 'Fille 2', dayOfWeek: 5, shiftTypeName: 'MATIN', isOff: false },
-  { staffName: 'Fille 2', dayOfWeek: 6, shiftTypeName: 'SOIR',  isOff: false },
-  { staffName: 'Fille 2', dayOfWeek: 7, shiftTypeName: 'MATIN', isOff: false },
-];
-
-const SHIFT_TYPE_IDS: Record<'MATIN' | 'SOIR', string> = {
-  MATIN: IDS.shiftTypeMatin,
-  SOIR:  IDS.shiftTypeSoir,
-};
-
-// ── Clean runtime data ─────────────────────────────────────────────────────────
+const SEED_ASSISTANTS   = process.env.SEED_ASSISTANT_USERS === 'true';
+const RESET_PASSWORDS   = process.env.RESET_ASSISTANT_PASSWORDS === 'true';
 
 async function cleanRuntime(): Promise<void> {
   if (IS_PRODUCTION && !FORCE_CLEAN) {
-    console.error('');
-    console.error('  ✗ REFUSED: --clean-runtime is blocked in production.');
-    console.error('    Set FORCE_CLEAN=true to override. Aborting.');
-    console.error('');
+    console.error('  ✗ REFUSED: --clean-runtime blocked in production.');
     process.exit(1);
   }
-
   console.log('── Cleaning runtime data ─────────────────────────────────────────');
-
-  // 1. ChairEvent references Chair + ChairSession — must go first
   const { count: evCount } = await prisma.chairEvent.deleteMany({});
   console.log(`  ✓ Deleted chair events      : ${evCount}`);
-
-  // 2. DeviceLog references Chair (nullable FK) — safe after events
   const { count: logCount } = await prisma.deviceLog.deleteMany({});
   console.log(`  ✓ Deleted device logs       : ${logCount}`);
-
-  // 3. SettingsAuditLog — references User only; safe to purge demo/test entries
   const { count: auditCount } = await prisma.settingsAuditLog.deleteMany({});
   console.log(`  ✓ Deleted audit log entries : ${auditCount}`);
-
-  // 4. ChairSession — references Chair + Shift + PricingPlan; events already gone
   const { count: sessionCount } = await prisma.chairSession.deleteMany({});
   console.log(`  ✓ Deleted chair sessions    : ${sessionCount}`);
-
-  // 5. Shift — references StaffMember + User; sessions already gone
   const { count: shiftCount } = await prisma.shift.deleteMany({});
   console.log(`  ✓ Deleted shifts            : ${shiftCount}`);
-
-  // 6. Reset chair runtime state — Shelly sync will repopulate on next poll
-  const { count: chairCount } = await prisma.chair.updateMany({
+  await prisma.chair.updateMany({
     data: {
-      status:             'IDLE',
-      currentSessionId:   null,
-      maybeActiveSince:   null,
-      maybeFinishedSince: null,
-      stateChangedAt:     null,
-      statusBeforeOffline: null,
-      offlineSince:       null,
-      lastOnlineAt:       null,
-      currentPowerWatts:  null,
-      relayIsOn:          null,
-      isOnline:           false,
-      lastSyncedAt:       null,
+      status: 'IDLE', currentSessionId: null, maybeActiveSince: null,
+      maybeFinishedSince: null, stateChangedAt: null, statusBeforeOffline: null,
+      offlineSince: null, lastOnlineAt: null, currentPowerWatts: null,
+      relayIsOn: null, isOnline: false, lastSyncedAt: null,
     },
   });
-  console.log(`  ✓ Reset chair runtime state : ${chairCount} chair(s)`);
   console.log('── Runtime clean done ────────────────────────────────────────────');
 }
-
-// ── Upsert base data ───────────────────────────────────────────────────────────
-
-async function seedBaseData(): Promise<void> {
-  console.log('── Seeding base data ─────────────────────────────────────────────');
-
-  // ── Owner user ──────────────────────────────────────────────────────────────
-  // In dev: seed sets the dev password so login works immediately.
-  // In production: never overwrite an existing password — only create if missing.
-  // CHANGE THE PASSWORD before going to production.
-  const DEV_PASSWORD = 'changeme123';
-  const ownerHash = IS_PRODUCTION
-    ? '$2b$10$PLACEHOLDER_CHANGE_BEFORE_PRODUCTION_00000000000000000'
-    : await bcrypt.hash(DEV_PASSWORD, 10);
-
-  const owner = await prisma.user.upsert({
-    where:  { id: IDS.owner },
-    update: IS_PRODUCTION ? {} : { passwordHash: ownerHash },
-    create: {
-      id:           IDS.owner,
-      name:         'Owner',
-      email:        'owner@example.com',
-      passwordHash: ownerHash,
-      role:         'OWNER',
-      isActive:     true,
-    },
-  });
-  console.log(`  ✓ Owner user   : ${owner.email} (${owner.role})`);
-  if (!IS_PRODUCTION) {
-    console.log('');
-    console.log('  ┌─────────────────────────────────────────────────┐');
-    console.log('  │  Owner login credentials (dev only)             │');
-    console.log('  │  email    : owner@example.com                   │');
-    console.log('  │  password : changeme123                         │');
-    console.log('  │  Change before production!                      │');
-    console.log('  └─────────────────────────────────────────────────┘');
-    console.log('');
-  }
-
-  // Demo Staff, the example ASSISTANT login, and the demo weekly schedule are seeded
-  // separately by seedDemoData() — gated by SEED_DEMO_DATA, never in production.
-  // See seedDemoData() below.
-
-  // ── Chairs F1–F5 ────────────────────────────────────────────────────────────
-  // Device ID priority:
-  //   1. SHELLY_DEVICE_Fx env var (real value, if present)
-  //   2. Existing DB shellyDeviceId (keep it — never overwrite real IDs)
-  //   3. Placeholder CHANGE_ME_Fx (only if chair is being created fresh)
-  const chairDefs = [
-    { name: 'F1', displayName: 'Fauteuil 1' },
-    { name: 'F2', displayName: 'Fauteuil 2' },
-    { name: 'F3', displayName: 'Fauteuil 3' },
-    { name: 'F4', displayName: 'Fauteuil 4' },
-    { name: 'F5', displayName: 'Fauteuil 5' },
-  ] as const;
-
-  for (const def of chairDefs) {
-    const envDeviceId =
-      process.env[`SHELLY_DEVICE_${def.name}`] ?? undefined;
-
-    const existing = await prisma.chair.findUnique({
-      where:  { name: def.name },
-      select: { id: true, shellyDeviceId: true, isEnabled: true },
-    });
-
-    let chair: { id: string; name: string; displayName: string | null; shellyDeviceId: string };
-
-    if (existing) {
-      // Update displayName always; only update device ID if env provides one
-      // AND the current value is still a placeholder (never overwrite a real ID
-      // unless env explicitly provides a different real ID for migration).
-      const isPlaceholder = existing.shellyDeviceId.startsWith('CHANGE_ME_');
-      const updateDeviceId =
-        envDeviceId !== undefined &&
-        (isPlaceholder || existing.shellyDeviceId !== envDeviceId)
-          ? envDeviceId
-          : undefined;
-
-      chair = await prisma.chair.update({
-        where: { name: def.name },
-        data: {
-          displayName: def.displayName,
-          ...(updateDeviceId !== undefined ? { shellyDeviceId: updateDeviceId } : {}),
-        },
-        select: { id: true, name: true, displayName: true, shellyDeviceId: true },
-      });
-
-      const deviceNote = updateDeviceId
-        ? ` (device → ${updateDeviceId})`
-        : ` (device unchanged: ${chair.shellyDeviceId.startsWith('CHANGE_ME') ? chair.shellyDeviceId : chair.shellyDeviceId.slice(0, 4) + '***'})`;
-      console.log(`  ✓ Chair        : ${chair.name} (updated)${deviceNote}`);
-    } else {
-      const deviceIdForCreate = envDeviceId ?? `CHANGE_ME_${def.name}`;
-      chair = await prisma.chair.create({
-        data: {
-          name:          def.name,
-          displayName:   def.displayName,
-          shellyDeviceId: deviceIdForCreate,
-          shellyChannel: 0,
-          status:        'IDLE',
-          isOnline:      false,
-          isEnabled:     true,
-        },
-        select: { id: true, name: true, displayName: true, shellyDeviceId: true },
-      });
-      const deviceNote = envDeviceId
-        ? envDeviceId.slice(0, 4) + '***'
-        : deviceIdForCreate;
-      console.log(`  ✓ Chair        : ${chair.name} (created, device=${deviceNote})`);
-    }
-
-    // ── Detection config — create default only if no active config exists ──────
-    const existingConfig = await prisma.chairDetectionConfig.findFirst({
-      where: { chairId: chair.id, isActive: true },
-    });
-    if (!existingConfig) {
-      await prisma.chairDetectionConfig.create({
-        data: {
-          chairId:               chair.id,
-          startThresholdWatts:   7,
-          stopThresholdWatts:    5,
-          startConfirmSeconds:   30,
-          stopConfirmSeconds:    180,
-          activationDelaySeconds: 30,
-          baselinePowerWatts:    2.1,
-          isActive:              true,
-          version:               1,
-        },
-      });
-      console.log(`    └ Detection config created (v1, 7W start / 5W stop)`);
-    } else {
-      console.log(
-        `    └ Detection config exists (v${existingConfig.version}, ` +
-        `${existingConfig.startThresholdWatts}W start / ${existingConfig.stopThresholdWatts}W stop)`,
-      );
-    }
-  }
-
-  // ── Pricing plans ────────────────────────────────────────────────────────────
-  const plan20 = await prisma.pricingPlan.upsert({
-    where:  { id: IDS.plan20 },
-    update: {},
-    create: {
-      id:              IDS.plan20,
-      name:            '20 minutes',
-      durationSeconds: 1200,
-      priceAmount:     20,
-      currency:        'MAD',
-      isActive:        true,
-      sortOrder:       1,
-    },
-  });
-
-  await prisma.pricingPlan.upsert({
-    where:  { id: IDS.plan30 },
-    update: {},
-    create: {
-      id:              IDS.plan30,
-      name:            '30 minutes',
-      durationSeconds: 1800,
-      priceAmount:     30,
-      currency:        'MAD',
-      isActive:        true,
-      sortOrder:       2,
-    },
-  });
-
-  await prisma.pricingPlan.upsert({
-    where:  { id: IDS.plan40 },
-    update: {},
-    create: {
-      id:              IDS.plan40,
-      name:            '40 minutes',
-      durationSeconds: 2400,
-      priceAmount:     40,
-      currency:        'MAD',
-      isActive:        true,
-      sortOrder:       3,
-    },
-  });
-  console.log('  ✓ Pricing plans: 20 min/20 MAD, 30 min/30 MAD, 40 min/40 MAD');
-
-  // ── Pricing rule ─────────────────────────────────────────────────────────────
-  // Deactivate any other active rules BEFORE upserting the canonical one so that
-  // the partial unique index unique_active_pricing_rule is never violated.
-  const { count: deactivated } = await prisma.pricingRule.updateMany({
-    where: { isActive: true, id: { not: IDS.rule } },
-    data:  { isActive: false },
-  });
-  if (deactivated > 0) {
-    console.log(`  ✓ Pricing rule : deactivated ${deactivated} non-canonical rule(s)`);
-  }
-
-  await prisma.pricingRule.upsert({
-    where:  { id: IDS.rule },
-    update: {
-      minimumBillableSeconds: 180,
-      overtimePolicy:         'ANOMALY',
-      isActive:               true,
-    },
-    create: {
-      id:                     IDS.rule,
-      roundingMode:           'NEXT_PLAN',
-      graceSeconds:           120,
-      minimumBillableSeconds: 180,
-      minimumPlanId:          plan20.id,
-      overtimePolicy:         'ANOMALY',
-      isActive:               true,
-    },
-  });
-
-  console.log('  ✓ Pricing rule : NEXT_PLAN, grace 120s, min 180s, overtime ANOMALY, minimum = 20 min');
-
-  // ── App settings ─────────────────────────────────────────────────────────────
-  const appSettings = [
-    {
-      key:         'timezone',
-      value:       'Africa/Casablanca',
-      type:        'string',
-      description: 'IANA timezone used for session timestamps and shift reporting',
-    },
-    {
-      key:         'sync_interval_ms',
-      value:       '1000',
-      type:        'number',
-      description: 'Shelly Cloud poll interval in milliseconds',
-    },
-    {
-      key:         'default_currency',
-      value:       'MAD',
-      type:        'string',
-      description: 'Default currency for pricing plans',
-    },
-  ];
-
-  for (const s of appSettings) {
-    await prisma.appSetting.upsert({
-      where:  { key: s.key },
-      update: {},
-      create: s,
-    });
-  }
-  console.log('  ✓ App settings : timezone, sync_interval_ms, default_currency');
-
-  console.log('── Seed complete ─────────────────────────────────────────────────');
-}
-
-// ── Demo data ────────────────────────────────────────────────────────────────
-// Demo data must never run in production.
-// Gated by SEED_DEMO_DATA (= !IS_PRODUCTION && DEMO_DATA_ENABLED). IS_PRODUCTION
-// alone is enough to skip this entire function — DEMO_DATA_ENABLED can never
-// override that. Creates: "Demo Staff" (id: IDS.staff, consumed by
-// dev-scenarios.service.ts / DEMO_TESTING.md) and an example ASSISTANT login
-// (assistant@example.com) linked to a placeholder "Fille 1" staff member.
-// Real staff onboarding (Fille 1 / Fille 2 for actual weekly planning) is a
-// separate, non-demo path — see seedShiftTable() below.
-
-async function seedDemoData(): Promise<void> {
-  console.log('── Seeding demo data (SEED_DEMO_DATA=true) ────────────────────────');
-
-  const fille1 = await prisma.staffMember.upsert({
-    where:  { id: IDS.fille1 },
-    update: { isActive: true, name: 'Fille 1' },
-    create: { id: IDS.fille1, name: 'Fille 1', isActive: true },
-  });
-
-  const ASSISTANT_DEV_PASSWORD = 'assistant123';
-  const assistantHash = await bcrypt.hash(ASSISTANT_DEV_PASSWORD, 10);
-
-  const assistant = await prisma.user.upsert({
-    where:  { id: IDS.assistant },
-    update: { passwordHash: assistantHash, staffMemberId: fille1.id },
-    create: {
-      id:            IDS.assistant,
-      name:          fille1.name,
-      email:         'assistant@example.com',
-      passwordHash:  assistantHash,
-      role:          'ASSISTANT',
-      staffMemberId: fille1.id,
-      isActive:      true,
-    },
-  });
-  console.log(`  ✓ Assistant user: ${assistant.email} (${assistant.role}) → ${fille1.name}`);
-  console.log('');
-  console.log('  ┌─────────────────────────────────────────────────┐');
-  console.log('  │  Assistant login credentials (dev only)         │');
-  console.log('  │  email    : assistant@example.com               │');
-  console.log('  │  password : assistant123                        │');
-  console.log('  │  staff    : Fille 1 (read-only dashboard)       │');
-  console.log('  └─────────────────────────────────────────────────┘');
-  console.log('');
-
-  const staff = await prisma.staffMember.upsert({
-    where:  { id: IDS.staff },
-    update: {},
-    create: {
-      id:       IDS.staff,
-      name:     'Demo Staff',
-      isActive: true,
-    },
-  });
-  console.log(`  ✓ Staff member : ${staff.name} (id: …${staff.id.slice(-8)})`);
-
-  console.log('── Demo data seed complete ─────────────────────────────────────────');
-}
-
-// ── Prime / commission seed data ───────────────────────────────────────────────
-
-async function seedPrimeData(): Promise<void> {
-  console.log('── Seeding prime/commission data ─────────────────────────────────');
-
-  // ── Shift types ─────────────────────────────────────────────────────────────
-  // update clause corrects old lowercase names and the SOIR label in existing DBs.
-  await prisma.shiftType.upsert({
-    where:  { id: IDS.shiftTypeMatin },
-    update: { name: 'MATIN', label: 'Matin',      startTime: '08:00', endTime: '15:00', isActive: true, sortOrder: 1 },
-    create: { id: IDS.shiftTypeMatin,   name: 'MATIN',   label: 'Matin',      startTime: '08:00', endTime: '15:00', isActive: true, sortOrder: 1 },
-  });
-
-  await prisma.shiftType.upsert({
-    where:  { id: IDS.shiftTypeSoir },
-    update: { name: 'SOIR', label: 'Soir', startTime: '15:00', endTime: '23:45', isActive: true, sortOrder: 2 },
-    create: { id: IDS.shiftTypeSoir,    name: 'SOIR',    label: 'Soir', startTime: '15:00', endTime: '23:45', isActive: true, sortOrder: 2 },
-  });
-
-  // Journée is deprecated — keep row for FK history but never active
-  await prisma.shiftType.upsert({
-    where:  { id: IDS.shiftTypeJournee },
-    update: { name: 'JOURNEE', label: 'Journée', startTime: '08:00', endTime: '23:45', isActive: false, sortOrder: 99 },
-    create: { id: IDS.shiftTypeJournee, name: 'JOURNEE', label: 'Journée',    startTime: '08:00', endTime: '23:45', isActive: false, sortOrder: 99 },
-  });
-
-  console.log('  ✓ Shift types  : MATIN (08:00–15:00), SOIR (15:00–23:45); JOURNEE désactivé');
-
-  // ── Target bonus rules ───────────────────────────────────────────────────────
-  // isActive=true — these are reasonable business defaults.
-  // Owner activates/edits from settings UI; these serve as ready-to-use examples.
-  await prisma.shiftTargetBonusRule.upsert({
-    where:  { id: IDS.bonusRuleMatin },
-    update: {},
-    create: {
-      id:           IDS.bonusRuleMatin,
-      shiftTypeId:  IDS.shiftTypeMatin,
-      targetAmount: 500,
-      bonusAmount:  50,
-      isActive:     true,
-    },
-  });
-
-  await prisma.shiftTargetBonusRule.upsert({
-    where:  { id: IDS.bonusRuleSoir },
-    update: {},
-    create: {
-      id:           IDS.bonusRuleSoir,
-      shiftTypeId:  IDS.shiftTypeSoir,
-      targetAmount: 1000,
-      bonusAmount:  100,
-      isActive:     true,
-    },
-  });
-
-  console.log('  ✓ Bonus rules  : Matin ≥500→50 MAD, Soir ≥1000→100 MAD (isActive=true)');
-
-  // ── Example commission rule — INACTIVE until owner confirms ──────────────────
-  // Seeded for the 30-minute plan (IDS.plan30) as a starting point.
-  // The owner must activate this rule from Settings → Primes before it takes effect.
-  // Rationale: we do not know the owner's agreed commission rate; activating an
-  // incorrect rule would silently generate wrong prime calculations.
-  await prisma.commissionRule.upsert({
-    where:  { id: IDS.commRule30 },
-    update: {},
-    create: {
-      id:            IDS.commRule30,
-      pricingPlanId: IDS.plan30,
-      type:          'PERCENTAGE',
-      value:         10,
-      isActive:      false,   // owner must review and activate from settings
-    },
-  });
-
-  console.log('  ✓ Commission   : 30 min plan → 10% example rule (isActive=false, needs owner activation)');
-  console.log('── Prime seed complete ────────────────────────────────────────────');
-}
-
-// ── Partial unique indexes (raw SQL — Prisma cannot express WHERE clauses) ─────
-
-async function applyRawSqlConstraints(): Promise<void> {
-  console.log('── Applying raw SQL constraints ──────────────────────────────────');
-
-  const indexes: Array<{ name: string; sql: string }> = [
-    {
-      name: 'unique_active_session_per_chair',
-      sql: `CREATE UNIQUE INDEX IF NOT EXISTS unique_active_session_per_chair
-              ON chair_sessions (chair_id) WHERE status = 'ACTIVE'`,
-    },
-    {
-      name: 'unique_active_detection_config_per_chair',
-      sql: `CREATE UNIQUE INDEX IF NOT EXISTS unique_active_detection_config_per_chair
-              ON chair_detection_configs (chair_id) WHERE is_active = true`,
-    },
-    {
-      name: 'unique_active_pricing_rule',
-      sql: `CREATE UNIQUE INDEX IF NOT EXISTS unique_active_pricing_rule
-              ON pricing_rules (is_active) WHERE is_active = true`,
-    },
-    {
-      name: 'unique_open_shift',
-      sql: `CREATE UNIQUE INDEX IF NOT EXISTS unique_open_shift
-              ON shifts (status) WHERE status = 'OPEN'`,
-    },
-    {
-      name: 'drop_unique_active_staff_schedule_per_day',
-      sql: `DROP INDEX IF EXISTS unique_active_staff_schedule_per_day`,
-    },
-    {
-      name: 'unique_active_staff_schedule_per_day_period',
-      sql: `CREATE UNIQUE INDEX IF NOT EXISTS unique_active_staff_schedule_per_day_period
-              ON staff_schedules (staff_member_id, day_of_week, shift_type_id)
-              WHERE is_active = true AND is_off = false AND shift_type_id IS NOT NULL`,
-    },
-    {
-      name: 'unique_active_staff_off_per_day',
-      sql: `CREATE UNIQUE INDEX IF NOT EXISTS unique_active_staff_off_per_day
-              ON staff_schedules (staff_member_id, day_of_week)
-              WHERE is_active = true AND is_off = true`,
-    },
-    {
-      name: 'unique_auto_shift_per_schedule_day',
-      sql: `CREATE UNIQUE INDEX IF NOT EXISTS unique_auto_shift_per_schedule_day
-              ON shifts (staff_schedule_id, business_date)
-              WHERE staff_schedule_id IS NOT NULL AND business_date IS NOT NULL`,
-    },
-  ];
-
-  for (const idx of indexes) {
-    try {
-      await prisma.$executeRawUnsafe(idx.sql);
-      console.log(`  ✓ Index : ${idx.name}`);
-    } catch (err) {
-      // Index already exists with the same definition — safe to ignore.
-      // Any real error (e.g. existing duplicate data) will surface here.
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes('already exists')) {
-        console.log(`  · Index : ${idx.name} (already exists)`);
-      } else {
-        console.warn(`  ⚠ Index : ${idx.name} — ${msg}`);
-      }
-    }
-  }
-
-  console.log('── Constraints done ──────────────────────────────────────────────');
-}
-
-// ── Weekly shift planning seed (opt-in, controlled by SEED_SHIFT_TABLE=true) ───
-
-async function seedShiftTable(): Promise<void> {
-  console.log('── Seeding weekly shift planning ─────────────────────────────────');
-
-  // ── Staff members (real employees, no login) ─────────────────────────────────
-  const fille1 = await prisma.staffMember.upsert({
-    where:  { id: IDS.fille1 },
-    update: { isActive: true },
-    create: { id: IDS.fille1, name: 'Fille 1', isActive: true },
-  });
-  const fille2 = await prisma.staffMember.upsert({
-    where:  { id: IDS.fille2 },
-    update: { isActive: true },
-    create: { id: IDS.fille2, name: 'Fille 2', isActive: true },
-  });
-  console.log(`  ✓ Staff : ${fille1.name} (id: …${fille1.id.slice(-8)})`);
-  console.log(`  ✓ Staff : ${fille2.name} (id: …${fille2.id.slice(-8)}) — no login`);
-
-  // ── Verify shift types exist (seeded by seedPrimeData) ──────────────────────
-  const stCount = await prisma.shiftType.count({
-    where: { id: { in: [IDS.shiftTypeMatin, IDS.shiftTypeSoir] }, isActive: true },
-  });
-  if (stCount < 2) {
-    console.error(
-      `  ✗ Only ${stCount}/2 active shift types (MATIN, SOIR) found. ` +
-      `Run base seed first (seedPrimeData seeds them).`,
-    );
-    return;
-  }
-
-  // Build name → ID map from fixed IDs (avoids any name-casing issues)
-  const staffIdMap: Record<string, string> = {
-    'Fille 1': fille1.id,
-    'Fille 2': fille2.id,
-  };
-
-  const DAY_LABELS: Record<number, string> = {
-    1: 'Lundi', 2: 'Mardi', 3: 'Mercredi',
-    4: 'Jeudi', 5: 'Vendredi', 6: 'Samedi', 7: 'Dimanche',
-  };
-
-  let deactivated = 0;
-  let created     = 0;
-  let skipped     = 0;
-
-  for (const entry of INITIAL_WEEKLY_SHIFT_TABLE) {
-    // ── Validate ────────────────────────────────────────────────────────────
-    if (entry.dayOfWeek < 1 || entry.dayOfWeek > 7) {
-      console.warn(`  ⚠ Invalid dayOfWeek=${entry.dayOfWeek} for ${entry.staffName} — skipped`);
-      skipped++;
-      continue;
-    }
-
-    const staffId = staffIdMap[entry.staffName];
-    if (!staffId) {
-      console.warn(`  ⚠ Unknown staffName="${entry.staffName}" — skipped`);
-      skipped++;
-      continue;
-    }
-
-    if (!entry.isOff && entry.shiftTypeName === null) {
-      console.warn(
-        `  ⚠ shiftTypeName required when isOff=false ` +
-        `(${entry.staffName} / ${DAY_LABELS[entry.dayOfWeek]}) — skipped`,
-      );
-      skipped++;
-      continue;
-    }
-
-    const shiftTypeId = entry.shiftTypeName ? SHIFT_TYPE_IDS[entry.shiftTypeName] : null;
-
-    // Deactivate only the same slot (staff + day + period, or staff + day off)
-    if (entry.isOff) {
-      const { count } = await prisma.staffSchedule.updateMany({
-        where: {
-          staffMemberId: staffId,
-          dayOfWeek:     entry.dayOfWeek,
-          isActive:      true,
-          isOff:         true,
-        },
-        data: { isActive: false },
-      });
-      deactivated += count;
-    } else if (shiftTypeId) {
-      const { count } = await prisma.staffSchedule.updateMany({
-        where: {
-          staffMemberId: staffId,
-          dayOfWeek:     entry.dayOfWeek,
-          shiftTypeId,
-          isActive:      true,
-          isOff:         false,
-        },
-        data: { isActive: false },
-      });
-      deactivated += count;
-    }
-
-    // ── Create new active row ────────────────────────────────────────────────
-    await prisma.staffSchedule.create({
-      data: {
-        staffMemberId: staffId,
-        shiftTypeId:   shiftTypeId ?? null,
-        dayOfWeek:     entry.dayOfWeek,
-        isOff:         entry.isOff,
-        isActive:      true,
-        notes:         'Planification initiale — généré par le seed',
-      },
-    });
-    created++;
-
-    const shiftLabel = entry.isOff ? 'OFF' : entry.shiftTypeName ?? '?';
-    console.log(`  · ${entry.staffName} ${DAY_LABELS[entry.dayOfWeek]}: ${shiftLabel}`);
-  }
-
-  if (deactivated > 0) {
-    console.log(`  · Deactivated ${deactivated} previous active schedule row(s)`);
-  }
-  if (skipped > 0) {
-    console.log(`  ⚠ Skipped ${skipped} invalid entr${skipped === 1 ? 'y' : 'ies'}`);
-  }
-  console.log(`  ✓ Created ${created} schedule entries`);
-  console.log('── Shift planning seed done ──────────────────────────────────────');
-}
-
-// ── Demo schedule (opt-in, never overwrites) ───────────────────────────────────
-
-async function seedDemoSchedule(): Promise<void> {
-  console.log('── Seeding demo schedule ─────────────────────────────────────────');
-
-  // Demo data must never run in production. Defense in depth: this assigns the
-  // "Demo Staff" row, which only exists when seedDemoData() has run.
-  if (!SEED_DEMO_DATA) {
-    console.log('  · SEED_DEMO_DATA is not enabled — skipping (see DEMO_DATA_ENABLED).');
-    console.log('── Demo schedule skipped ─────────────────────────────────────────');
-    return;
-  }
-
-  // Only create entries if none exist at all (fully idempotent — never wipes data)
-  const existingCount = await prisma.staffSchedule.count();
-  if (existingCount > 0) {
-    console.log(`  · Staff schedules already exist (${existingCount} rows). Skipping.`);
-    console.log('── Demo schedule skipped ─────────────────────────────────────────');
-    return;
-  }
-
-  // Assign Demo Staff to MATIN shift on Monday (day 1)
-  await prisma.staffSchedule.create({
-    data: {
-      staffMemberId: IDS.staff,
-      shiftTypeId:   IDS.shiftTypeMatin,
-      dayOfWeek:     1,     // Monday
-      isOff:         false,
-      isActive:      true,
-      notes:         'Exemple — généré par le seed',
-    },
-  });
-
-  console.log('  ✓ Demo schedule: Demo Staff → Matin, Lundi');
-  console.log('── Demo schedule done ────────────────────────────────────────────');
-}
-
-// ── Entry point ────────────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
   console.log('');
   console.log('  dreamMassage seed');
   console.log(`  mode: ${CLEAN_RUNTIME ? 'CLEAN-RUNTIME + seed' : 'seed only'}`);
   console.log(`  env : ${IS_PRODUCTION ? 'production' : 'development'}`);
-  if (SEED_SHIFT_TABLE) {
-    console.log('  SEED_SHIFT_TABLE=true — weekly planning will be seeded');
-  }
-  console.log(`  demo data : ${SEED_DEMO_DATA ? 'enabled (DEMO_DATA_ENABLED=true, non-production)' : 'disabled'}`);
+  console.log(`  demo staff : ${SEED_DEMO_DATA ? 'included' : 'excluded'}`);
   console.log('');
 
   if (!process.env.DATABASE_URL) {
-    console.error('  ✗ DATABASE_URL is not set. Load .env before running.');
+    console.error('  ✗ DATABASE_URL is not set.');
     process.exit(1);
   }
 
@@ -808,28 +86,20 @@ async function main(): Promise<void> {
     console.log('');
   }
 
-  await seedBaseData();
-  console.log('');
+  await seedFromJson(prisma, {
+    isProduction: IS_PRODUCTION,
+    includeDemoStaff: SEED_DEMO_DATA,
+    seedAssistantUsers: SEED_ASSISTANTS,
+    resetPasswords: RESET_PASSWORDS,
+  });
 
   if (SEED_DEMO_DATA) {
-    await seedDemoData();
+    console.log(`── Demo staff (${DEMO_STAFF_ID}) included via DEMO_DATA_ENABLED ───`);
     console.log('');
   }
 
-  await seedPrimeData();
+  await applyRawSqlConstraints(prisma);
   console.log('');
-  await applyRawSqlConstraints();
-  console.log('');
-
-  if (SEED_SHIFT_TABLE) {
-    await seedShiftTable();
-    console.log('');
-  }
-
-  if (SEED_DEMO_DATA && process.env.SEED_DEMO_SCHEDULE === 'true') {
-    await seedDemoSchedule();
-    console.log('');
-  }
 }
 
 main()

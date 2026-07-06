@@ -34,6 +34,11 @@ Thumbs.db
 # Logs
 *.log
 
+# Database backups — never commit production dumps
+*.dump
+*.backup
+backups/
+
 # Claude folder
 .claude/
-
+.dream-massage-seed-data/
