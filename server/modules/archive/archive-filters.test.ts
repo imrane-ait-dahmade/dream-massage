@@ -9,6 +9,7 @@ import {
   scheduleListWhere,
   SCHEDULE_OPERATIONAL_WHERE,
   STAFF_VISIBLE_WHERE,
+  SESSION_OPERATIONAL_WHERE,
 } from './archive-filters';
 
 function test(name: string, fn: () => void) {
@@ -45,6 +46,10 @@ test('active schedule list hides archived rows', () => {
   const w = scheduleListWhere('active');
   assert.equal(w.isActive, true);
   assert.equal(w.archivedAt, null);
+});
+
+test('operational sessions exclude archived', () => {
+  assert.deepEqual(SESSION_OPERATIONAL_WHERE, { archivedAt: null });
 });
 
 console.log('All archive-filters tests passed.');

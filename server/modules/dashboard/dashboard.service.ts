@@ -1,5 +1,6 @@
 import { elapsedSeconds, nowISO, getTimezone } from '../../utils/time';
 import { prisma } from '../../prisma';
+import { SESSION_OPERATIONAL_WHERE } from '../archive/archive-filters';
 
 export type ChairStatus =
   | 'IDLE'
@@ -96,6 +97,7 @@ export class DashboardService {
 
     const todaySessions = await prisma.chairSession.findMany({
       where: {
+        ...SESSION_OPERATIONAL_WHERE,
         startedAt: { gte: todayStart },
         status: { notIn: ['CANCELLED'] },
       },
@@ -208,6 +210,7 @@ export class RevenueStatsService {
 
     const rows = await prisma.chairSession.findMany({
       where: {
+        ...SESSION_OPERATIONAL_WHERE,
         startedAt: { gte: startUTC },
         status: { notIn: ['CANCELLED'] },
       },

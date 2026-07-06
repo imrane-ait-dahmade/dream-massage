@@ -3,6 +3,7 @@ import { prisma } from '../../prisma';
 import { primeCalculationService } from '../prime/prime-calculation.service';
 import type { AuthUser } from '../auth/auth.service';
 import { getBusinessDate, getDayBoundsUtc } from '../../utils/time';
+import { SESSION_OPERATIONAL_WHERE } from '../archive/archive-filters';
 import type {
   AssistantAlert,
   AssistantDashboardResponse,
@@ -258,7 +259,7 @@ export class AssistantService {
     const rawSessions =
       shiftIds.length > 0
         ? await prisma.chairSession.findMany({
-            where: { shiftId: { in: shiftIds } },
+            where: { shiftId: { in: shiftIds }, ...SESSION_OPERATIONAL_WHERE },
             include: {
               chair: { select: { name: true } },
               matchedPlan: { select: { name: true } },
@@ -372,6 +373,7 @@ export class AssistantService {
     }
 
     const where: Prisma.ChairSessionWhereInput = {
+      ...SESSION_OPERATIONAL_WHERE,
       shiftId: { in: shiftIds },
       ...(params.status ? { status: params.status as Prisma.EnumSessionStatusFilter['equals'] } : {}),
     };

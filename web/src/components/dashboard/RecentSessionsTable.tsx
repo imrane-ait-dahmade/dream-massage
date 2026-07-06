@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Pencil, Search, X } from 'lucide-react';
+import { Pencil, Search, Trash2, X } from 'lucide-react';
 import type { HomeRecentSession } from '@/lib/types';
 import { formatDH, formatElapsed, formatTime } from '@/lib/format';
+import { deleteSession, ApiError } from '@/lib/api';
 import { SessionCorrectionModal } from './SessionCorrectionModal';
+import { SessionDeleteConfirmModal } from './SessionDeleteConfirmModal';
 
 // ── Label maps ────────────────────────────────────────────────────────────────
 
@@ -135,6 +137,30 @@ interface Props {
 
 export function RecentSessionsTable({ sessions, total, loading, onCorrect }: Props) {
   const [correcting, setCorrecting] = useState<HomeRecentSession | null>(null);
+  const [deleting, setDeleting] = useState<HomeRecentSession | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  function showToast(type: 'success' | 'error', message: string) {
+    setToast({ type, message });
+    window.setTimeout(() => setToast(null), 4000);
+  }
+
+  async function confirmDelete() {
+    if (!deleting) return;
+    setDeleteBusy(true);
+    try {
+      await deleteSession(deleting.id);
+      setDeleting(null);
+      showToast('success', 'Session deleted successfully.');
+      onCorrect?.();
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : 'Failed to delete session.';
+      showToast('error', msg);
+    } finally {
+      setDeleteBusy(false);
+    }
+  }
 
   // Internal table search — client-side only, no API calls, no effect on dashboard totals
   const [query,        setQuery]        = useState('');
@@ -213,6 +239,18 @@ export function RecentSessionsTable({ sessions, total, loading, onCorrect }: Pro
 
   return (
     <>
+      {toast && (
+        <div
+          className={`fixed bottom-4 right-4 z-50 rounded-xl border px-4 py-3 text-sm font-medium shadow-lg ${
+            toast.type === 'success'
+              ? 'border-emerald-500/40 bg-emerald-950 text-emerald-300'
+              : 'border-red-500/40 bg-red-950 text-red-300'
+          }`}
+        >
+          {toast.message}
+        </div>
+      )}
+
       <div className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800">
 
         {/* ── Header ────────────────────────────────────────────────────────── */}
@@ -387,14 +425,24 @@ export function RecentSessionsTable({ sessions, total, loading, onCorrect }: Pro
                   </td>
                   <td className="px-2 py-2.5">
                     {s.status !== 'ACTIVE' && (
-                      <button
-                        onClick={() => setCorrecting(s)}
-                        title="Corriger le prix"
-                        className="flex items-center gap-1 rounded-lg border border-slate-600 px-2 py-1 text-[10px] font-semibold text-slate-400 hover:border-blue-500/50 hover:bg-blue-500/10 hover:text-blue-300"
-                      >
-                        <Pencil className="h-3 w-3" />
-                        <span className="hidden sm:block">Corriger</span>
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setCorrecting(s)}
+                          title="Corriger le prix"
+                          className="flex items-center gap-1 rounded-lg border border-slate-600 px-2 py-1 text-[10px] font-semibold text-slate-400 hover:border-blue-500/50 hover:bg-blue-500/10 hover:text-blue-300"
+                        >
+                          <Pencil className="h-3 w-3" />
+                          <span className="hidden sm:block">Corriger</span>
+                        </button>
+                        <button
+                          onClick={() => setDeleting(s)}
+                          title="Delete session"
+                          disabled={deleteBusy}
+                          className="flex items-center rounded-lg border border-slate-600 px-2 py-1 text-red-400 hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-300 disabled:opacity-50"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -415,6 +463,13 @@ export function RecentSessionsTable({ sessions, total, loading, onCorrect }: Pro
           }}
         />
       )}
+
+      <SessionDeleteConfirmModal
+        open={deleting != null}
+        busy={deleteBusy}
+        onCancel={() => !deleteBusy && setDeleting(null)}
+        onConfirm={() => void confirmDelete()}
+      />
     </>
   );
 }

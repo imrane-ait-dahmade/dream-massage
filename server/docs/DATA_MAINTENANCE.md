@@ -11,7 +11,16 @@ Safe hide/archive for production data — never destroy history linked to sessio
 | `archiveReason` | Optional admin note |
 | `archivedById` | User who archived |
 
-Models with archive fields: **StaffMember**, **StaffSchedule**, **ShiftType**, **Shift**, **PricingPlan**.
+Models with archive fields: **StaffMember**, **StaffSchedule**, **ShiftType**, **Shift**, **PricingPlan**, **ChairSession**.
+
+### Delete session (OWNER/ADMIN)
+
+`DELETE /api/sessions/:id` — removes a session from operational views.
+
+- **Hard delete** when no shift link, no chair events, no billing history
+- **Archive** (`archivedAt`) when linked to shift, events, corrections, or calculated billing — preserved for shift prime reports
+
+Archived sessions are hidden from dashboard, assistant, and chair lists but remain in `PrimeCalculationService` for closed-shift history.
 
 ## Backup before destructive actions
 

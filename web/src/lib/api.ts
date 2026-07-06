@@ -758,6 +758,20 @@ export async function correctSession(
   );
 }
 
+export async function deleteSession(
+  sessionId: string,
+  reason?: string,
+): Promise<{ ok: boolean; mode: 'archived' | 'deleted'; sessionId: string }> {
+  return apiRequest<{ ok: boolean; mode: 'archived' | 'deleted'; sessionId: string }>(
+    `${BASE}/api/sessions/${encodeURIComponent(sessionId)}`,
+    {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reason ? { reason } : {}),
+    },
+  );
+}
+
 // ── Session settings ───────────────────────────────────────────────────────────
 
 export async function getSessionSettings(): Promise<SessionSettings> {

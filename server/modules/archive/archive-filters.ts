@@ -50,3 +50,8 @@ export function mapArchiveFields(row: {
     isArchived:    row.archivedAt != null,
   };
 }
+
+/** Sessions visible in dashboard, assistant, and operational lists. */
+export const SESSION_OPERATIONAL_WHERE: Prisma.ChairSessionWhereInput = {
+  archivedAt: null,
+};

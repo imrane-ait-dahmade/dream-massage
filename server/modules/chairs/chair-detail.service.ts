@@ -1,5 +1,6 @@
 import { prisma } from '../../prisma';
 import { elapsedSeconds } from '../../utils/time';
+import { SESSION_OPERATIONAL_WHERE } from '../archive/archive-filters';
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 // TODO: Replace with timezone-aware midnight using APP_TIMEZONE (Africa/Casablanca).
@@ -253,6 +254,7 @@ class ChairDetailService {
     const [todayRows, monthRows, recentRows, eventRows] = await Promise.all([
       prisma.chairSession.findMany({
         where: {
+          ...SESSION_OPERATIONAL_WHERE,
           chairId: chair.id,
           startedAt: { gte: todayStart },
           status: { notIn: ['CANCELLED'] },
@@ -261,6 +263,7 @@ class ChairDetailService {
       }),
       prisma.chairSession.findMany({
         where: {
+          ...SESSION_OPERATIONAL_WHERE,
           chairId: chair.id,
           startedAt: { gte: monthStart },
           status: { notIn: ['CANCELLED'] },
@@ -269,6 +272,7 @@ class ChairDetailService {
       }),
       prisma.chairSession.findMany({
         where: {
+          ...SESSION_OPERATIONAL_WHERE,
           chairId: chair.id,
           status: { notIn: ['CANCELLED'] },
         },
@@ -358,6 +362,7 @@ class ChairDetailService {
     // Build where dynamically; `any` avoids complex Prisma enum casting for runtime-safe code
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: Record<string, any> = {
+      ...SESSION_OPERATIONAL_WHERE,
       chairId: chair.id,
       status: filters.status ? filters.status : { notIn: ['CANCELLED'] },
     };

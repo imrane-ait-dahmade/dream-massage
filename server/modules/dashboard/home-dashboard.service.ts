@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { getTimezone } from '../../utils/time';
-import { STAFF_VISIBLE_WHERE } from '../archive/archive-filters';
+import { STAFF_VISIBLE_WHERE, SESSION_OPERATIONAL_WHERE } from '../archive/archive-filters';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -299,6 +299,7 @@ export class HomeDashboardService {
 
     // ── Session WHERE clause ──────────────────────────────────────────────────
     const sessionWhere: Prisma.ChairSessionWhereInput = {
+      ...SESSION_OPERATIONAL_WHERE,
       startedAt: { gte: utcStart, lt: utcEnd },
       ...(chairDbId ? { chairId: chairDbId } : {}),
       ...(shiftId !== 'all'
@@ -418,7 +419,7 @@ export class HomeDashboardService {
       // All sessions in the currently OPEN shift (unfiltered — for the shift card)
       currentShiftRow
         ? (prisma.chairSession.findMany({
-            where:  { shiftId: currentShiftRow.id, status: { not: 'CANCELLED' } },
+            where:  { shiftId: currentShiftRow.id, status: { not: 'CANCELLED' }, ...SESSION_OPERATIONAL_WHERE },
             select: {
               expectedAmount:  true,
               correctedAmount: true,

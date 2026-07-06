@@ -4,3 +4,8 @@
 .env
 Dockerfile
 fly.toml
+
+# Database backups — never ship to image
+*.dump
+*.backup
+backups/

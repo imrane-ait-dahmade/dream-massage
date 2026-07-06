@@ -294,6 +294,10 @@ model ChairSession {
   anomalyType String? @map("anomaly_type") @db.VarChar(100)
   notes       String? @db.Text
 
+  archivedAt    DateTime? @map("archived_at")
+  archivedById  String?   @map("archived_by_id")
+  archiveReason String?   @map("archive_reason") @db.Text
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -311,6 +315,7 @@ model ChairSession {
   @@index([matchedPlanId])
   @@index([chairId, status])
   @@index([chairId, startedAt])
+  @@index([archivedAt])
   @@map("chair_sessions")
 }
 

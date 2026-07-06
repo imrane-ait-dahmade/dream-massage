@@ -1,6 +1,7 @@
 import { prisma } from '../../prisma';
 import { sessionSettingsService } from '../settings/session-settings.service';
 import type { AuthUser } from '../auth/auth.service';
+import { assessSessionDeletion } from './session-delete.logic';
 
 // Resolve actor userId — falls back to first OWNER from DB
 async function resolveActorUserId(user?: AuthUser | null): Promise<string | null> {
@@ -153,4 +154,104 @@ export const sessionService = {
 
     return mapSession(updated);
   },
+
+  async deleteSession(
+    sessionId: string,
+    actor?: AuthUser | null,
+    reason?: string,
+  ): Promise<{ mode: 'archived' | 'deleted'; sessionId: string } | null> {
+    const session = await prisma.chairSession.findUnique({
+      where:   { id: sessionId },
+      include: { _count: { select: { chairEvents: true } } },
+    });
+    if (!session) return null;
+    if (session.archivedAt) {
+      throw Object.assign(new Error('Cette session est déjà supprimée.'), { status: 409 });
+    }
+
+    const actorUserId = await resolveActorUserId(actor);
+    const assessment = assessSessionDeletion({
+      shiftId:           session.shiftId,
+      chairEventsCount:  session._count.chairEvents,
+      billingStatus:     session.billingStatus,
+      correctedAmount:   session.correctedAmount != null ? Number(session.correctedAmount) : null,
+      expectedAmount:    session.expectedAmount != null ? Number(session.expectedAmount) : null,
+    });
+
+    const archiveReason = reason?.trim() || 'Removed from application by admin';
+
+    if (assessment.mustArchive) {
+      await prisma.$transaction(async (tx) => {
+        await tx.chairSession.update({
+          where: { id: sessionId },
+          data: {
+            archivedAt:    new Date(),
+            archivedById:  actorUserId,
+            archiveReason,
+            ...(session.status === 'ACTIVE' ? { status: 'CANCELLED' as const } : {}),
+          },
+        });
+
+        if (session.status === 'ACTIVE') {
+          await tx.chair.updateMany({
+            where: { id: session.chairId, currentSessionId: sessionId },
+            data: {
+              currentSessionId:   null,
+              status:             'IDLE',
+              maybeActiveSince:   null,
+              maybeFinishedSince: null,
+            },
+          });
+        }
+      });
+
+      await writeSessionDeleteAudit(sessionId, 'ARCHIVE', actorUserId, {
+        mode: assessment.reasons,
+        archiveReason,
+      });
+
+      return { mode: 'archived', sessionId };
+    }
+
+    await prisma.$transaction(async (tx) => {
+      if (session.status === 'ACTIVE') {
+        await tx.chair.updateMany({
+          where: { id: session.chairId, currentSessionId: sessionId },
+          data: {
+            currentSessionId:   null,
+            status:             'IDLE',
+            maybeActiveSince:   null,
+            maybeFinishedSince: null,
+          },
+        });
+      }
+      await tx.chairEvent.deleteMany({ where: { sessionId } });
+      await tx.chairSession.delete({ where: { id: sessionId } });
+    });
+
+    await writeSessionDeleteAudit(sessionId, 'HARD_DELETE', actorUserId, { mode: 'hard' });
+
+    return { mode: 'deleted', sessionId };
+  },
 };
+
+async function writeSessionDeleteAudit(
+  sessionId: string,
+  action: string,
+  userId: string | null,
+  meta: Prisma.InputJsonValue,
+): Promise<void> {
+  try {
+    await prisma.settingsAuditLog.create({
+      data: {
+        userId:     userId ?? undefined,
+        entityType: 'ChairSession',
+        entityId:   sessionId,
+        action,
+        newValue:   meta,
+      },
+    });
+  } catch {
+    // non-blocking
+  }
+}

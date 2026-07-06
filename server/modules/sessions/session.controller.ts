@@ -60,4 +60,28 @@ router.patch('/:sessionId/correction', (req: Request, res: Response) => {
     .catch((err: unknown) => handleError(res, err));
 });
 
+const deleteSchema = z.object({ reason: z.string().optional() }).strict();
+
+// DELETE /api/sessions/:sessionId
+router.delete('/:sessionId', (req: Request, res: Response) => {
+  const parsed = deleteSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    res.status(400).json({ ok: false, error: 'Corps de requête invalide' });
+    return;
+  }
+
+  const actor = (req as AuthRequest).user ?? null;
+
+  sessionService
+    .deleteSession(req.params.sessionId, actor, parsed.data.reason)
+    .then((result) => {
+      if (!result) {
+        res.status(404).json({ ok: false, error: 'Session introuvable' });
+        return;
+      }
+      res.json({ ok: true, ...result });
+    })
+    .catch((err: unknown) => handleError(res, err));
+});
+
 export default router;
