@@ -30,7 +30,6 @@ import chairRouter from './modules/chairs/chair.controller';
 import settingsRouter from './modules/settings/settings.controller';
 import shiftRouter from './modules/shifts/shift.controller';
 import sessionRouter from './modules/sessions/session.controller';
-import devDemoRouter from './modules/dev/dev.controller';
 import assistantRouter from './modules/assistant/assistant.controller';
 
 const app = express();
@@ -237,14 +236,6 @@ if (env.NODE_ENV !== 'production') {
       .then(() => res.json({ ok: true, chairId, powerWatts, isOnline }))
       .catch((err) => res.status(500).json({ ok: false, error: String(err) }));
   });
-}
-
-// ── Demo / scenario testing tools (dev + DEMO_TOOLS_ENABLED only) ─────────────
-// Routes live at /api/dev/demo/* to avoid path conflicts with simulation routes.
-
-if (env.NODE_ENV !== 'production' && env.DEMO_TOOLS_ENABLED) {
-  app.use('/api/dev/demo', requireAuth, requireOwnerAdmin, devDemoRouter);
-  logger.info('[server] Demo tools enabled at /api/dev/demo/*');
 }
 
 // ── Chairs (protected) ─────────────────────────────────────────────────────────

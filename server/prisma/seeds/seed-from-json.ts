@@ -8,7 +8,6 @@ import { findShiftTypeOverlapError } from '../../modules/settings/shift-time-ran
 import {
   buildPlanningSlots,
   CANONICAL_SHIFT_HOURS,
-  DEMO_STAFF_ID,
   JOURNEE_SHIFT_TYPE_ID,
   loadSeedData,
   MATIN_SHIFT_TYPE_ID,
@@ -24,14 +23,8 @@ const DAY_LABELS: Record<number, string> = {
   4: 'Jeudi', 5: 'Vendredi', 6: 'Samedi', 7: 'Dimanche',
 };
 
-/** Fix production data: Oumaima login was linked to Demo Staff. */
-const ASSISTANT_STAFF_FIX: Record<string, string> = {
-  'c75ae9e3-91b5-47d7-b646-bd6c43f382d9': '00000000-0000-0000-0001-000000000002',
-};
-
 export type SeedFromJsonOptions = {
   isProduction: boolean;
-  includeDemoStaff: boolean;
   seedAssistantUsers: boolean;
   resetPasswords: boolean;
 };
@@ -41,7 +34,7 @@ export async function seedFromJson(
   options: SeedFromJsonOptions,
 ): Promise<void> {
   const data = loadSeedData();
-  const roster = rosterStaffIds(data, options.includeDemoStaff);
+  const roster = rosterStaffIds(data);
 
   console.log(`  source : ${data.source.dump_file} (${data.source.generated_at_utc})`);
   console.log('');
@@ -108,8 +101,8 @@ async function seedAssistantUsers(
   const assistantHash = await bcrypt.hash(DEV_ASSISTANT_PASSWORD, 10);
 
   for (const user of data.seedData.usersSanitized.filter((u) => u.role === 'ASSISTANT')) {
-    const staffId = ASSISTANT_STAFF_FIX[user.id] ?? user.staff_member_id;
-    if (!staffId || staffId === DEMO_STAFF_ID) {
+    const staffId = user.staff_member_id;
+    if (!staffId) {
       console.warn(`  ⚠ Assistant ${user.email}: invalid staff link — skipped`);
       continue;
     }

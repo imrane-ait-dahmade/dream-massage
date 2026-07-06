@@ -3,7 +3,6 @@ import { join } from 'node:path';
 import type { PlanningSlot, SeedDataFile } from './seed-data.types';
 
 export const JOURNEE_SHIFT_TYPE_ID = '00000000-0000-0000-0004-000000000003';
-export const DEMO_STAFF_ID = '00000000-0000-0000-0001-000000000001';
 export const MATIN_SHIFT_TYPE_ID = '00000000-0000-0000-0004-000000000001';
 export const SOIR_SHIFT_TYPE_ID = '00000000-0000-0000-0004-000000000002';
 
@@ -33,7 +32,6 @@ export function planningSlotKey(slot: PlanningSlot): string {
 
 /**
  * Build planning slots from active staff_schedules in the JSON dump.
- * - Excludes Demo Staff
  * - Expands JOURNEE → MATIN + SOIR
  * - Drops per-row start/end times (hours come from ShiftType)
  */
@@ -106,10 +104,10 @@ export function buildPlanningSlots(
   });
 }
 
-export function rosterStaffIds(data: SeedDataFile, includeDemoStaff: boolean): Set<string> {
+export function rosterStaffIds(data: SeedDataFile): Set<string> {
   return new Set(
     data.seedData.staffMembers
-      .filter((s) => s.is_active && (includeDemoStaff || s.id !== DEMO_STAFF_ID))
+      .filter((s) => s.is_active)
       .map((s) => s.id),
   );
 }

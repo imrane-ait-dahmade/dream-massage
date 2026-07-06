@@ -23,7 +23,6 @@ async function main(): Promise<void> {
   try {
     await seedFromJson(prisma, {
       isProduction: IS_PRODUCTION,
-      includeDemoStaff: process.env.DEMO_DATA_ENABLED === 'true' && !IS_PRODUCTION,
       seedAssistantUsers: seedAssistants,
       resetPasswords: process.env.RESET_ASSISTANT_PASSWORDS === 'true',
     });

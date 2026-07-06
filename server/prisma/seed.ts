@@ -8,7 +8,6 @@
  * Optional env:
  *   SEED_ASSISTANT_USERS=true      ← create ASSISTANT logins (dev placeholder passwords)
  *   RESET_ASSISTANT_PASSWORDS=true ← overwrite assistant passwords (dev only)
- *   DEMO_DATA_ENABLED=true         ← include Demo Staff in roster (non-production only)
  *   CLEAN_RUNTIME_DATA=true        ← wipe sessions/shifts before seed
  *
  * Never seeds: shifts, chair_sessions, chair_events, device_logs, settings_audit_logs,
@@ -21,7 +20,6 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import { applyRawSqlConstraints, seedFromJson } from './seeds/seed-from-json';
-import { DEMO_STAFF_ID } from './seeds/seed-data.loader';
 
 config({ path: join(process.cwd(), '.env') });
 config({ path: join(process.cwd(), '..', '.env'), override: false });
@@ -36,8 +34,6 @@ const CLEAN_RUNTIME =
 
 const IS_PRODUCTION    = (process.env.NODE_ENV ?? 'development') === 'production';
 const FORCE_CLEAN      = process.env.FORCE_CLEAN === 'true';
-const DEMO_DATA_ENABLED = process.env.DEMO_DATA_ENABLED === 'true';
-const SEED_DEMO_DATA    = !IS_PRODUCTION && DEMO_DATA_ENABLED;
 const SEED_ASSISTANTS   = process.env.SEED_ASSISTANT_USERS === 'true';
 const RESET_PASSWORDS   = process.env.RESET_ASSISTANT_PASSWORDS === 'true';
 
@@ -73,7 +69,6 @@ async function main(): Promise<void> {
   console.log('  dreamMassage seed');
   console.log(`  mode: ${CLEAN_RUNTIME ? 'CLEAN-RUNTIME + seed' : 'seed only'}`);
   console.log(`  env : ${IS_PRODUCTION ? 'production' : 'development'}`);
-  console.log(`  demo staff : ${SEED_DEMO_DATA ? 'included' : 'excluded'}`);
   console.log('');
 
   if (!process.env.DATABASE_URL) {
@@ -88,15 +83,9 @@ async function main(): Promise<void> {
 
   await seedFromJson(prisma, {
     isProduction: IS_PRODUCTION,
-    includeDemoStaff: SEED_DEMO_DATA,
     seedAssistantUsers: SEED_ASSISTANTS,
     resetPasswords: RESET_PASSWORDS,
   });
-
-  if (SEED_DEMO_DATA) {
-    console.log(`── Demo staff (${DEMO_STAFF_ID}) included via DEMO_DATA_ENABLED ───`);
-    console.log('');
-  }
 
   await applyRawSqlConstraints(prisma);
   console.log('');

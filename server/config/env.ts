@@ -59,12 +59,6 @@ const envSchema = z.object({
   CRON_SECRET: z.string().min(16).optional(),
   // Legacy alias — CRON_SECRET takes precedence when both are set.
   SHIFT_AUTOMATION_SECRET: z.string().min(16).optional(),
-  // ── Demo / dev testing tools ─────────────────────────────────────────────────
-  // Enable only in non-production environments for manual scenario testing.
-  DEMO_TOOLS_ENABLED: z
-    .string()
-    .default('false')
-    .transform((v) => v === 'true'),
   // When true, shortens confirm windows for quicker session detection in tests.
   SESSION_TEST_FAST_MODE: z
     .string()

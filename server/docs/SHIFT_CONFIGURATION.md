@@ -111,7 +111,7 @@ These routes delegate to the same `primeSettingsService` used by
         {
           "id": "uuid",
           "staffMemberId": "uuid",
-          "staffMemberName": "Demo Staff",
+          "staffMemberName": "Oumaima",
           "shiftTypeId": "uuid|null",
           "shiftTypeLabel": "Matin|null",
           "startTime": "10:00|null",
@@ -177,7 +177,7 @@ the `APP_TIMEZONE` environment variable (`Africa/Casablanca` by default).
   "suggestions": [
     {
       "staffMemberId": "uuid",
-      "staffMemberName": "Demo Staff",
+      "staffMemberName": "Oumaima",
       "shiftTypeId": "uuid|null",
       "shiftTypeLabel": "Matin",
       "startTime": "10:00",
@@ -221,7 +221,7 @@ The response `shift` object includes:
   "id": "uuid",
   "status": "OPEN",
   "startedAt": "ISO datetime",
-  "staffMember": { "id": "uuid", "name": "Demo Staff" },
+  "staffMember": { "id": "uuid", "name": "Oumaima" },
   "shiftType":  { "id": "uuid", "name": "matin", "label": "Matin", "startTime": "10:00", "endTime": "15:00" },
   "openedBy":   { "id": "uuid", "name": "Owner" },
   "closedBy":   null,
@@ -276,7 +276,6 @@ as snapshot columns on the shift row.
 | Variable           | Default             | Description                              |
 |--------------------|---------------------|------------------------------------------|
 | `APP_TIMEZONE`     | `Africa/Casablanca` | IANA timezone for day-of-week resolution |
-| `SEED_DEMO_SCHEDULE` | *(unset)*         | Set to `true` to seed one example schedule row |
 
 ---
 

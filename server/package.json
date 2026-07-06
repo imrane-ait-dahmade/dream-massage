@@ -14,7 +14,6 @@
     "prisma:seed:clean": "tsx prisma/seed.ts --clean-runtime",
     "prisma:seed:staff-planning": "tsx prisma/seed-staff-planning.ts",
     "prisma:seed:shifts": "SEED_SHIFT_TABLE=true tsx prisma/seed.ts",
-    "prisma:seed:demo": "DEMO_DATA_ENABLED=true tsx prisma/seed.ts",
     "extract:staff-planning": "tsx scripts/extract-staff-planning-from-dump.ts",
     "db:push": "prisma db push",
     "backfill:staff-members": "tsx scripts/backfill-staff-members.ts",
