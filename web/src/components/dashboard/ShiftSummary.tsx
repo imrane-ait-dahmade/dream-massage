@@ -13,18 +13,12 @@ interface Props {
 
 export function ShiftSummary({ currentShift }: Props) {
   const [lastCheck, setLastCheck] = useState<string | null>(null);
-  const [noShiftReason, setNoShiftReason] = useState<string | null>(null);
 
   useEffect(() => {
     getShiftAutomationStatus()
-      .then((s) => {
-        setLastCheck(s.lastRunAt);
-        if (!currentShift && s.lastResult?.reason) {
-          setNoShiftReason(s.lastResult.reason);
-        }
-      })
+      .then((s) => setLastCheck(s.lastRunAt))
       .catch(() => {});
-  }, [currentShift]);
+  }, []);
 
   const isActive = !!currentShift;
 
@@ -71,9 +65,6 @@ export function ShiftSummary({ currentShift }: Props) {
               <p className="mt-1 text-[10px] text-slate-500">
                 Dernière vérif. auto : {formatTimeHHMM(lastCheck)}
               </p>
-            )}
-            {!isActive && noShiftReason && (
-              <p className="mt-1 text-[10px] text-slate-500">{noShiftReason}</p>
             )}
           </div>
         </div>

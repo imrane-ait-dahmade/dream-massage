@@ -18,7 +18,6 @@ const OPEN_SHIFT_SELECT = {
   id:               true,
   status:           true,
   businessDate:     true,
-  staffScheduleId:  true,
   scheduledStartAt: true,
   scheduledEndAt:   true,
   startedAt:        true,
@@ -31,7 +30,6 @@ export type OpenShiftRow = {
   id:               string;
   status:           string;
   businessDate:     string | null;
-  staffScheduleId:  string | null;
   scheduledStartAt: Date | null;
   scheduledEndAt:   Date | null;
   startedAt:        Date;

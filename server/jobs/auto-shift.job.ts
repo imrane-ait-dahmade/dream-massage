@@ -40,21 +40,15 @@ export async function runAutoShiftSyncJob(): Promise<AutoShiftCheckResult> {
     lastError = String(err);
     logger.error('[auto-shift-job] Sync error:', lastError);
     const fallback: AutoShiftCheckResult = {
-      opened:              false,
-      closed:              false,
-      closedIds:           [],
-      repaired:            false,
-      openFound:           false,
-      activeShiftId:       null,
-      activeShiftTypeId:   null,
-      activeShiftTypeName: null,
-      activeStaffMemberId: null,
-      activeStaffName:     null,
-      reason:              `error: ${lastError}`,
-      message:             `error: ${lastError}`,
-      checkedAt:           new Date().toISOString(),
-      openedCount:         0,
-      closedCount:         0,
+      opened:        false,
+      closed:        false,
+      closedIds:     [],
+      openFound:     false,
+      activeShiftId: null,
+      message:       `error: ${lastError}`,
+      checkedAt:     new Date().toISOString(),
+      openedCount:   0,
+      closedCount:   0,
     };
     lastResult = fallback;
     return fallback;

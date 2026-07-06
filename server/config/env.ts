@@ -55,10 +55,6 @@ const envSchema = z.object({
     .string()
     .regex(/^\d{2}:\d{2}$/, 'AUTO_SHIFT_SHOP_CLOSE_TIME must be HH:mm')
     .default('23:45'),
-  AUTO_SHIFT_REPAIR_ENABLED: z
-    .string()
-    .default('true')
-    .transform((v) => v === 'true'),
   // Shared secret for automation endpoints (GitHub Actions, cron).
   CRON_SECRET: z.string().min(16).optional(),
   // Legacy alias — CRON_SECRET takes precedence when both are set.
