@@ -713,6 +713,12 @@ export async function closeShift(shiftId: string, declaredCash?: number): Promis
   });
 }
 
+export async function deleteShift(shiftId: string): Promise<void> {
+  await apiRequest(`${BASE}/api/shifts/${encodeURIComponent(shiftId)}`, {
+    method: 'DELETE',
+  });
+}
+
 // ── Dashboard — revenue stats ──────────────────────────────────────────────────
 
 export async function getRevenueStats(period: 'day' | 'week' | 'month' | 'year'): Promise<RevenueStats> {

@@ -104,6 +104,18 @@ router.post('/open', requireOwnerAdmin, (req: Request, res: Response) => {
     .catch((err: unknown) => handleError(res, err));
 });
 
+// ── DELETE /api/shifts/:id ────────────────────────────────────────────────────
+// Hard delete. Linked sessions are detached, never deleted.
+
+router.delete('/:id', (req: Request, res: Response) => {
+  const userId = (req as AuthRequest).user?.id;
+
+  shiftService
+    .deleteShift(req.params.id, userId)
+    .then(() => res.json({ ok: true }))
+    .catch((err: unknown) => handleError(res, err));
+});
+
 // ── POST /api/shifts/:id/close ────────────────────────────────────────────────
 // Manual close — OWNER-only troubleshooting. Production uses auto-shift from planning.
 

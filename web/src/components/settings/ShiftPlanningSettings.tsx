@@ -115,6 +115,7 @@ export function ShiftPlanningSettings() {
           dayLabel={data.todayLabel}
           autoShiftEnabled={data.autoShiftEnabled}
           suggestions={data.todaySuggestions}
+          onRefresh={refresh}
         />
       </SubSection>
 

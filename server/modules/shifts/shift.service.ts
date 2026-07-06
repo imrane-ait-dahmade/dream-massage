@@ -1,8 +1,10 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { env } from '../../config/env';
 import { logger } from '../../utils/logger';
 import { primeCalculationService } from '../prime/prime-calculation.service';
 import type { ShiftPrimeSummary } from '../prime/prime-calculation.service';
+import { assessShiftDeletion } from './shift-delete.logic';
 
 // ── Reusable include block for shift responses ─────────────────────────────────
 
@@ -324,6 +326,80 @@ export class ShiftService {
     });
 
     return this.recalculateAndSaveShiftPrimeSummary(shiftId);
+  }
+
+  /**
+   * Hard-deletes a shift. Linked sessions are preserved and detached (shiftId → null).
+   * Bonus adjustments for the shift are removed with the shift row.
+   */
+  async deleteShift(shiftId: string, userId?: string): Promise<void> {
+    const existing = await prisma.shift.findUnique({
+      where:  { id: shiftId },
+      select: {
+        id:             true,
+        staffMemberId:  true,
+        businessDate:   true,
+        status:         true,
+        _count:         { select: { sessions: true, bonusAdjustments: true } },
+      },
+    });
+    if (!existing) {
+      throw Object.assign(new Error(`Shift introuvable : ${shiftId}`), { status: 404 });
+    }
+
+    const assessment = assessShiftDeletion({ sessionCount: existing._count.sessions });
+    if (!assessment.canDelete) {
+      throw Object.assign(
+        new Error(`Suppression impossible : ${assessment.blockers.join(', ')}.`),
+        { status: 409, blockers: assessment.blockers },
+      );
+    }
+
+    try {
+      await prisma.$transaction(async (tx) => {
+        if (existing._count.sessions > 0) {
+          await tx.chairSession.updateMany({
+            where: { shiftId },
+            data:  { shiftId: null },
+          });
+        }
+        if (existing._count.bonusAdjustments > 0) {
+          await tx.shiftBonusAdjustment.deleteMany({ where: { shiftId } });
+        }
+        await tx.shift.delete({ where: { id: shiftId } });
+      });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError) {
+        if (err.code === 'P2003' || err.code === 'P2014') {
+          throw Object.assign(
+            new Error(
+              'Suppression impossible : ce shift est encore référencé par d\'autres données.',
+            ),
+            { status: 409 },
+          );
+        }
+      }
+      throw err;
+    }
+
+    try {
+      await prisma.settingsAuditLog.create({
+        data: {
+          userId,
+          entityType: 'Shift',
+          entityId:   shiftId,
+          action:     'HARD_DELETE',
+          oldValue: {
+            staffMemberId: existing.staffMemberId,
+            businessDate:  existing.businessDate,
+            status:        existing.status,
+            detachedSessions: existing._count.sessions,
+          },
+        },
+      });
+    } catch (err) {
+      logger.warn('[shift] Audit log write failed:', String(err));
+    }
   }
 }
 

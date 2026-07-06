@@ -22,7 +22,8 @@
     "test:auto-shift-check": "tsx modules/shifts/auto-shift-check.test.ts",
     "test:schedule-period": "tsx modules/settings/schedule-period.test.ts",
     "test:archive": "tsx modules/archive/archive-filters.test.ts",
-    "test:session-delete": "tsx modules/sessions/session-delete.logic.test.ts"
+    "test:session-delete": "tsx modules/sessions/session-delete.logic.test.ts",
+    "test:shift-delete": "tsx modules/shifts/shift-delete.logic.test.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
