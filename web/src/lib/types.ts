@@ -38,8 +38,14 @@ export interface AutoShiftCheckResult {
   opened: boolean;
   closed: boolean;
   closedIds: string[];
+  repaired?: boolean;
   openFound: boolean;
   activeShiftId: string | null;
+  activeShiftTypeId?: string | null;
+  activeShiftTypeName?: string | null;
+  activeStaffMemberId?: string | null;
+  activeStaffName?: string | null;
+  reason?: string;
   message: string;
   checkedAt: string;
   openedCount?: number;

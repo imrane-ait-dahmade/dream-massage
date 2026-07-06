@@ -3,12 +3,17 @@ export type AutoShiftCheckResult = {
   opened: boolean;
   closed: boolean;
   closedIds: string[];
+  repaired: boolean;
   openFound: boolean;
   activeShiftId: string | null;
+  activeShiftTypeId: string | null;
+  activeShiftTypeName: string | null;
+  activeStaffMemberId: string | null;
+  activeStaffName: string | null;
+  reason: string;
+  /** @deprecated use `reason` */
   message: string;
   checkedAt: string;
-  /** Count of shifts opened this run (informational). */
   openedCount: number;
-  /** Count of shifts closed this run (informational). */
   closedCount: number;
 };
