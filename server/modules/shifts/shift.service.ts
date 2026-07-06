@@ -15,23 +15,27 @@ const SHIFT_INCLUDE = {
 } as const;
 
 const OPEN_SHIFT_SELECT = {
-  id:             true,
-  status:         true,
-  businessDate:   true,
-  scheduledEndAt: true,
-  startedAt:      true,
-  staffMemberId:  true,
-  staffMember:    { select: { name: true } },
+  id:               true,
+  status:           true,
+  businessDate:     true,
+  scheduledStartAt: true,
+  scheduledEndAt:   true,
+  startedAt:        true,
+  staffMemberId:    true,
+  shiftTypeId:      true,
+  staffMember:      { select: { name: true } },
 } as const;
 
 export type OpenShiftRow = {
-  id:             string;
-  status:         string;
-  businessDate:   string | null;
-  scheduledEndAt: Date | null;
-  startedAt:      Date;
-  staffMemberId:  string;
-  staffMember:    { name: string };
+  id:               string;
+  status:           string;
+  businessDate:     string | null;
+  scheduledStartAt: Date | null;
+  scheduledEndAt:   Date | null;
+  startedAt:        Date;
+  staffMemberId:    string;
+  shiftTypeId:      string | null;
+  staffMember:      { name: string };
 };
 
 export type AutoCloseShiftResult = {

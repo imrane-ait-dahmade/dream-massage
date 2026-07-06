@@ -16,6 +16,7 @@ const base: ShiftCloseCandidate = {
   id: 'shift-1',
   status: 'OPEN',
   businessDate: '2026-07-03',
+  scheduledStartAt: null,
   scheduledEndAt: new Date('2026-07-03T14:00:00Z'),
   startedAt: new Date('2026-07-03T08:00:00Z'),
   staffMemberId: 'staff-1',

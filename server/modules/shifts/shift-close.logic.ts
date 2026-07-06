@@ -15,15 +15,19 @@ export type ShiftCloseContext = {
   /** HH:mm shop-wide close (e.g. 23:45). When set, closes today's shifts at/after this time. */
   dailyCloseTime?: string;
   maxOpenMs?: number;
+  /** When set, closes OPEN shifts whose shiftTypeId differs from the current period. */
+  activeShiftTypeId?: string | null;
 };
 
 export type ShiftCloseCandidate = {
   id: string;
   status: string;
   businessDate: string | null;
+  scheduledStartAt: Date | null;
   scheduledEndAt: Date | null;
   startedAt: Date;
   staffMemberId: string;
+  shiftTypeId?: string | null;
 };
 
 export type ShiftCloseDecision = {
@@ -44,6 +48,7 @@ export function evaluateShiftClose(
   maxOpenMs: number = DEFAULT_MAX_OPEN_SHIFT_MS,
   dailyCloseTime?: string,
   timezone?: string,
+  activeShiftTypeId?: string | null,
 ): ShiftCloseDecision {
   if (shift.status !== 'OPEN') {
     return { close: false, reason: null, endedAt: null };
@@ -58,6 +63,23 @@ export function evaluateShiftClose(
     if (now >= dailyCloseAt) {
       return { close: true, reason: 'DAILY_CLOSE', endedAt: dailyCloseAt };
     }
+  }
+
+  if (
+    activeShiftTypeId &&
+    shift.businessDate === todayBusinessDate &&
+    shift.shiftTypeId &&
+    shift.shiftTypeId !== activeShiftTypeId
+  ) {
+    return { close: true, reason: 'PERIOD_HANDOFF', endedAt: now };
+  }
+
+  if (
+    shift.businessDate === todayBusinessDate &&
+    shift.scheduledStartAt &&
+    now < shift.scheduledStartAt
+  ) {
+    return { close: true, reason: 'BEFORE_SCHEDULED_START', endedAt: now };
   }
 
   // Keep today's shift while still inside the planned end time.
@@ -107,5 +129,6 @@ export function shouldCloseBeforeHandoff(
     ctx.maxOpenMs,
     ctx.dailyCloseTime,
     ctx.timezone,
+    ctx.activeShiftTypeId,
   ).close;
 }

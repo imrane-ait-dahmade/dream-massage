@@ -16,6 +16,13 @@ import {
 } from './shift-close.logic';
 import type { AutoShiftCheckResult } from './auto-shift.types';
 import { SCHEDULE_OPERATIONAL_WHERE } from '../archive/archive-filters';
+import {
+  evaluatePeriodOpen,
+  findActiveShiftTypeAtTime,
+  resolveAutoShiftStartedAt,
+  type ScheduleSlot,
+  type ShiftTypeWindow,
+} from './auto-shift-period.logic';
 
 function autoShiftLog(message: string): void {
   logger.info(`AUTO_SHIFT: ${message}`);
@@ -38,28 +45,46 @@ function toCloseCandidate(row: {
   id: string;
   status: string;
   businessDate: string | null;
+  scheduledStartAt: Date | null;
   scheduledEndAt: Date | null;
   startedAt: Date;
   staffMemberId: string;
+  shiftTypeId?: string | null;
 }): ShiftCloseCandidate {
   return {
-    id:             row.id,
-    status:         row.status,
-    businessDate:   row.businessDate,
-    scheduledEndAt: row.scheduledEndAt,
-    startedAt:      row.startedAt,
-    staffMemberId:  row.staffMemberId,
+    id:               row.id,
+    status:           row.status,
+    businessDate:     row.businessDate,
+    scheduledStartAt: row.scheduledStartAt,
+    scheduledEndAt:   row.scheduledEndAt,
+    startedAt:        row.startedAt,
+    staffMemberId:    row.staffMemberId,
+    shiftTypeId:      row.shiftTypeId ?? null,
   };
 }
 
-function buildCloseContext(tz: string, businessDate: string): ShiftCloseContext {
+function buildCloseContext(
+  tz: string,
+  businessDate: string,
+  activeShiftTypeId?: string | null,
+): ShiftCloseContext {
   const { start: todayStartUtc } = getDayBoundsUtc(businessDate, tz);
   return {
     todayBusinessDate: businessDate,
     todayStartUtc,
     timezone:          tz,
     dailyCloseTime:    env.AUTO_SHIFT_SHOP_CLOSE_TIME,
+    activeShiftTypeId,
   };
+}
+
+function formatLocalTime(now: Date, tz: string): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: tz,
+    hour:     '2-digit',
+    minute:   '2-digit',
+    hour12:   false,
+  }).format(now);
 }
 
 // ── Service ────────────────────────────────────────────────────────────────────
@@ -91,11 +116,11 @@ class AutoShiftService {
    */
   async closeEligibleOpenShifts(
     now: Date,
-    opts?: { reasonOverride?: string; ownerId?: string | null },
+    opts?: { reasonOverride?: string; ownerId?: string | null; activeShiftTypeId?: string | null },
   ): Promise<{ closed: number; closedIds: string[]; openFound: number }> {
     const tz                = getTimezone();
     const todayBusinessDate = getBusinessDate(tz);
-    const closeCtx          = buildCloseContext(tz, todayBusinessDate);
+    const closeCtx          = buildCloseContext(tz, todayBusinessDate, opts?.activeShiftTypeId);
     const ownerId           = opts?.ownerId ?? await this.resolveOwnerUserId();
 
     const openShifts = await shiftService.listOpenShifts();
@@ -121,6 +146,7 @@ class AutoShiftService {
         undefined,
         closeCtx.dailyCloseTime,
         closeCtx.timezone,
+        closeCtx.activeShiftTypeId,
       );
       if (!decision.close) {
         logger.info(
@@ -194,208 +220,244 @@ class AutoShiftService {
   }
 
   /**
-   * Opens shifts that are due now according to the weekly schedule.
-   * Shop opens at AUTO_SHIFT_SHOP_OPEN_TIME (default 08:00) even if the
-   * scheduled shift type starts later (e.g. Matin 10:00).
+   * Opens the shift for the current period (Matin or Soir) based on local time.
+   * Only one schedule row is selected: today's active ShiftType window + StaffSchedule.
    */
-  async openDueShifts(now: Date, ownerId: string | null): Promise<number> {
+  async openDueShifts(
+    now: Date,
+    ownerId: string | null,
+    activeShiftTypeId?: string | null,
+  ): Promise<{ opened: number; skipReason?: string }> {
     const tz           = getTimezone();
     const businessDate = getBusinessDate(tz);
     const dow          = todayDayOfWeek(tz);
     const shopOpenAt   = buildScheduledDatetime(businessDate, env.AUTO_SHIFT_SHOP_OPEN_TIME, tz);
-    const closeCtx     = buildCloseContext(tz, businessDate);
+    const closeCtx     = buildCloseContext(tz, businessDate, activeShiftTypeId);
+    const localTime    = formatLocalTime(now, tz);
 
-    autoShiftLog(`CurrentTime: ${now.toISOString()}`);
-    autoShiftLog(`Timezone: ${tz}`);
+    autoShiftLog(`currentLocalTime: ${localTime} (${tz})`);
     autoShiftLog(`BusinessDate: ${businessDate}`);
     autoShiftLog(`DayOfWeek: ${dow}`);
-    autoShiftLog(`ShopOpenAt: ${shopOpenAt.toISOString()}`);
 
-    if (now < shopOpenAt) {
-      autoShiftLog('ShouldOpen: false');
-      autoShiftLog(`Reason: before shop open (${env.AUTO_SHIFT_SHOP_OPEN_TIME})`);
-      logger.info(
-        `[auto-shift] Before shop open (${env.AUTO_SHIFT_SHOP_OPEN_TIME}) — skipping open scan`,
-      );
-      return 0;
-    }
+    const beforeShopOpen = now < shopOpenAt;
 
-    const schedules = await prisma.staffSchedule.findMany({
-      where: {
-        dayOfWeek: dow,
-        ...SCHEDULE_OPERATIONAL_WHERE,
-        staffMember: { archivedAt: null, isActive: true },
-      },
-      include: {
-        staffMember: { select: { id: true, name: true } },
-        shiftType:   { select: { id: true, name: true, startTime: true, endTime: true } },
-      },
-    });
+    const [shiftTypes, schedules, openShifts] = await Promise.all([
+      prisma.shiftType.findMany({
+        where:   { isActive: true, archivedAt: null },
+        select:  { id: true, name: true, startTime: true, endTime: true, sortOrder: true },
+        orderBy: { sortOrder: 'asc' },
+      }),
+      prisma.staffSchedule.findMany({
+        where: {
+          dayOfWeek: dow,
+          ...SCHEDULE_OPERATIONAL_WHERE,
+          staffMember: { archivedAt: null, isActive: true },
+        },
+        include: {
+          staffMember: { select: { id: true, name: true } },
+          shiftType:   { select: { id: true, name: true, startTime: true, endTime: true } },
+        },
+      }),
+      shiftService.listOpenShifts(),
+    ]);
 
-    const openShifts = await shiftService.listOpenShifts();
+    const typeWindows: ShiftTypeWindow[] = shiftTypes.map((st) => ({
+      id:        st.id,
+      name:      st.name,
+      startTime: st.startTime,
+      endTime:   st.endTime,
+      sortOrder: st.sortOrder,
+    }));
+
+    const scheduleSlots: ScheduleSlot[] = schedules.map((s) => ({
+      id:              s.id,
+      staffMemberId:   s.staffMemberId,
+      staffMemberName: s.staffMember.name,
+      shiftTypeId:     s.shiftTypeId,
+    }));
+
+    const periodDecision = evaluatePeriodOpen(
+      typeWindows,
+      scheduleSlots,
+      now,
+      businessDate,
+      tz,
+      { beforeShopOpen },
+    );
+
+    const activeType =
+      periodDecision.activeShiftType
+      ?? findActiveShiftTypeAtTime(typeWindows, now, businessDate, tz);
+
     autoShiftLog(
-      `PlanningFound: count=${schedules.length} ` +
-      `slots=[${schedules.map((s) =>
-        `${s.staffMember.name}/${s.shiftType?.name ?? '?'}(${s.shiftType?.startTime ?? '?'}-${s.shiftType?.endTime ?? '?'})`,
-      ).join(', ')}]`,
+      `activeShiftType: ${activeType ? `${activeType.name} (${activeType.startTime}–${activeType.endTime})` : 'none'}`,
     );
     autoShiftLog(
-      `ExistingOpenShift: count=${openShifts.length} ` +
-      `ids=[${openShifts.map((s) => `${s.id}:${s.staffMember.name}`).join(', ')}]`,
+      `selectedSchedule: ${periodDecision.selectedSchedule
+        ? `${periodDecision.selectedSchedule.id} staff=${periodDecision.selectedSchedule.staffMemberName}`
+        : 'none'}`,
+    );
+    autoShiftLog(
+      `existingOpenShift: count=${openShifts.length} ` +
+      `[${openShifts.map((s) => `${s.id}:${s.staffMember.name}:${s.shiftTypeId ?? '?'}`).join(', ')}]`,
     );
     autoShiftLog(`OwnerUserId: ${ownerId ?? 'none'}`);
 
-    let opened = 0;
-
-    for (const schedule of schedules) {
-      const startHHmm = schedule.shiftType?.startTime;
-      const endHHmm   = schedule.shiftType?.endTime;
-      const shiftTypeName = schedule.shiftType?.name ?? 'unknown';
-
-      autoShiftLog(`SelectedStaff: ${schedule.staffMember.name} (scheduleId=${schedule.id})`);
-      autoShiftLog(`SelectedShiftType: ${shiftTypeName} (${startHHmm ?? '?'}–${endHHmm ?? '?'})`);
-
-      if (!startHHmm || !endHHmm) {
-        autoShiftLog('ShouldOpen: false');
-        autoShiftLog('Reason: schedule shift type has no start/end time');
-        logger.warn(
-          `[auto-shift] Schedule ${schedule.id} (${schedule.staffMember.name}) ` +
-          `has no start/end time — skipping`,
-        );
-        continue;
+    if (!periodDecision.shouldOpen || !periodDecision.selectedSchedule || !activeType) {
+      autoShiftLog(`decision: skip — ${periodDecision.reason}`);
+      if (!beforeShopOpen) {
+        logger.info(`[auto-shift] Open scan skipped: ${periodDecision.reason}`);
       }
-
-      const scheduledStartAt = buildScheduledDatetime(businessDate, startHHmm, tz);
-      const scheduledEndAt   = buildScheduledDatetime(businessDate, endHHmm, tz);
-      const effectiveOpenAt  = scheduledStartAt > shopOpenAt ? shopOpenAt : scheduledStartAt;
-
-      if (now < effectiveOpenAt) {
-        autoShiftLog('ShouldOpen: false');
-        autoShiftLog(`Reason: before effective open time (${effectiveOpenAt.toISOString()})`);
-        continue;
-      }
-
-      if (now >= scheduledEndAt) {
-        autoShiftLog('ShouldOpen: false');
-        autoShiftLog(`Reason: past scheduled end (${scheduledEndAt.toISOString()})`);
-        continue;
-      }
-
-      const existing = await prisma.shift.findFirst({
-        where:  { staffScheduleId: schedule.id, businessDate },
-        select: { id: true, status: true, endedAt: true },
-      });
-
-      autoShiftLog(
-        `ExistingShiftForSlot: ${existing ? `${existing.id} status=${existing.status}` : 'none'}`,
-      );
-
-      if (existing?.status === 'OPEN' && existing.endedAt === null) {
-        autoShiftLog('ShouldOpen: false');
-        autoShiftLog('Reason: shift already OPEN for this schedule and business date');
-        continue;
-      }
-
-      await this.closeBlockingOpenShiftsBeforeOpen(
-        now,
-        schedule.staffMemberId,
-        ownerId,
-        closeCtx,
-      );
-
-      if (!ownerId) {
-        autoShiftLog('ShouldOpen: false');
-        autoShiftLog('Reason: no active OWNER or ADMIN user for openedByUserId');
-        logger.error('[auto-shift] No active OWNER/ADMIN user found — cannot auto-open shift');
-        continue;
-      }
-
-      const effectiveStartedAt = effectiveOpenAt;
-
-      if (existing?.status === 'CLOSED') {
-        const reopened = await shiftService.reopenScheduledShift(existing.id, {
-          ownerId,
-          scheduledStartAt,
-          scheduledEndAt,
-          businessDate,
-        });
-        if (reopened) {
-          autoShiftLog('ShouldOpen: true');
-          autoShiftLog(`Reason: re-opened CLOSED shift ${existing.id}`);
-          logger.info(
-            `[auto-shift] Re-opened shift ${existing.id} for ${schedule.staffMember.name} ` +
-            `(${startHHmm}–${endHHmm}, ${businessDate})`,
-          );
-          opened++;
-        } else {
-          autoShiftLog('ShouldOpen: false');
-          autoShiftLog(`Reason: reopenScheduledShift failed for ${existing.id}`);
-        }
-        continue;
-      }
-
-      await prisma.shift.create({
-        data: {
-          staffMemberId:       schedule.staffMemberId,
-          shiftTypeId:         schedule.shiftTypeId ?? null,
-          staffScheduleId:     schedule.id,
-          businessDate,
-          startedAt:           effectiveStartedAt,
-          scheduledStartAt,
-          scheduledEndAt,
-          status:              'OPEN',
-          openedByUserId:      ownerId,
-          openedAutomatically: true,
-          notes:               'Auto-ouvert depuis le planning hebdomadaire',
-        },
-      });
-
-      autoShiftLog('ShouldOpen: true');
-      autoShiftLog(`Reason: created new OPEN shift for ${schedule.staffMember.name}`);
-      logger.info(
-        `[auto-shift] Opened shift for ${schedule.staffMember.name} ` +
-        `(${startHHmm}–${endHHmm}, ${businessDate})`,
-      );
-      opened++;
+      return { opened: 0, skipReason: periodDecision.reason };
     }
 
-    autoShiftLog(`OpenScanResult: opened=${opened}`);
-    return opened;
+    const schedule = schedules.find((s) => s.id === periodDecision.selectedSchedule!.id);
+    if (!schedule) {
+      autoShiftLog('decision: skip — selected schedule row not found');
+      return { opened: 0, skipReason: 'selected schedule not found' };
+    }
+
+    const startHHmm = schedule.shiftType?.startTime ?? activeType.startTime;
+    const endHHmm   = schedule.shiftType?.endTime ?? activeType.endTime;
+
+    autoShiftLog(`selectedStaff: ${schedule.staffMember.name}`);
+
+    const scheduledStartAt = buildScheduledDatetime(businessDate, startHHmm, tz);
+    const scheduledEndAt   = buildScheduledDatetime(businessDate, endHHmm, tz);
+
+    const existing = await prisma.shift.findFirst({
+      where:  { staffScheduleId: schedule.id, businessDate },
+      select: { id: true, status: true, endedAt: true },
+    });
+
+    if (existing?.status === 'OPEN' && existing.endedAt === null) {
+      autoShiftLog('decision: keep — shift already OPEN for current period schedule');
+      return { opened: 0 };
+    }
+
+    await this.closeBlockingOpenShiftsBeforeOpen(
+      now,
+      schedule.staffMemberId,
+      ownerId,
+      closeCtx,
+    );
+
+    if (!ownerId) {
+      autoShiftLog('decision: skip — no active OWNER or ADMIN user for openedByUserId');
+      logger.error('[auto-shift] No active OWNER/ADMIN user found — cannot auto-open shift');
+      return { opened: 0, skipReason: 'no owner/admin user' };
+    }
+
+    const effectiveStartedAt = resolveAutoShiftStartedAt(scheduledStartAt, now);
+
+    if (existing?.status === 'CLOSED') {
+      const reopened = await shiftService.reopenScheduledShift(existing.id, {
+        ownerId,
+        scheduledStartAt,
+        scheduledEndAt,
+        businessDate,
+      });
+      if (reopened) {
+        autoShiftLog(`decision: re-opened CLOSED shift ${existing.id} for ${schedule.staffMember.name}`);
+        logger.info(
+          `[auto-shift] Re-opened shift ${existing.id} for ${schedule.staffMember.name} ` +
+          `(${startHHmm}–${endHHmm}, ${businessDate})`,
+        );
+        return { opened: 1 };
+      }
+      autoShiftLog(`decision: skip — reopenScheduledShift failed for ${existing.id}`);
+      return { opened: 0, skipReason: 'reopen failed' };
+    }
+
+    await prisma.shift.create({
+      data: {
+        staffMemberId:       schedule.staffMemberId,
+        shiftTypeId:         schedule.shiftTypeId ?? activeType.id,
+        staffScheduleId:     schedule.id,
+        businessDate,
+        startedAt:           effectiveStartedAt,
+        scheduledStartAt,
+        scheduledEndAt,
+        status:              'OPEN',
+        openedByUserId:      ownerId,
+        openedAutomatically: true,
+        notes:               'Auto-ouvert depuis le planning hebdomadaire',
+      },
+    });
+
+    autoShiftLog(
+      `decision: opened ${activeType.name} for ${schedule.staffMember.name} ` +
+      `(${startHHmm}–${endHHmm})`,
+    );
+    logger.info(
+      `[auto-shift] Opened shift for ${schedule.staffMember.name} ` +
+      `(${startHHmm}–${endHHmm}, ${businessDate})`,
+    );
+    return { opened: 1 };
   }
 
   /**
    * Central idempotent auto-shift check. Safe every 15 minutes or on demand.
    */
   async runAutoShiftCheck(now: Date = new Date()): Promise<AutoShiftCheckResult> {
-    const checkedAt = now.toISOString();
-    const tz        = getTimezone();
+    const checkedAt    = now.toISOString();
+    const tz           = getTimezone();
     const businessDate = getBusinessDate(tz);
 
     autoShiftLog(`CurrentTime: ${checkedAt}`);
     autoShiftLog(`Timezone: ${tz}`);
     autoShiftLog(`BusinessDate: ${businessDate}`);
 
-    const ownerId   = await this.resolveOwnerUserId();
+    const ownerId = await this.resolveOwnerUserId();
     autoShiftLog(`OwnerUserId: ${ownerId ?? 'none'}`);
 
-    const closeResult = await this.closeEligibleOpenShifts(now, { ownerId });
+    const shiftTypes = await prisma.shiftType.findMany({
+      where:   { isActive: true, archivedAt: null },
+      select:  { id: true, name: true, startTime: true, endTime: true, sortOrder: true },
+      orderBy: { sortOrder: 'asc' },
+    });
+    const activeShiftType = findActiveShiftTypeAtTime(
+      shiftTypes.map((st) => ({
+        id:        st.id,
+        name:      st.name,
+        startTime: st.startTime,
+        endTime:   st.endTime,
+        sortOrder: st.sortOrder,
+      })),
+      now,
+      businessDate,
+      tz,
+    );
+    autoShiftLog(
+      `activeShiftType: ${activeShiftType ? `${activeShiftType.name} (${activeShiftType.startTime}–${activeShiftType.endTime})` : 'none'}`,
+    );
+
+    const closeResult = await this.closeEligibleOpenShifts(now, {
+      ownerId,
+      activeShiftTypeId: activeShiftType?.id ?? null,
+    });
     autoShiftLog(
       `CloseScan: openFound=${closeResult.openFound} closed=${closeResult.closed} ` +
       `closedIds=[${closeResult.closedIds.join(', ')}]`,
     );
 
-    const openedCount = await this.openDueShifts(now, ownerId);
+    const openResult = await this.openDueShifts(now, ownerId, activeShiftType?.id ?? null);
+    const openedCount = openResult.opened;
 
     const active = await shiftService.getOpenShift();
     const parts: string[] = [];
     if (openedCount > 0) parts.push(`opened=${openedCount}`);
     if (closeResult.closed > 0) parts.push(`closed=${closeResult.closed}`);
-    if (closeResult.openFound > 0 && closeResult.closed === 0) {
+    if (openResult.skipReason) parts.push(`skip=${openResult.skipReason}`);
+    if (closeResult.openFound > 0 && closeResult.closed === 0 && openedCount === 0) {
       parts.push(`openFound=${closeResult.openFound}`);
     }
     const message = parts.length > 0 ? parts.join(', ') : 'no changes';
 
-    autoShiftLog(`FinalDecision: opened=${openedCount > 0} openedCount=${openedCount} activeShiftId=${active?.id ?? 'none'} message=${message}`);
+    autoShiftLog(
+      `decision: opened=${openedCount > 0} openedCount=${openedCount} ` +
+      `activeShiftId=${active?.id ?? 'none'} message=${message}`,
+    );
 
     if (openedCount > 0 || closeResult.closed > 0) {
       logger.info(`[auto-shift] Check: ${message}`);
