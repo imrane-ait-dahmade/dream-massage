@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { getTimezone } from '../../utils/time';
+import { STAFF_VISIBLE_WHERE } from '../archive/archive-filters';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -68,7 +69,7 @@ function resolvePresetDates(preset: string, today: string): { from: string; to: 
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const VALID_PERIODS  = ['all', 'matin', 'soir', 'journee', 'custom'] as const;
+const VALID_PERIODS  = ['all', 'matin', 'soir', 'custom'] as const;
 const VALID_CHART_P  = ['day', 'week', 'month', 'year'] as const;
 const VALID_PRESETS  = ['today', 'yesterday', 'week', 'month', 'year', 'custom'] as const;
 const VALID_STATUSES = ['all', 'ACTIVE', 'COMPLETED', 'PENDING', 'CORRECTED', 'ANOMALY'] as const;
@@ -337,12 +338,12 @@ export class HomeDashboardService {
         orderBy: { startedAt: 'desc' },
       }),
       prisma.staffMember.findMany({
-        where:   { isActive: true },
+        where:   STAFF_VISIBLE_WHERE,
         orderBy: { name: 'asc' },
         select:  { id: true, name: true },
       }),
       prisma.shiftType.findMany({
-        where:   { isActive: true },
+        where:   { isActive: true, archivedAt: null },
         orderBy: { sortOrder: 'asc' },
         select:  { id: true, name: true, label: true },
       }),
@@ -528,9 +529,8 @@ export class HomeDashboardService {
     });
     if (st) return [parseHHmm(st.startTime), parseHHmm(st.endTime)];
     const defaults: Record<string, [string, string]> = {
-      matin:   ['10:00', '15:00'],
-      soir:    ['15:00', '22:00'],
-      journee: ['10:00', '22:00'],
+      matin: ['08:00', '15:00'],
+      soir:  ['15:00', '23:45'],
     };
     const def = defaults[period];
     return def ? [parseHHmm(def[0]), parseHHmm(def[1])] : null;

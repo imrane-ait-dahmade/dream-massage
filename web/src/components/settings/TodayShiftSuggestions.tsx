@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarDays, Clock, Users } from 'lucide-react';
+import { CalendarDays, Clock, Users, AlertTriangle } from 'lucide-react';
 import type { TodayShiftSuggestion, TodayShiftStatus } from '@/lib/types';
 
 interface Props {
@@ -24,16 +24,30 @@ const STATUS_CLASS: Record<TodayShiftStatus, string> = {
 };
 
 export function TodayShiftSuggestions({ dayLabel, autoShiftEnabled, suggestions }: Props) {
+  const workingToday = suggestions.filter((s) => s.status !== 'rest');
+
   return (
     <div className="space-y-3">
-      <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-        Les shifts sont ouverts et fermés automatiquement selon le planning.
+      <div className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-700">
+        <p>
+          Le shift automatique utilise ce planning avec ouverture à{' '}
+          <strong>08:00</strong> et fermeture à <strong>23:45</strong> (Africa/Casablanca).
+        </p>
         {!autoShiftEnabled && (
-          <span className="mt-1 block text-xs font-medium text-amber-700">
-            Attention : l&apos;auto-shift est désactivé sur le serveur (AUTO_SHIFT_ENABLED=false).
-          </span>
+          <p className="mt-2 text-xs font-medium text-amber-700">
+            L&apos;auto-shift est désactivé sur le serveur (AUTO_SHIFT_ENABLED=false).
+          </p>
         )}
       </div>
+
+      {workingToday.length === 0 && (
+        <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            Aucun planning défini pour aujourd&apos;hui. L&apos;ouverture automatique ne pourra pas créer de shift.
+          </p>
+        </div>
+      )}
 
       <div className="overflow-hidden rounded-2xl border border-stone-100 bg-white shadow-sm">
         <div className="flex items-center gap-2 border-b border-stone-100 bg-stone-50/50 px-4 py-3">
@@ -60,12 +74,12 @@ export function TodayShiftSuggestions({ dayLabel, autoShiftEnabled, suggestions 
                       {s.staffMemberName}
                     </p>
                     <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
-                      {s.shiftTypeLabel && (
+                      {s.shiftTypeLabel && s.status !== 'rest' && (
                         <span className="text-xs font-medium text-stone-600">{s.shiftTypeLabel}</span>
                       )}
                       {s.startTime && s.endTime && (
                         <>
-                          {s.shiftTypeLabel && (
+                          {s.shiftTypeLabel && s.status !== 'rest' && (
                             <span className="text-xs text-stone-300">·</span>
                           )}
                           <Clock className="h-3 w-3 text-stone-400" />

@@ -20,12 +20,13 @@ import { PrimeBonusSettings } from '@/components/settings/PrimeBonusSettings';
 import { ShiftPlanningSettings } from '@/components/settings/ShiftPlanningSettings';
 import { SessionSettingsPanel } from '@/components/settings/SessionSettingsPanel';
 import { UsersAccessSection } from '@/components/settings/UsersAccessSection';
+import { MaintenanceSettings } from '@/components/settings/MaintenanceSettings';
 import { AuthGuard } from '@/components/AuthGuard';
-import { logout } from '@/lib/api';
+import { logout, getMe, ApiError, type AuthUser } from '@/lib/api';
 
 // ── Tabs ───────────────────────────────────────────────────────────────────────
 
-type Tab = 'fauteuils' | 'prix' | 'staff' | 'systeme' | 'primes' | 'planning' | 'sessions' | 'utilisateurs';
+type Tab = 'fauteuils' | 'prix' | 'staff' | 'systeme' | 'primes' | 'planning' | 'sessions' | 'utilisateurs' | 'maintenance';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'fauteuils',    label: 'Fauteuils' },
@@ -36,6 +37,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'planning',     label: 'Shifts & Planning' },
   { id: 'sessions',     label: 'Sessions' },
   { id: 'utilisateurs', label: 'Utilisateurs & Accès' },
+  { id: 'maintenance',  label: 'Maintenance' },
 ];
 
 // ── Data ───────────────────────────────────────────────────────────────────────
@@ -118,12 +120,20 @@ function PageHeader() {
 
 // ── Tab bar ────────────────────────────────────────────────────────────────────
 
-function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
+function TabBar({
+  active,
+  onChange,
+  tabs,
+}: {
+  active: Tab;
+  onChange: (t: Tab) => void;
+  tabs: { id: Tab; label: string }[];
+}) {
   return (
     <div className="sticky top-[57px] z-10 border-b border-stone-200 bg-white">
       <div className="mx-auto max-w-2xl">
         <div className="flex overflow-x-auto px-4 scrollbar-hide">
-          {TABS.map((tab) => (
+          {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => onChange(tab.id)}
@@ -160,6 +170,7 @@ function SettingsContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('fauteuils');
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -180,13 +191,26 @@ function SettingsContent() {
         users:  usersRes.items,
       });
     } catch (e) {
-      setError((e as Error).message || 'Impossible de charger les paramètres.');
+      const msg =
+        e instanceof ApiError
+          ? e.message
+          : (e as Error).message || 'Impossible de charger les paramètres.';
+      setError(msg);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+  useEffect(() => { getMe().then(setCurrentUser).catch(() => {}); }, []);
+
+  const refreshSettingsData = useCallback(() => {
+    void load();
+  }, [load]);
+
+  const tabs = currentUser?.role === 'OWNER'
+    ? TABS
+    : TABS.filter((t) => t.id !== 'maintenance');
 
   if (loading && !data) return <LoadingScreen />;
   if (error && !data) return <ErrorScreen message={error} onRetry={() => void load()} />;
@@ -195,7 +219,7 @@ function SettingsContent() {
   return (
     <div className="min-h-screen bg-stone-50">
       <PageHeader />
-      <TabBar active={activeTab} onChange={setActiveTab} />
+      <TabBar active={activeTab} onChange={setActiveTab} tabs={tabs} />
 
       <main className="mx-auto max-w-2xl px-4 py-5 pb-12">
         {/* Refreshing indicator */}
@@ -214,7 +238,7 @@ function SettingsContent() {
             ) : (
               <div className="space-y-3">
                 {data.chairs.map((chair) => (
-                  <ChairSettingsCard key={chair.id} chair={chair} onSaved={() => void load()} />
+                  <ChairSettingsCard key={chair.id} chair={chair} onSaved={refreshSettingsData} />
                 ))}
               </div>
             )}
@@ -224,14 +248,14 @@ function SettingsContent() {
         {/* ── Prix & plans ───────────────────────────────────────────────────── */}
         {activeTab === 'prix' && (
           <Section title="Plans tarifaires">
-            <PricingPlansSettings plans={data.plans} onSaved={() => void load()} />
+            <PricingPlansSettings plans={data.plans} onSaved={refreshSettingsData} />
           </Section>
         )}
 
         {/* ── Staff ──────────────────────────────────────────────────────────── */}
         {activeTab === 'staff' && (
           <Section title="Assistantes">
-            <StaffSettings members={data.staff} onSaved={() => void load()} />
+            <StaffSettings onSaved={refreshSettingsData} />
           </Section>
         )}
 
@@ -266,7 +290,13 @@ function SettingsContent() {
         {/* ── Utilisateurs & Accès ───────────────────────────────────────────── */}
         {activeTab === 'utilisateurs' && (
           <Section title="Utilisateurs & Accès">
-            <UsersAccessSection users={data.users} staffMembers={data.staff} onSaved={() => void load()} />
+            <UsersAccessSection users={data.users} staffMembers={data.staff} onSaved={refreshSettingsData} />
+          </Section>
+        )}
+
+        {activeTab === 'maintenance' && currentUser?.role === 'OWNER' && (
+          <Section title="Maintenance & sauvegardes">
+            <MaintenanceSettings />
           </Section>
         )}
       </main>

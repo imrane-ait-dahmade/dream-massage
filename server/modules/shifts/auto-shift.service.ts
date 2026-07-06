@@ -1,13 +1,21 @@
 import { prisma } from '../../prisma';
 import { env } from '../../config/env';
 import { logger } from '../../utils/logger';
-import { getBusinessDate, getDayBoundsUtc, getTimezone } from '../../utils/time';
+import {
+  buildScheduledDatetime,
+  getBusinessDate,
+  getDayBoundsUtc,
+  getTimezone,
+} from '../../utils/time';
 import { shiftService } from './shift.service';
 import {
   evaluateShiftClose,
   shouldCloseBeforeHandoff,
   type ShiftCloseCandidate,
+  type ShiftCloseContext,
 } from './shift-close.logic';
+import type { AutoShiftCheckResult } from './auto-shift.types';
+import { SCHEDULE_OPERATIONAL_WHERE } from '../archive/archive-filters';
 
 // ── Timezone helpers (schedule windows) ────────────────────────────────────────
 
@@ -20,17 +28,6 @@ function todayDayOfWeek(tz: string): number {
     Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7,
   };
   return map[short] ?? 1;
-}
-
-function buildScheduledDatetime(businessDate: string, hhmm: string, tz: string): Date {
-  const [hStr, mStr] = hhmm.split(':');
-  const h = parseInt(hStr ?? '0', 10);
-  const m = parseInt(mStr ?? '0', 10);
-  const probeUTC    = new Date(`${businessDate}T00:00:00Z`);
-  const local       = new Date(probeUTC.toLocaleString('en-US', { timeZone: tz }));
-  const offsetMs    = local.getTime() - probeUTC.getTime();
-  const midnightUTC = new Date(probeUTC.getTime() - offsetMs);
-  return new Date(midnightUTC.getTime() + (h * 60 + m) * 60_000);
 }
 
 function toCloseCandidate(row: {
@@ -51,12 +48,15 @@ function toCloseCandidate(row: {
   };
 }
 
-export type AutoShiftSyncResult = {
-  opened: number;
-  closed: number;
-  closedIds: string[];
-  openFound: number;
-};
+function buildCloseContext(tz: string, businessDate: string): ShiftCloseContext {
+  const { start: todayStartUtc } = getDayBoundsUtc(businessDate, tz);
+  return {
+    todayBusinessDate: businessDate,
+    todayStartUtc,
+    timezone:          tz,
+    dailyCloseTime:    env.AUTO_SHIFT_SHOP_CLOSE_TIME,
+  };
+}
 
 // ── Service ────────────────────────────────────────────────────────────────────
 
@@ -82,10 +82,10 @@ class AutoShiftService {
     now: Date,
     opts?: { reasonOverride?: string; ownerId?: string | null },
   ): Promise<{ closed: number; closedIds: string[]; openFound: number }> {
-    const tz                 = getTimezone();
-    const todayBusinessDate  = getBusinessDate(tz);
-    const { start: todayStartUtc } = getDayBoundsUtc(todayBusinessDate, tz);
-    const ownerId            = opts?.ownerId ?? await this.resolveOwnerUserId();
+    const tz                = getTimezone();
+    const todayBusinessDate = getBusinessDate(tz);
+    const closeCtx          = buildCloseContext(tz, todayBusinessDate);
+    const ownerId           = opts?.ownerId ?? await this.resolveOwnerUserId();
 
     const openShifts = await shiftService.listOpenShifts();
     const openFound  = openShifts.length;
@@ -105,8 +105,11 @@ class AutoShiftService {
       const decision = evaluateShiftClose(
         toCloseCandidate(row),
         now,
-        todayBusinessDate,
-        todayStartUtc,
+        closeCtx.todayBusinessDate,
+        closeCtx.todayStartUtc,
+        undefined,
+        closeCtx.dailyCloseTime,
+        closeCtx.timezone,
       );
       if (!decision.close) {
         logger.info(
@@ -147,8 +150,7 @@ class AutoShiftService {
     now: Date,
     staffMemberId: string,
     ownerId: string | null,
-    todayBusinessDate: string,
-    todayStartUtc: Date,
+    closeCtx: ShiftCloseContext,
   ): Promise<number> {
     const openShifts = await shiftService.listOpenShifts();
     if (openShifts.length === 0) return 0;
@@ -157,10 +159,10 @@ class AutoShiftService {
       ? openShifts.filter(
           (s) =>
             s.staffMemberId === staffMemberId &&
-            shouldCloseBeforeHandoff(toCloseCandidate(s), now, todayBusinessDate, todayStartUtc),
+            shouldCloseBeforeHandoff(toCloseCandidate(s), now, closeCtx),
         )
       : openShifts.filter((s) =>
-          shouldCloseBeforeHandoff(toCloseCandidate(s), now, todayBusinessDate, todayStartUtc),
+          shouldCloseBeforeHandoff(toCloseCandidate(s), now, closeCtx),
         );
 
     let closed = 0;
@@ -182,14 +184,29 @@ class AutoShiftService {
 
   /**
    * Opens shifts that are due now according to the weekly schedule.
+   * Shop opens at AUTO_SHIFT_SHOP_OPEN_TIME (default 08:00) even if the
+   * scheduled shift type starts later (e.g. Matin 10:00).
    */
   async openDueShifts(now: Date, ownerId: string | null): Promise<number> {
     const tz           = getTimezone();
     const businessDate = getBusinessDate(tz);
     const dow          = todayDayOfWeek(tz);
+    const shopOpenAt   = buildScheduledDatetime(businessDate, env.AUTO_SHIFT_SHOP_OPEN_TIME, tz);
+    const closeCtx     = buildCloseContext(tz, businessDate);
+
+    if (now < shopOpenAt) {
+      logger.info(
+        `[auto-shift] Before shop open (${env.AUTO_SHIFT_SHOP_OPEN_TIME}) — skipping open scan`,
+      );
+      return 0;
+    }
 
     const schedules = await prisma.staffSchedule.findMany({
-      where: { dayOfWeek: dow, isActive: true, isOff: false },
+      where: {
+        dayOfWeek: dow,
+        ...SCHEDULE_OPERATIONAL_WHERE,
+        staffMember: { archivedAt: null, isActive: true },
+      },
       include: {
         staffMember: { select: { id: true, name: true } },
         shiftType:   { select: { id: true, startTime: true, endTime: true } },
@@ -199,8 +216,8 @@ class AutoShiftService {
     let opened = 0;
 
     for (const schedule of schedules) {
-      const startHHmm = schedule.startTime ?? schedule.shiftType?.startTime;
-      const endHHmm   = schedule.endTime   ?? schedule.shiftType?.endTime;
+      const startHHmm = schedule.shiftType?.startTime;
+      const endHHmm   = schedule.shiftType?.endTime;
 
       if (!startHHmm || !endHHmm) {
         logger.warn(
@@ -213,7 +230,7 @@ class AutoShiftService {
       const scheduledStartAt = buildScheduledDatetime(businessDate, startHHmm, tz);
       const scheduledEndAt   = buildScheduledDatetime(businessDate, endHHmm, tz);
 
-      if (now < scheduledStartAt || now >= scheduledEndAt) continue;
+      if (now >= scheduledEndAt) continue;
 
       const existing = await prisma.shift.findFirst({
         where:  { staffScheduleId: schedule.id, businessDate },
@@ -224,19 +241,19 @@ class AutoShiftService {
         continue;
       }
 
-      const { start: todayStartUtc } = getDayBoundsUtc(businessDate, tz);
       await this.closeBlockingOpenShiftsBeforeOpen(
         now,
         schedule.staffMemberId,
         ownerId,
-        businessDate,
-        todayStartUtc,
+        closeCtx,
       );
 
       if (!ownerId) {
         logger.error('[auto-shift] No active OWNER user found — cannot auto-open shift');
         continue;
       }
+
+      const effectiveStartedAt = scheduledStartAt > shopOpenAt ? shopOpenAt : scheduledStartAt;
 
       if (existing?.status === 'CLOSED') {
         const reopened = await shiftService.reopenScheduledShift(existing.id, {
@@ -261,7 +278,7 @@ class AutoShiftService {
           shiftTypeId:         schedule.shiftTypeId ?? null,
           staffScheduleId:     schedule.id,
           businessDate,
-          startedAt:           scheduledStartAt,
+          startedAt:           effectiveStartedAt,
           scheduledStartAt,
           scheduledEndAt,
           status:              'OPEN',
@@ -282,30 +299,66 @@ class AutoShiftService {
   }
 
   /**
-   * Full sync: close all eligible OPEN shifts (any date), then open due shifts.
-   * Idempotent — safe to run on every cron tick or after server restart.
+   * Central idempotent auto-shift check. Safe every 15 minutes or on demand.
    */
-  async runAutoShiftSync(): Promise<AutoShiftSyncResult> {
-    const now     = new Date();
-    const ownerId = await this.resolveOwnerUserId();
+  async runAutoShiftCheck(now: Date = new Date()): Promise<AutoShiftCheckResult> {
+    const checkedAt = now.toISOString();
+    const ownerId   = await this.resolveOwnerUserId();
 
     const closeResult = await this.closeEligibleOpenShifts(now, { ownerId });
-    const opened      = await this.openDueShifts(now, ownerId);
+    const openedCount = await this.openDueShifts(now, ownerId);
 
-    if (opened > 0 || closeResult.closed > 0) {
+    const active = await shiftService.getOpenShift();
+    const parts: string[] = [];
+    if (openedCount > 0) parts.push(`opened=${openedCount}`);
+    if (closeResult.closed > 0) parts.push(`closed=${closeResult.closed}`);
+    if (closeResult.openFound > 0 && closeResult.closed === 0) {
+      parts.push(`openFound=${closeResult.openFound}`);
+    }
+    const message = parts.length > 0 ? parts.join(', ') : 'no changes';
+
+    if (openedCount > 0 || closeResult.closed > 0) {
+      logger.info(`[auto-shift] Check: ${message}`);
+    } else {
       logger.info(
-        `[auto-shift] Sync: openFound=${closeResult.openFound} ` +
-        `closed=${closeResult.closed} opened=${opened}`,
+        `[auto-shift] Check: no changes (openFound=${closeResult.openFound}, ` +
+        `active=${active?.id ?? 'none'})`,
       );
     }
 
     return {
-      opened,
-      closed:    closeResult.closed,
-      closedIds: closeResult.closedIds,
-      openFound: closeResult.openFound,
+      opened:        openedCount > 0,
+      closed:        closeResult.closed > 0,
+      closedIds:     closeResult.closedIds,
+      openFound:     closeResult.openFound > 0,
+      activeShiftId: active?.id ?? null,
+      message,
+      checkedAt,
+      openedCount,
+      closedCount:   closeResult.closed,
+    };
+  }
+
+  /** @deprecated Use runAutoShiftCheck — kept for internal callers during migration. */
+  async runAutoShiftSync(): Promise<{
+    opened: number;
+    closed: number;
+    closedIds: string[];
+    openFound: number;
+  }> {
+    const result = await this.runAutoShiftCheck();
+    return {
+      opened:    result.openedCount,
+      closed:    result.closedCount,
+      closedIds: result.closedIds,
+      openFound: result.openFound ? 1 : 0,
     };
   }
 }
 
 export const autoShiftService = new AutoShiftService();
+
+/** Central entry point for jobs, HTTP triggers, and startup. */
+export function runAutoShiftCheck(now?: Date): Promise<AutoShiftCheckResult> {
+  return autoShiftService.runAutoShiftCheck(now ?? new Date());
+}

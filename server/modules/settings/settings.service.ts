@@ -12,6 +12,14 @@ import type {
   StaffCreateInput,
   StaffUpdateInput,
 } from './settings.types';
+import { archiveService } from '../archive/archive.service';
+import {
+  mapArchiveFields,
+  parseVisibilityFilter,
+  staffListWhere,
+  type VisibilityFilter,
+} from '../archive/archive-filters';
+import type { ArchiveReasonInput } from '../archive/archive.types';
 
 // ── Audit helper ───────────────────────────────────────────────────────────────
 
@@ -436,21 +444,30 @@ class SettingsService {
 
   // ── Staff members ─────────────────────────────────────────────────────────────
 
-  async getStaff() {
+  async getStaff(visibility: VisibilityFilter = 'active') {
     const staff = await prisma.staffMember.findMany({
+      where: staffListWhere(visibility),
       orderBy: { name: 'asc' },
     });
 
-    return {
-      items: staff.map((s) => ({
-        id: s.id,
-        name: s.name,
-        phone: s.phone ?? null,
-        isActive: s.isActive,
-        notes: s.notes ?? null,
-        createdAt: s.createdAt.toISOString(),
-      })),
-    };
+    const items = await Promise.all(
+      staff.map(async (s) => {
+        const hardDelete = await archiveService.canHardDeleteStaffMember(s.id);
+        return {
+          id: s.id,
+          name: s.name,
+          phone: s.phone ?? null,
+          isActive: s.isActive,
+          notes: s.notes ?? null,
+          createdAt: s.createdAt.toISOString(),
+          ...mapArchiveFields(s),
+          canHardDelete: hardDelete.allowed,
+          hardDeleteBlockers: hardDelete.blockers,
+        };
+      }),
+    );
+
+    return { items };
   }
 
   async createStaff(input: StaffCreateInput, userId?: string) {
@@ -476,6 +493,9 @@ class SettingsService {
       isActive: staff.isActive,
       notes: staff.notes ?? null,
       createdAt: staff.createdAt.toISOString(),
+      ...mapArchiveFields(staff),
+      canHardDelete: true,
+      hardDeleteBlockers: [] as string[],
     };
   }
 
@@ -509,7 +529,48 @@ class SettingsService {
       isActive: staff.isActive,
       notes: staff.notes ?? null,
       createdAt: staff.createdAt.toISOString(),
+      ...mapArchiveFields(staff),
+      canHardDelete: (await archiveService.canHardDeleteStaffMember(staff.id)).allowed,
+      hardDeleteBlockers: (await archiveService.canHardDeleteStaffMember(staff.id)).blockers,
     };
+  }
+
+  async archiveStaff(staffMemberId: string, userId?: string, input?: ArchiveReasonInput) {
+    const updated = await archiveService.archiveStaffMember(staffMemberId, userId, input);
+    if (!updated) return null;
+    const hardDelete = await archiveService.canHardDeleteStaffMember(staffMemberId);
+    return {
+      id: updated.id,
+      name: updated.name,
+      phone: updated.phone ?? null,
+      isActive: updated.isActive,
+      notes: updated.notes ?? null,
+      createdAt: updated.createdAt.toISOString(),
+      ...mapArchiveFields(updated),
+      canHardDelete: hardDelete.allowed,
+      hardDeleteBlockers: hardDelete.blockers,
+    };
+  }
+
+  async restoreStaff(staffMemberId: string, userId?: string, input?: ArchiveReasonInput) {
+    const updated = await archiveService.restoreStaffMember(staffMemberId, userId, input);
+    if (!updated) return null;
+    const hardDelete = await archiveService.canHardDeleteStaffMember(staffMemberId);
+    return {
+      id: updated.id,
+      name: updated.name,
+      phone: updated.phone ?? null,
+      isActive: updated.isActive,
+      notes: updated.notes ?? null,
+      createdAt: updated.createdAt.toISOString(),
+      ...mapArchiveFields(updated),
+      canHardDelete: hardDelete.allowed,
+      hardDeleteBlockers: hardDelete.blockers,
+    };
+  }
+
+  async hardDeleteStaff(staffMemberId: string, userId?: string) {
+    return archiveService.hardDeleteStaffMember(staffMemberId, userId);
   }
 
   // ── System info ───────────────────────────────────────────────────────────────
@@ -551,3 +612,7 @@ class SettingsService {
 }
 
 export const settingsService = new SettingsService();
+
+export function parseStaffVisibility(raw?: string | null): VisibilityFilter {
+  return parseVisibilityFilter(raw);
+}

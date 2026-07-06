@@ -187,10 +187,10 @@ export class AssistantService {
 
     const staffMember = await prisma.staffMember.findUnique({
       where: { id: user.staffMemberId },
-      select: { id: true, name: true, isActive: true },
+      select: { id: true, name: true, isActive: true, archivedAt: true },
     });
 
-    if (!staffMember || !staffMember.isActive) {
+    if (!staffMember || !staffMember.isActive || staffMember.archivedAt) {
       const err = new Error('Forbidden');
       (err as Error & { status?: number }).status = 403;
       throw err;
@@ -217,9 +217,9 @@ export class AssistantService {
 
     const staffMember = await prisma.staffMember.findUnique({
       where: { id: staffMemberId },
-      select: { id: true, name: true, isActive: true },
+      select: { id: true, name: true, isActive: true, archivedAt: true },
     });
-    if (!staffMember || !staffMember.isActive) {
+    if (!staffMember || !staffMember.isActive || staffMember.archivedAt) {
       const err = new Error('Staff member not found');
       (err as Error & { status?: number }).status = 404;
       throw err;

@@ -8,6 +8,9 @@ import {
   shouldCloseBeforeHandoff,
   type ShiftCloseCandidate,
 } from './shift-close.logic';
+import { buildScheduledDatetime } from '../../utils/time';
+
+const TZ = 'Africa/Casablanca';
 
 const base: ShiftCloseCandidate = {
   id: 'shift-1',
@@ -86,27 +89,53 @@ test('closes manual shift without businessDate started before today', () => {
 });
 
 test('shouldCloseBeforeHandoff is false for active today shift', () => {
+  const ctx = {
+    todayBusinessDate: '2026-07-03',
+    todayStartUtc: new Date('2026-07-03T00:00:00Z'),
+    timezone: TZ,
+    dailyCloseTime: '23:45',
+  };
   assert.equal(
     shouldCloseBeforeHandoff(
       base,
       new Date('2026-07-03T10:00:00Z'),
-      '2026-07-03',
-      new Date('2026-07-03T00:00:00Z'),
+      ctx,
     ),
     false,
   );
 });
 
 test('shouldCloseBeforeHandoff is true after scheduled end', () => {
+  const ctx = {
+    todayBusinessDate: '2026-07-03',
+    todayStartUtc: new Date('2026-07-03T00:00:00Z'),
+    timezone: TZ,
+    dailyCloseTime: '23:45',
+  };
   assert.equal(
     shouldCloseBeforeHandoff(
       base,
       new Date('2026-07-03T15:00:00Z'),
-      '2026-07-03',
-      new Date('2026-07-03T00:00:00Z'),
+      ctx,
     ),
     true,
   );
+});
+
+test('closes at daily shop close time (23:45)', () => {
+  const businessDate = '2026-07-03';
+  const closeAt = buildScheduledDatetime(businessDate, '23:45', TZ);
+  const d = evaluateShiftClose(
+    { ...base, scheduledEndAt: buildScheduledDatetime(businessDate, '22:00', TZ) },
+    new Date(closeAt.getTime() + 60_000),
+    businessDate,
+    new Date('2026-07-03T00:00:00Z'),
+    undefined,
+    '23:45',
+    TZ,
+  );
+  assert.equal(d.close, true);
+  assert.equal(d.reason, 'DAILY_CLOSE');
 });
 
 console.log('All shift-close.logic tests passed.');

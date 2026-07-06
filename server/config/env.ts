@@ -47,7 +47,17 @@ const envSchema = z.object({
     .string()
     .default('false')
     .transform((v) => v === 'true'),
-  // Shared secret for POST /api/shifts/automation/run (GitHub Actions, cron).
+  AUTO_SHIFT_SHOP_OPEN_TIME: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/, 'AUTO_SHIFT_SHOP_OPEN_TIME must be HH:mm')
+    .default('08:00'),
+  AUTO_SHIFT_SHOP_CLOSE_TIME: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/, 'AUTO_SHIFT_SHOP_CLOSE_TIME must be HH:mm')
+    .default('23:45'),
+  // Shared secret for automation endpoints (GitHub Actions, cron).
+  CRON_SECRET: z.string().min(16).optional(),
+  // Legacy alias — CRON_SECRET takes precedence when both are set.
   SHIFT_AUTOMATION_SECRET: z.string().min(16).optional(),
   // ── Demo / dev testing tools ─────────────────────────────────────────────────
   // Enable only in non-production environments for manual scenario testing.
@@ -77,4 +87,23 @@ if (!result.success) {
   process.exit(1);
 }
 
-export const env = result.data;
+const parsed = result.data;
+
+if (
+  parsed.NODE_ENV === 'production' &&
+  parsed.AUTO_SHIFT_ENABLED &&
+  !parsed.CRON_SECRET &&
+  !parsed.SHIFT_AUTOMATION_SECRET
+) {
+  console.error(
+    '[env] Production with AUTO_SHIFT_ENABLED=true requires CRON_SECRET or SHIFT_AUTOMATION_SECRET',
+  );
+  process.exit(1);
+}
+
+export const env = parsed;
+
+/** Resolved automation secret — CRON_SECRET preferred over legacy name. */
+export function getCronSecret(): string | undefined {
+  return env.CRON_SECRET ?? env.SHIFT_AUTOMATION_SECRET;
+}

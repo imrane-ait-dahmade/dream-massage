@@ -88,33 +88,33 @@ const SEED_DEMO_DATA    = !IS_PRODUCTION && DEMO_DATA_ENABLED;
 const INITIAL_WEEKLY_SHIFT_TABLE: Array<{
   staffName:     string;
   dayOfWeek:     number;
-  shiftTypeName: 'MATIN' | 'SOIR' | 'JOURNEE' | null;
+  shiftTypeName: 'MATIN' | 'SOIR' | null;
   isOff:         boolean;
 }> = [
-  // ── Fille 1 ─────────────────────────────────────────────────────────────────
-  { staffName: 'Fille 1', dayOfWeek: 1, shiftTypeName: 'SOIR',    isOff: false },
-  { staffName: 'Fille 1', dayOfWeek: 2, shiftTypeName: 'JOURNEE', isOff: false },
-  { staffName: 'Fille 1', dayOfWeek: 3, shiftTypeName: 'MATIN',   isOff: false },
-  { staffName: 'Fille 1', dayOfWeek: 4, shiftTypeName: null,      isOff: true  },
-  { staffName: 'Fille 1', dayOfWeek: 5, shiftTypeName: 'SOIR',    isOff: false },
-  { staffName: 'Fille 1', dayOfWeek: 6, shiftTypeName: 'MATIN',   isOff: false },
-  { staffName: 'Fille 1', dayOfWeek: 7, shiftTypeName: 'SOIR',    isOff: false },
+  // ── Fille 1 — Lundi Matin + Soir (journée complète = deux périodes) ────────
+  { staffName: 'Fille 1', dayOfWeek: 1, shiftTypeName: 'MATIN', isOff: false },
+  { staffName: 'Fille 1', dayOfWeek: 1, shiftTypeName: 'SOIR',  isOff: false },
+  { staffName: 'Fille 1', dayOfWeek: 2, shiftTypeName: 'MATIN', isOff: false },
+  { staffName: 'Fille 1', dayOfWeek: 2, shiftTypeName: 'SOIR',  isOff: false },
+  { staffName: 'Fille 1', dayOfWeek: 3, shiftTypeName: 'MATIN', isOff: false },
+  { staffName: 'Fille 1', dayOfWeek: 4, shiftTypeName: null,    isOff: true  },
+  { staffName: 'Fille 1', dayOfWeek: 5, shiftTypeName: 'SOIR',  isOff: false },
+  { staffName: 'Fille 1', dayOfWeek: 6, shiftTypeName: 'MATIN', isOff: false },
+  { staffName: 'Fille 1', dayOfWeek: 7, shiftTypeName: 'SOIR',  isOff: false },
   // ── Fille 2 ─────────────────────────────────────────────────────────────────
-  { staffName: 'Fille 2', dayOfWeek: 1, shiftTypeName: 'MATIN',   isOff: false },
-  { staffName: 'Fille 2', dayOfWeek: 2, shiftTypeName: null,      isOff: true  },
-  { staffName: 'Fille 2', dayOfWeek: 3, shiftTypeName: 'SOIR',    isOff: false },
-  { staffName: 'Fille 2', dayOfWeek: 4, shiftTypeName: 'JOURNEE', isOff: false },
-  { staffName: 'Fille 2', dayOfWeek: 5, shiftTypeName: 'MATIN',   isOff: false },
-  { staffName: 'Fille 2', dayOfWeek: 6, shiftTypeName: 'SOIR',    isOff: false },
-  { staffName: 'Fille 2', dayOfWeek: 7, shiftTypeName: 'MATIN',   isOff: false },
+  { staffName: 'Fille 2', dayOfWeek: 1, shiftTypeName: 'MATIN', isOff: false },
+  { staffName: 'Fille 2', dayOfWeek: 2, shiftTypeName: null,    isOff: true  },
+  { staffName: 'Fille 2', dayOfWeek: 3, shiftTypeName: 'SOIR',  isOff: false },
+  { staffName: 'Fille 2', dayOfWeek: 4, shiftTypeName: 'MATIN', isOff: false },
+  { staffName: 'Fille 2', dayOfWeek: 4, shiftTypeName: 'SOIR',  isOff: false },
+  { staffName: 'Fille 2', dayOfWeek: 5, shiftTypeName: 'MATIN', isOff: false },
+  { staffName: 'Fille 2', dayOfWeek: 6, shiftTypeName: 'SOIR',  isOff: false },
+  { staffName: 'Fille 2', dayOfWeek: 7, shiftTypeName: 'MATIN', isOff: false },
 ];
 
-// Maps the human-readable shiftTypeName above to the fixed DB UUID.
-// These IDs must match what seedPrimeData inserts.
-const SHIFT_TYPE_IDS: Record<'MATIN' | 'SOIR' | 'JOURNEE', string> = {
-  MATIN:   IDS.shiftTypeMatin,
-  SOIR:    IDS.shiftTypeSoir,
-  JOURNEE: IDS.shiftTypeJournee,
+const SHIFT_TYPE_IDS: Record<'MATIN' | 'SOIR', string> = {
+  MATIN: IDS.shiftTypeMatin,
+  SOIR:  IDS.shiftTypeSoir,
 };
 
 // ── Clean runtime data ─────────────────────────────────────────────────────────
@@ -485,23 +485,24 @@ async function seedPrimeData(): Promise<void> {
   // update clause corrects old lowercase names and the SOIR label in existing DBs.
   await prisma.shiftType.upsert({
     where:  { id: IDS.shiftTypeMatin },
-    update: { name: 'MATIN', label: 'Matin',      startTime: '10:00', endTime: '15:00', isActive: true, sortOrder: 1 },
-    create: { id: IDS.shiftTypeMatin,   name: 'MATIN',   label: 'Matin',      startTime: '10:00', endTime: '15:00', isActive: true, sortOrder: 1 },
+    update: { name: 'MATIN', label: 'Matin',      startTime: '08:00', endTime: '15:00', isActive: true, sortOrder: 1 },
+    create: { id: IDS.shiftTypeMatin,   name: 'MATIN',   label: 'Matin',      startTime: '08:00', endTime: '15:00', isActive: true, sortOrder: 1 },
   });
 
   await prisma.shiftType.upsert({
     where:  { id: IDS.shiftTypeSoir },
-    update: { name: 'SOIR', label: 'Après-midi', startTime: '15:00', endTime: '22:00', isActive: true, sortOrder: 2 },
-    create: { id: IDS.shiftTypeSoir,    name: 'SOIR',    label: 'Après-midi', startTime: '15:00', endTime: '22:00', isActive: true, sortOrder: 2 },
+    update: { name: 'SOIR', label: 'Soir', startTime: '15:00', endTime: '23:45', isActive: true, sortOrder: 2 },
+    create: { id: IDS.shiftTypeSoir,    name: 'SOIR',    label: 'Soir', startTime: '15:00', endTime: '23:45', isActive: true, sortOrder: 2 },
   });
 
+  // Journée is deprecated — keep row for FK history but never active
   await prisma.shiftType.upsert({
     where:  { id: IDS.shiftTypeJournee },
-    update: { name: 'JOURNEE', label: 'Journée', startTime: '10:00', endTime: '22:00', isActive: true, sortOrder: 3 },
-    create: { id: IDS.shiftTypeJournee, name: 'JOURNEE', label: 'Journée',    startTime: '10:00', endTime: '22:00', isActive: true, sortOrder: 3 },
+    update: { name: 'JOURNEE', label: 'Journée', startTime: '08:00', endTime: '23:45', isActive: false, sortOrder: 99 },
+    create: { id: IDS.shiftTypeJournee, name: 'JOURNEE', label: 'Journée',    startTime: '08:00', endTime: '23:45', isActive: false, sortOrder: 99 },
   });
 
-  console.log('  ✓ Shift types  : MATIN (10:00–15:00), SOIR/Après-midi (15:00–22:00), JOURNEE (10:00–22:00)');
+  console.log('  ✓ Shift types  : MATIN (08:00–15:00), SOIR (15:00–23:45); JOURNEE désactivé');
 
   // ── Target bonus rules ───────────────────────────────────────────────────────
   // isActive=true — these are reasonable business defaults.
@@ -580,9 +581,20 @@ async function applyRawSqlConstraints(): Promise<void> {
               ON shifts (status) WHERE status = 'OPEN'`,
     },
     {
-      name: 'unique_active_staff_schedule_per_day',
-      sql: `CREATE UNIQUE INDEX IF NOT EXISTS unique_active_staff_schedule_per_day
-              ON staff_schedules (staff_member_id, day_of_week) WHERE is_active = true`,
+      name: 'drop_unique_active_staff_schedule_per_day',
+      sql: `DROP INDEX IF EXISTS unique_active_staff_schedule_per_day`,
+    },
+    {
+      name: 'unique_active_staff_schedule_per_day_period',
+      sql: `CREATE UNIQUE INDEX IF NOT EXISTS unique_active_staff_schedule_per_day_period
+              ON staff_schedules (staff_member_id, day_of_week, shift_type_id)
+              WHERE is_active = true AND is_off = false AND shift_type_id IS NOT NULL`,
+    },
+    {
+      name: 'unique_active_staff_off_per_day',
+      sql: `CREATE UNIQUE INDEX IF NOT EXISTS unique_active_staff_off_per_day
+              ON staff_schedules (staff_member_id, day_of_week)
+              WHERE is_active = true AND is_off = true`,
     },
     {
       name: 'unique_auto_shift_per_schedule_day',
@@ -632,11 +644,11 @@ async function seedShiftTable(): Promise<void> {
 
   // ── Verify shift types exist (seeded by seedPrimeData) ──────────────────────
   const stCount = await prisma.shiftType.count({
-    where: { id: { in: Object.values(SHIFT_TYPE_IDS) } },
+    where: { id: { in: [IDS.shiftTypeMatin, IDS.shiftTypeSoir] }, isActive: true },
   });
-  if (stCount < 3) {
+  if (stCount < 2) {
     console.error(
-      `  ✗ Only ${stCount}/3 shift types found by ID. ` +
+      `  ✗ Only ${stCount}/2 active shift types (MATIN, SOIR) found. ` +
       `Run base seed first (seedPrimeData seeds them).`,
     );
     return;
@@ -683,12 +695,31 @@ async function seedShiftTable(): Promise<void> {
 
     const shiftTypeId = entry.shiftTypeName ? SHIFT_TYPE_IDS[entry.shiftTypeName] : null;
 
-    // ── Deactivate existing active schedule for same staff + day ─────────────
-    const { count } = await prisma.staffSchedule.updateMany({
-      where: { staffMemberId: staffId, dayOfWeek: entry.dayOfWeek, isActive: true },
-      data:  { isActive: false },
-    });
-    deactivated += count;
+    // Deactivate only the same slot (staff + day + period, or staff + day off)
+    if (entry.isOff) {
+      const { count } = await prisma.staffSchedule.updateMany({
+        where: {
+          staffMemberId: staffId,
+          dayOfWeek:     entry.dayOfWeek,
+          isActive:      true,
+          isOff:         true,
+        },
+        data: { isActive: false },
+      });
+      deactivated += count;
+    } else if (shiftTypeId) {
+      const { count } = await prisma.staffSchedule.updateMany({
+        where: {
+          staffMemberId: staffId,
+          dayOfWeek:     entry.dayOfWeek,
+          shiftTypeId,
+          isActive:      true,
+          isOff:         false,
+        },
+        data: { isActive: false },
+      });
+      deactivated += count;
+    }
 
     // ── Create new active row ────────────────────────────────────────────────
     await prisma.staffSchedule.create({

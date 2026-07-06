@@ -1,87 +1,82 @@
 'use client';
 
-import { UserRound, Clock, TrendingUp, AlertTriangle } from 'lucide-react';
-import type { DashboardCurrentShift, OpenShift } from '@/lib/types';
-import { formatDH, formatTimeHHMM } from '@/lib/format';
+import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
+import { Clock, Circle, Settings2 } from 'lucide-react';
+import type { DashboardCurrentShift } from '@/lib/types';
+import { getShiftAutomationStatus } from '@/lib/api';
+import { formatTimeHHMM } from '@/lib/format';
 
 interface Props {
   currentShift: DashboardCurrentShift | null;
-  openShift:    OpenShift | null;
 }
 
-export function ShiftSummary({ currentShift, openShift }: Props) {
-  const hasShift = !!(currentShift ?? openShift);
+export function ShiftSummary({ currentShift }: Props) {
+  const [lastCheck, setLastCheck] = useState<string | null>(null);
 
-  if (!hasShift) {
-    return (
-      <div className="flex items-center gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3">
-        <div className="shrink-0 rounded-xl bg-amber-500/20 p-2">
-          <AlertTriangle className="h-4 w-4 text-amber-400" />
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-amber-300">Aucun shift actif</p>
-          <p className="mt-0.5 text-xs text-amber-400/70">
-            Les sessions ne seront pas liées à un quart de travail.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    getShiftAutomationStatus()
+      .then((s) => setLastCheck(s.lastRunAt))
+      .catch(() => {});
+  }, []);
 
-  const staffName   = currentShift?.staffMemberName ?? openShift?.staffMemberName ?? '—';
-  const shiftLabel  = currentShift?.shiftTypeLabel;
-  const startedAt   = currentShift?.startedAt ?? openShift?.startedAt ?? '';
-  const scheduledEnd = currentShift?.scheduledEndAt;
-  const gross       = currentShift?.grossRevenue;
-  const net         = currentShift?.netRevenue;
+  const isActive = !!currentShift;
 
   return (
-    <div className="rounded-2xl border border-slate-700 bg-slate-800 shadow-lg">
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-        {/* Left: staff name + shift type */}
+    <div
+      className={
+        isActive
+          ? 'rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3'
+          : 'rounded-2xl border border-slate-700 bg-slate-800/60 px-4 py-3'
+      }
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="shrink-0 rounded-xl bg-emerald-500/15 p-2">
-            <UserRound className="h-4 w-4 text-emerald-400" />
+          <div
+            className={
+              isActive
+                ? 'rounded-lg bg-emerald-500/15 p-2'
+                : 'rounded-lg bg-slate-700/80 p-2'
+            }
+          >
+            <Circle
+              className={`h-3 w-3 ${isActive ? 'fill-emerald-400 text-emerald-400' : 'fill-slate-500 text-slate-500'}`}
+            />
           </div>
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Shift actif</p>
-            <p className="text-sm font-bold text-white">{staffName}</p>
-            {shiftLabel && (
-              <p className="text-xs text-slate-400">{shiftLabel}</p>
+            <p className="text-sm font-semibold text-white">
+              {isActive ? 'Shift actif' : 'Aucun shift actif'}
+            </p>
+            {isActive && currentShift && (
+              <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-400">
+                {currentShift.staffMemberName && (
+                  <span>{currentShift.staffMemberName}</span>
+                )}
+                <span className="inline-flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  Ouvert {formatTimeHHMM(currentShift.startedAt)}
+                </span>
+                {currentShift.scheduledEndAt && (
+                  <span>Fin prévue {formatTimeHHMM(currentShift.scheduledEndAt)}</span>
+                )}
+              </div>
+            )}
+            {lastCheck && (
+              <p className="mt-1 text-[10px] text-slate-500">
+                Dernière vérif. auto : {formatTimeHHMM(lastCheck)}
+              </p>
             )}
           </div>
         </div>
 
-        {/* Right: times */}
-        <div className="flex items-center gap-4 text-slate-400">
-          <div className="flex items-center gap-1.5">
-            <Clock className="h-3.5 w-3.5" />
-            <div className="text-xs">
-              <span className="font-medium text-white">{formatTimeHHMM(startedAt)}</span>
-              {scheduledEnd && (
-                <span className="text-slate-500"> → {formatTimeHHMM(scheduledEnd)}</span>
-              )}
-            </div>
-          </div>
-        </div>
+        <Link
+          href="/settings"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-700"
+        >
+          <Settings2 className="h-3.5 w-3.5" />
+          Voir paramétrage
+        </Link>
       </div>
-
-      {/* Revenue row — only when data from REST API */}
-      {gross !== undefined && (
-        <div className="flex flex-wrap gap-4 border-t border-slate-700/60 px-4 py-2">
-          <div className="flex items-center gap-1.5">
-            <TrendingUp className="h-3 w-3 text-emerald-400" />
-            <span className="text-[10px] text-slate-500">Brut</span>
-            <span className="text-xs font-semibold text-white">{formatDH(gross ?? 0)}</span>
-          </div>
-          {net !== undefined && (
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-slate-500">Net</span>
-              <span className="text-xs font-semibold text-emerald-400">{formatDH(net ?? 0)}</span>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

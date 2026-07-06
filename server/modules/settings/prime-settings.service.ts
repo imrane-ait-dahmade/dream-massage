@@ -10,6 +10,23 @@ import type {
   TargetBonusRuleCreateInput,
   TargetBonusRuleUpdateInput,
 } from './prime-settings.types';
+import {
+  assertValidShiftTypeTimes,
+} from './shift-time-ranges';
+import { assertNoOverlapWithActiveTypes } from './shift-type-overlap';
+import {
+  FORBIDDEN_SHIFT_TYPE_MESSAGE,
+  isAllowedShiftTypeName,
+  isForbiddenShiftTypeName,
+} from '../shifts/shift-period';
+import { archiveService } from '../archive/archive.service';
+import {
+  mapArchiveFields,
+  parseVisibilityFilter,
+  shiftTypeListWhere,
+  type VisibilityFilter,
+} from '../archive/archive-filters';
+import type { ArchiveReasonInput } from '../archive/archive.types';
 
 // ── Payload types (Prisma relations included) ──────────────────────────────────
 
@@ -23,7 +40,7 @@ type TargetBonusRuleWithType = Prisma.ShiftTargetBonusRuleGetPayload<{
 
 // ── Mappers ────────────────────────────────────────────────────────────────────
 
-function mapShiftType(st: ShiftType) {
+function mapShiftType(st: ShiftType, hardDelete?: { allowed: boolean; blockers: string[] }) {
   return {
     id:        st.id,
     name:      st.name,
@@ -33,6 +50,9 @@ function mapShiftType(st: ShiftType) {
     isActive:  st.isActive,
     sortOrder: st.sortOrder,
     createdAt: st.createdAt.toISOString(),
+    ...mapArchiveFields(st),
+    canHardDelete: hardDelete?.allowed ?? false,
+    hardDeleteBlockers: hardDelete?.blockers ?? [],
   };
 }
 
@@ -117,12 +137,24 @@ class PrimeSettingsService {
 
   // ── A. Shift Types ─────────────────────────────────────────────────────────────
 
-  async getShiftTypes() {
-    const items = await prisma.shiftType.findMany({ orderBy: { sortOrder: 'asc' } });
-    return { items: items.map(mapShiftType) };
+  async getShiftTypes(visibility: VisibilityFilter = 'active') {
+    const items = await prisma.shiftType.findMany({
+      where: shiftTypeListWhere(visibility),
+      orderBy: { sortOrder: 'asc' },
+    });
+    const mapped = await Promise.all(
+      items
+        .filter((st) => visibility === 'archived' || visibility === 'all' ||
+          (isAllowedShiftTypeName(st.name) && !isForbiddenShiftTypeName(st.name)))
+        .map(async (st) => mapShiftType(st, await archiveService.canHardDeleteShiftType(st.id))),
+    );
+    return { items: mapped };
   }
 
   async createShiftType(input: ShiftTypeCreateInput, userId?: string) {
+    if (isForbiddenShiftTypeName(input.name) || !isAllowedShiftTypeName(input.name)) {
+      throw Object.assign(new Error(FORBIDDEN_SHIFT_TYPE_MESSAGE), { status: 400 });
+    }
     const existing = await prisma.shiftType.findUnique({ where: { name: input.name } });
     if (existing) {
       throw Object.assign(
@@ -130,6 +162,13 @@ class PrimeSettingsService {
         { status: 409 },
       );
     }
+
+    assertValidShiftTypeTimes(input.startTime, input.endTime);
+    await assertNoOverlapWithActiveTypes({
+      name: input.name,
+      startTime: input.startTime,
+      endTime: input.endTime,
+    });
 
     const created = await prisma.shiftType.create({
       data: {
@@ -149,7 +188,7 @@ class PrimeSettingsService {
       newValue:   { name: created.name, startTime: created.startTime, endTime: created.endTime },
     }, userId);
 
-    return mapShiftType(created);
+    return mapShiftType(created, { allowed: true, blockers: [] });
   }
 
   async updateShiftType(id: string, input: ShiftTypeUpdateInput, userId?: string) {
@@ -172,6 +211,18 @@ class PrimeSettingsService {
     if (input.isActive  !== undefined) data.isActive  = input.isActive;
     if (input.sortOrder !== undefined) data.sortOrder = input.sortOrder;
 
+    const nextStart = input.startTime ?? existing.startTime;
+    const nextEnd   = input.endTime   ?? existing.endTime;
+    if (input.startTime !== undefined || input.endTime !== undefined) {
+      assertValidShiftTypeTimes(nextStart, nextEnd);
+      await assertNoOverlapWithActiveTypes({
+        id,
+        name: existing.name,
+        startTime: nextStart,
+        endTime: nextEnd,
+      });
+    }
+
     const updated = await prisma.shiftType.update({ where: { id }, data });
 
     await this.audit({
@@ -182,7 +233,23 @@ class PrimeSettingsService {
       newValue:   { label: updated.label, startTime: updated.startTime, endTime: updated.endTime, isActive: updated.isActive },
     }, userId);
 
-    return mapShiftType(updated);
+    return mapShiftType(updated, await archiveService.canHardDeleteShiftType(id));
+  }
+
+  async archiveShiftType(id: string, userId?: string, input?: ArchiveReasonInput) {
+    const updated = await archiveService.archiveShiftType(id, userId, input);
+    if (!updated) return null;
+    return mapShiftType(updated, await archiveService.canHardDeleteShiftType(id));
+  }
+
+  async restoreShiftType(id: string, userId?: string, input?: ArchiveReasonInput) {
+    const updated = await archiveService.restoreShiftType(id, userId, input);
+    if (!updated) return null;
+    return mapShiftType(updated, await archiveService.canHardDeleteShiftType(id));
+  }
+
+  async hardDeleteShiftType(id: string, userId?: string) {
+    return archiveService.hardDeleteShiftType(id, userId);
   }
 
   // ── B. Commission Rules ────────────────────────────────────────────────────────
@@ -347,6 +414,9 @@ class PrimeSettingsService {
         { status: 404 },
       );
     }
+    if (isForbiddenShiftTypeName(shiftType.name) || !isAllowedShiftTypeName(shiftType.name)) {
+      throw Object.assign(new Error(FORBIDDEN_SHIFT_TYPE_MESSAGE), { status: 400 });
+    }
 
     const now = new Date();
 
@@ -487,7 +557,7 @@ class PrimeSettingsService {
     ]);
 
     return {
-      shiftTypes: shiftTypes.map(mapShiftType),
+      shiftTypes: shiftTypes.map((st) => mapShiftType(st)),
       pricingPlans: pricingPlans.map((p) => ({
         id:              p.id,
         name:            p.name,

@@ -11,6 +11,8 @@ import {
 } from './prime-settings.types';
 import { parseBody, handleError } from '../../utils/controller-helpers';
 import type { AuthRequest } from '../../middleware/auth.middleware';
+import { parseVisibilityFilter } from '../archive/archive-filters';
+import { archiveReasonSchema } from '../archive/archive.types';
 
 const router = Router();
 
@@ -20,10 +22,13 @@ function userId(req: Request): string | undefined {
 
 // ── A. Shift Types ─────────────────────────────────────────────────────────────
 
-// GET /api/settings/prime/shift-types
-router.get('/shift-types', (_req: Request, res: Response) => {
+// GET /api/settings/prime/shift-types?visibility=active|archived|all
+router.get('/shift-types', (req: Request, res: Response) => {
+  const visibility = parseVisibilityFilter(
+    typeof req.query.visibility === 'string' ? req.query.visibility : undefined,
+  );
   primeSettingsService
-    .getShiftTypes()
+    .getShiftTypes(visibility)
     .then((data) => res.json(data))
     .catch((err: unknown) => handleError(res, err, 'Failed to load shift types'));
 });
@@ -62,6 +67,58 @@ router.patch('/shift-types/:shiftTypeId', (req: Request, res: Response) => {
       res.json(result);
     })
     .catch((err: unknown) => handleError(res, err, 'Failed to update shift type'));
+});
+
+// PATCH /api/settings/prime/shift-types/:shiftTypeId/archive
+router.patch('/shift-types/:shiftTypeId/archive', (req: Request, res: Response) => {
+  const parsed = parseBody(archiveReasonSchema, req.body ?? {});
+  if (!parsed.ok) {
+    res.status(400).json({ ok: false, error: parsed.error });
+    return;
+  }
+  primeSettingsService
+    .archiveShiftType(req.params.shiftTypeId, userId(req), parsed.data)
+    .then((result) => {
+      if (!result) {
+        res.status(404).json({ ok: false, error: 'Shift type not found' });
+        return;
+      }
+      res.json(result);
+    })
+    .catch((err: unknown) => handleError(res, err, 'Failed to archive shift type'));
+});
+
+// PATCH /api/settings/prime/shift-types/:shiftTypeId/restore
+router.patch('/shift-types/:shiftTypeId/restore', (req: Request, res: Response) => {
+  const parsed = parseBody(archiveReasonSchema, req.body ?? {});
+  if (!parsed.ok) {
+    res.status(400).json({ ok: false, error: parsed.error });
+    return;
+  }
+  primeSettingsService
+    .restoreShiftType(req.params.shiftTypeId, userId(req), parsed.data)
+    .then((result) => {
+      if (!result) {
+        res.status(404).json({ ok: false, error: 'Shift type not found' });
+        return;
+      }
+      res.json(result);
+    })
+    .catch((err: unknown) => handleError(res, err, 'Failed to restore shift type'));
+});
+
+// DELETE /api/settings/prime/shift-types/:shiftTypeId
+router.delete('/shift-types/:shiftTypeId', (req: Request, res: Response) => {
+  primeSettingsService
+    .hardDeleteShiftType(req.params.shiftTypeId, userId(req))
+    .then((deleted) => {
+      if (!deleted) {
+        res.status(404).json({ ok: false, error: 'Shift type not found' });
+        return;
+      }
+      res.json({ ok: true });
+    })
+    .catch((err: unknown) => handleError(res, err, 'Failed to delete shift type'));
 });
 
 // ── B. Commission Rules ────────────────────────────────────────────────────────

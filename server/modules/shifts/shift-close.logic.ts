@@ -3,8 +3,19 @@
  * Timezone-aware dates use APP_TIMEZONE (business calendar), not UTC midnight.
  */
 
+import { buildScheduledDatetime } from '../../utils/time';
+
 /** Safety cap for OPEN shifts without a scheduled end (manual / legacy rows). */
 export const DEFAULT_MAX_OPEN_SHIFT_MS = 14 * 60 * 60 * 1000;
+
+export type ShiftCloseContext = {
+  todayBusinessDate: string;
+  todayStartUtc: Date;
+  timezone: string;
+  /** HH:mm shop-wide close (e.g. 23:45). When set, closes today's shifts at/after this time. */
+  dailyCloseTime?: string;
+  maxOpenMs?: number;
+};
 
 export type ShiftCloseCandidate = {
   id: string;
@@ -31,9 +42,22 @@ export function evaluateShiftClose(
   todayBusinessDate: string,
   todayStartUtc: Date,
   maxOpenMs: number = DEFAULT_MAX_OPEN_SHIFT_MS,
+  dailyCloseTime?: string,
+  timezone?: string,
 ): ShiftCloseDecision {
   if (shift.status !== 'OPEN') {
     return { close: false, reason: null, endedAt: null };
+  }
+
+  if (
+    dailyCloseTime &&
+    timezone &&
+    shift.businessDate === todayBusinessDate
+  ) {
+    const dailyCloseAt = buildScheduledDatetime(todayBusinessDate, dailyCloseTime, timezone);
+    if (now >= dailyCloseAt) {
+      return { close: true, reason: 'DAILY_CLOSE', endedAt: dailyCloseAt };
+    }
   }
 
   // Keep today's shift while still inside the planned end time.
@@ -73,8 +97,15 @@ export function evaluateShiftClose(
 export function shouldCloseBeforeHandoff(
   shift: ShiftCloseCandidate,
   now: Date,
-  todayBusinessDate: string,
-  todayStartUtc: Date,
+  ctx: ShiftCloseContext,
 ): boolean {
-  return evaluateShiftClose(shift, now, todayBusinessDate, todayStartUtc).close;
+  return evaluateShiftClose(
+    shift,
+    now,
+    ctx.todayBusinessDate,
+    ctx.todayStartUtc,
+    ctx.maxOpenMs,
+    ctx.dailyCloseTime,
+    ctx.timezone,
+  ).close;
 }

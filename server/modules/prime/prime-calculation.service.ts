@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import type { CommissionRule } from '@prisma/client';
 import { prisma } from '../../prisma';
+import { resolveShiftPeriod } from '../shifts/shift-period';
 
 // Shorthand for the Decimal constructor.
 // Prisma.Decimal is decimal.js — all arithmetic returns new instances (immutable).
@@ -343,6 +344,49 @@ export class PrimeCalculationService {
       targetBonusRule:   targetBonusRuleOut,
       manualAdjustments,
       sessions:          sessionLines,
+    };
+  }
+
+  /**
+   * Sums prime totals per period for one staff member on a business date.
+   * Each shift is calculated separately (sessions linked via shiftId); combined = morning + evening.
+   */
+  async calculateStaffDayPrimeTotals(
+    staffMemberId: string,
+    businessDate: string,
+  ): Promise<{
+    morning: { totalPrime: number; shiftId: string | null };
+    evening: { totalPrime: number; shiftId: string | null };
+    combinedTotalPrime: number;
+  }> {
+    const shifts = await prisma.shift.findMany({
+      where: { staffMemberId, businessDate },
+      include: { shiftType: { select: { name: true } } },
+      orderBy: { startedAt: 'asc' },
+    });
+
+    let morningPrime = 0;
+    let eveningPrime = 0;
+    let morningShiftId: string | null = null;
+    let eveningShiftId: string | null = null;
+
+    for (const sh of shifts) {
+      const summary = await this.calculateShiftPrimeSummary(sh.id);
+      const prime = summary.totals.totalPrime;
+      const period = resolveShiftPeriod(sh.shiftType?.name);
+      if (period === 'MORNING') {
+        morningPrime += prime;
+        morningShiftId = sh.id;
+      } else if (period === 'EVENING') {
+        eveningPrime += prime;
+        eveningShiftId = sh.id;
+      }
+    }
+
+    return {
+      morning: { totalPrime: morningPrime, shiftId: morningShiftId },
+      evening: { totalPrime: eveningPrime, shiftId: eveningShiftId },
+      combinedTotalPrime: morningPrime + eveningPrime,
     };
   }
 }

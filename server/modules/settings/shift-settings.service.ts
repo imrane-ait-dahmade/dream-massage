@@ -3,6 +3,26 @@ import { prisma } from '../../prisma';
 import { logger } from '../../utils/logger';
 import { env } from '../../config/env';
 import type { ScheduleCreateInput, ScheduleUpdateInput } from './shift-settings.types';
+import {
+  duplicateScheduleMessage,
+  FORBIDDEN_SHIFT_TYPE_MESSAGE,
+  isAllowedShiftTypeName,
+  isForbiddenShiftTypeName,
+  resolveShiftPeriod,
+  type ShiftPeriod,
+} from '../shifts/shift-period';
+import { compareScheduleItems, sortScheduleItems } from './shift-schedule.sort';
+import { archiveService } from '../archive/archive.service';
+import {
+  mapArchiveFields,
+  scheduleListWhere,
+  SCHEDULE_OPERATIONAL_WHERE,
+  STAFF_VISIBLE_WHERE,
+  type VisibilityFilter,
+} from '../archive/archive-filters';
+import type { ArchiveReasonInput } from '../archive/archive.types';
+
+export { compareScheduleItems, sortScheduleItems } from './shift-schedule.sort';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -18,20 +38,10 @@ const DAY_LABELS: Record<number, string> = {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function timeToMinutes(hhmm: string): number {
-  const match = /^(\d{2}):(\d{2})$/.exec(hhmm);
-  if (!match) return -1;
-  return parseInt(match[1]!, 10) * 60 + parseInt(match[2]!, 10);
-}
-
-function timesOverlap(startA: string, endA: string, startB: string, endB: string): boolean {
-  const sa = timeToMinutes(startA);
-  const ea = timeToMinutes(endA);
-  const sb = timeToMinutes(startB);
-  const eb = timeToMinutes(endB);
-  if (sa < 0 || ea < 0 || sb < 0 || eb < 0) return false;
-  return sa < eb && sb < ea;
-}
+import {
+  parseTimeToMinutes,
+  rangesOverlap,
+} from './shift-time-ranges';
 
 // Returns ISO 8601 day-of-week (1=Monday … 7=Sunday) in the app timezone.
 function todayDayOfWeek(tz: string): number {
@@ -78,8 +88,8 @@ function resolveTodayShiftStatus(
 ): TodayShiftStatus {
   if (row.isOff) return 'rest';
 
-  const startHHmm = row.startTime ?? row.shiftType?.startTime;
-  const endHHmm   = row.endTime   ?? row.shiftType?.endTime;
+  const startHHmm = row.shiftType?.startTime;
+  const endHHmm   = row.shiftType?.endTime;
   if (!startHHmm || !endHHmm) return 'upcoming';
 
   const scheduledStartAt = buildScheduledDatetime(businessDate, startHHmm, tz);
@@ -111,27 +121,39 @@ type ScheduleItem = {
   staffMemberId: string;
   staffMemberName: string;
   shiftTypeId: string | null;
+  shiftTypeName: string | null;
   shiftTypeLabel: string | null;
   startTime: string | null;
   endTime: string | null;
   isOff: boolean;
   isActive: boolean;
   notes: string | null;
+  createdAt: string;
+  archivedAt: string | null;
+  archiveReason: string | null;
+  isArchived: boolean;
+  canHardDelete: boolean;
+  hardDeleteBlockers: string[];
 };
 
-function mapRow(s: ScheduleRow): ScheduleItem {
+function mapRow(s: ScheduleRow, hardDelete?: { allowed: boolean; blockers: string[] }): ScheduleItem {
+  // StaffSchedule.startTime/endTime are deprecated — ShiftType hours are the source of truth.
   return {
     id:              s.id,
     staffMemberId:   s.staffMemberId,
     staffMemberName: s.staffMember.name,
     shiftTypeId:     s.shiftTypeId ?? null,
+    shiftTypeName:   s.shiftType?.name ?? null,
     shiftTypeLabel:  s.shiftType?.label ?? s.shiftType?.name ?? null,
-    // Prefer the per-row override, then fall back to the ShiftType default times.
-    startTime:       s.startTime ?? s.shiftType?.startTime ?? null,
-    endTime:         s.endTime   ?? s.shiftType?.endTime   ?? null,
+    startTime:       s.isOff ? null : (s.shiftType?.startTime ?? null),
+    endTime:         s.isOff ? null : (s.shiftType?.endTime ?? null),
     isOff:           s.isOff,
     isActive:        s.isActive,
     notes:           s.notes ?? null,
+    createdAt:       s.createdAt.toISOString(),
+    ...mapArchiveFields(s),
+    canHardDelete:   hardDelete?.allowed ?? false,
+    hardDeleteBlockers: hardDelete?.blockers ?? [],
   };
 }
 
@@ -188,48 +210,104 @@ class ShiftSettingsService {
     }
   }
 
+  private async assertAllowedShiftType(shiftTypeId: string): Promise<{
+    id: string;
+    name: string;
+    startTime: string;
+    endTime: string;
+  }> {
+    const st = await prisma.shiftType.findUnique({
+      where:  { id: shiftTypeId },
+      select: { id: true, name: true, startTime: true, endTime: true, isActive: true },
+    });
+    if (!st) {
+      throw Object.assign(
+        new Error(`Type de shift introuvable : ${shiftTypeId}`),
+        { status: 404 },
+      );
+    }
+    if (!st.isActive || isForbiddenShiftTypeName(st.name) || !isAllowedShiftTypeName(st.name)) {
+      throw Object.assign(new Error(FORBIDDEN_SHIFT_TYPE_MESSAGE), { status: 400 });
+    }
+    return st;
+  }
+
+  private async assertNoDuplicatePeriod(
+    staffMemberId: string,
+    dayOfWeek: number,
+    shiftTypeId: string,
+    excludeId?: string,
+  ): Promise<void> {
+    const st = await this.assertAllowedShiftType(shiftTypeId);
+    const period = resolveShiftPeriod(st.name);
+    if (!period) {
+      throw Object.assign(new Error(FORBIDDEN_SHIFT_TYPE_MESSAGE), { status: 400 });
+    }
+
+    const dup = await prisma.staffSchedule.findFirst({
+      where: {
+        id:            excludeId ? { not: excludeId } : undefined,
+        staffMemberId,
+        dayOfWeek,
+        shiftTypeId,
+        isActive:      true,
+        isOff:         false,
+      },
+      select: { id: true },
+    });
+    if (dup) {
+      throw Object.assign(new Error(duplicateScheduleMessage(period)), { status: 409 });
+    }
+  }
+
   // ── A. Staff Schedule ──────────────────────────────────────────────────────────
 
   /**
    * Returns the weekly schedule grouped by day (all 7 days, empty items for
    * days with no active schedule). Pass staffMemberId to filter by one person.
    */
-  async getSchedule(staffMemberId?: string): Promise<{
+  async getSchedule(
+    staffMemberId?: string,
+    visibility: VisibilityFilter = 'active',
+  ): Promise<{
     days: Array<{ dayOfWeek: number; label: string; items: ScheduleItem[] }>;
   }> {
     const where: Prisma.StaffScheduleWhereInput = {
-      isActive: true,
+      ...scheduleListWhere(visibility),
       ...(staffMemberId ? { staffMemberId } : {}),
     };
 
     const rows = await prisma.staffSchedule.findMany({
       where,
       include: SCHEDULE_INCLUDE,
-      orderBy: [{ dayOfWeek: 'asc' }, { staffMember: { name: 'asc' } }],
+      orderBy: [
+        { dayOfWeek: 'asc' },
+        { startTime: 'asc' },
+        { endTime: 'asc' },
+        { createdAt: 'asc' },
+      ],
     });
 
     const grouped: Record<number, ScheduleItem[]> = {};
     for (const row of rows) {
       const d = row.dayOfWeek;
       if (!grouped[d]) grouped[d] = [];
-      grouped[d].push(mapRow(row));
+      const hardDelete = await archiveService.canHardDeleteStaffSchedule(row.id);
+      grouped[d].push(mapRow(row, hardDelete));
     }
 
     const days = [1, 2, 3, 4, 5, 6, 7].map((d) => ({
       dayOfWeek: d,
       label:     DAY_LABELS[d]!,
-      items:     grouped[d] ?? [],
+      items:     sortScheduleItems(grouped[d] ?? []),
     }));
 
     return { days };
   }
 
   /**
-   * Creates a schedule entry for one staff member on one day.
-   * Any existing active schedule for the same (staffMemberId, dayOfWeek) is
-   * deactivated first — only one active row per staff/day is allowed.
-   * MVP: direct create; if structural change patterns are needed later,
-   * use deactivate+create like CommissionRule.
+   * Creates a schedule entry for one staff member on one day and period (Matin/Soir).
+   * Same staff may have both Matin and Soir on the same day; duplicate period is rejected.
    */
   async createScheduleEntry(
     input: ScheduleCreateInput,
@@ -238,7 +316,7 @@ class ShiftSettingsService {
     // Validate staff member
     const staff = await prisma.staffMember.findUnique({
       where:  { id: input.staffMemberId },
-      select: { id: true, name: true, isActive: true },
+      select: { id: true, name: true, isActive: true, archivedAt: true },
     });
     if (!staff) {
       throw Object.assign(
@@ -246,41 +324,46 @@ class ShiftSettingsService {
         { status: 404 },
       );
     }
+    if (staff.archivedAt) {
+      throw Object.assign(
+        new Error('Cette assistante est archivée — restaurez-la avant d\'ajouter du planning.'),
+        { status: 409 },
+      );
+    }
 
     // Validate shift type if provided
     let resolvedShiftType: { startTime: string; endTime: string } | null = null;
-    if (input.shiftTypeId) {
-      const st = await prisma.shiftType.findUnique({
-        where:  { id: input.shiftTypeId },
-        select: { id: true, startTime: true, endTime: true },
-      });
-      if (!st) {
-        throw Object.assign(
-          new Error(`Type de shift introuvable : ${input.shiftTypeId}`),
-          { status: 404 },
-        );
-      }
+    if (!input.isOff && input.shiftTypeId) {
+      const st = await this.assertAllowedShiftType(input.shiftTypeId);
       resolvedShiftType = st;
+      await this.assertNoDuplicatePeriod(
+        input.staffMemberId,
+        input.dayOfWeek,
+        input.shiftTypeId,
+      );
+    } else if (!input.isOff && !input.shiftTypeId) {
+      throw Object.assign(
+        new Error('shiftTypeId est requis lorsque isOff est false'),
+        { status: 400 },
+      );
     }
 
-    // Validate times and check for overlaps (only for working days)
+    // Hours come from ShiftType only — no per-schedule overrides.
     if (!input.isOff) {
-      const effectiveStart = input.startTime ?? resolvedShiftType?.startTime;
-      const effectiveEnd   = input.endTime   ?? resolvedShiftType?.endTime;
+      const effectiveStart = resolvedShiftType?.startTime;
+      const effectiveEnd   = resolvedShiftType?.endTime;
 
       if (effectiveStart && effectiveEnd) {
-        const startMins = timeToMinutes(effectiveStart);
-        const endMins   = timeToMinutes(effectiveEnd);
-        if (startMins >= 0 && endMins >= 0 && endMins <= startMins) {
+        const startMins = parseTimeToMinutes(effectiveStart);
+        const endMins   = parseTimeToMinutes(effectiveEnd);
+        if (startMins == null || endMins == null || endMins <= startMins) {
           throw Object.assign(
-            new Error('L\'heure de fin doit être après l\'heure de début'),
+            new Error('Les horaires du type de shift sont invalides'),
             { status: 400 },
           );
         }
 
-        // If only one OPEN shift is allowed at a time, no two staff schedules
-        // on the same day can overlap — they would conflict at runtime.
-        if (!env.ALLOW_MULTIPLE_OPEN_SHIFTS && effectiveStart && effectiveEnd) {
+        if (!env.ALLOW_MULTIPLE_OPEN_SHIFTS) {
           const others = await prisma.staffSchedule.findMany({
             where: {
               dayOfWeek:     input.dayOfWeek,
@@ -292,9 +375,9 @@ class ShiftSettingsService {
           });
 
           for (const other of others) {
-            const otherStart = other.startTime ?? other.shiftType?.startTime ?? '';
-            const otherEnd   = other.endTime   ?? other.shiftType?.endTime   ?? '';
-            if (timesOverlap(effectiveStart, effectiveEnd, otherStart, otherEnd)) {
+            const otherStart = other.shiftType?.startTime ?? '';
+            const otherEnd   = other.shiftType?.endTime ?? '';
+            if (rangesOverlap(effectiveStart, effectiveEnd, otherStart, otherEnd)) {
               throw Object.assign(
                 new Error('Un autre membre du staff a déjà un shift qui se chevauche ce jour-là.'),
                 { status: 409 },
@@ -305,20 +388,44 @@ class ShiftSettingsService {
       }
     }
 
-    // Deactivate any existing active schedule for the same staff/day
-    const previousActive = await prisma.staffSchedule.findMany({
-      where:  { staffMemberId: input.staffMemberId, dayOfWeek: input.dayOfWeek, isActive: true },
-      select: { id: true },
-    });
-    if (previousActive.length > 0) {
-      await prisma.staffSchedule.updateMany({
-        where: { id: { in: previousActive.map((r) => r.id) } },
-        data:  { isActive: false },
+    // Deactivate only the same slot (staff + day + period, or staff + day off)
+    if (input.isOff) {
+      const previousOff = await prisma.staffSchedule.findMany({
+        where: {
+          staffMemberId: input.staffMemberId,
+          dayOfWeek:     input.dayOfWeek,
+          isActive:      true,
+          isOff:         true,
+        },
+        select: { id: true },
       });
-      logger.info(
-        `[shift-settings] Deactivated ${previousActive.length} schedule(s) for ` +
-        `${staff.name} on day ${input.dayOfWeek} before creating new entry`,
-      );
+      if (previousOff.length > 0) {
+        await prisma.staffSchedule.updateMany({
+          where: { id: { in: previousOff.map((r) => r.id) } },
+          data:  { isActive: false },
+        });
+      }
+    } else if (input.shiftTypeId) {
+      const previousSamePeriod = await prisma.staffSchedule.findMany({
+        where: {
+          staffMemberId: input.staffMemberId,
+          dayOfWeek:     input.dayOfWeek,
+          shiftTypeId:   input.shiftTypeId,
+          isActive:      true,
+          isOff:         false,
+        },
+        select: { id: true },
+      });
+      if (previousSamePeriod.length > 0) {
+        await prisma.staffSchedule.updateMany({
+          where: { id: { in: previousSamePeriod.map((r) => r.id) } },
+          data:  { isActive: false },
+        });
+        logger.info(
+          `[shift-settings] Replaced ${previousSamePeriod.length} schedule(s) for ` +
+          `${staff.name} day ${input.dayOfWeek} period ${input.shiftTypeId}`,
+        );
+      }
     }
 
     const created = await prisma.staffSchedule.create({
@@ -326,8 +433,8 @@ class ShiftSettingsService {
         staffMemberId: input.staffMemberId,
         shiftTypeId:   input.shiftTypeId ?? null,
         dayOfWeek:     input.dayOfWeek,
-        startTime:     input.startTime ?? null,
-        endTime:       input.endTime   ?? null,
+        startTime:     null,
+        endTime:       null,
         isOff:         input.isOff,
         isActive:      true,
         notes:         input.notes ?? null,
@@ -350,7 +457,7 @@ class ShiftSettingsService {
       userId,
     );
 
-    return mapRow(created);
+    return mapRow(created, await archiveService.canHardDeleteStaffSchedule(created.id));
   }
 
   /**
@@ -373,11 +480,30 @@ class ShiftSettingsService {
     if (!existing) return null;
 
     // Validate new shiftTypeId if being changed to a non-null value
-    let updatedShiftType: { startTime: string; endTime: string } | null = null;
-    if (input.shiftTypeId != null) {
+    let updatedShiftType: { startTime: string; endTime: string; name: string } | null = null;
+    const mergedIsOff = 'isOff' in input ? (input.isOff ?? existing.isOff) : existing.isOff;
+    const mergedShiftTypeId =
+      'shiftTypeId' in input ? (input.shiftTypeId ?? null) : existing.shiftTypeId;
+
+    if (!mergedIsOff) {
+      if (!mergedShiftTypeId) {
+        throw Object.assign(
+          new Error('shiftTypeId est requis lorsque isOff est false'),
+          { status: 400 },
+        );
+      }
+      const st = await this.assertAllowedShiftType(mergedShiftTypeId);
+      updatedShiftType = st;
+      await this.assertNoDuplicatePeriod(
+        existing.staffMemberId,
+        existing.dayOfWeek,
+        mergedShiftTypeId,
+        id,
+      );
+    } else if (input.shiftTypeId != null) {
       const st = await prisma.shiftType.findUnique({
         where:  { id: input.shiftTypeId },
-        select: { id: true, startTime: true, endTime: true },
+        select: { id: true, name: true, startTime: true, endTime: true, isActive: true },
       });
       if (!st) {
         throw Object.assign(
@@ -385,24 +511,22 @@ class ShiftSettingsService {
           { status: 404 },
         );
       }
-      updatedShiftType = st;
+      if (isForbiddenShiftTypeName(st.name)) {
+        throw Object.assign(new Error(FORBIDDEN_SHIFT_TYPE_MESSAGE), { status: 400 });
+      }
     }
 
-    // Resolve the merged state after the update to validate times and overlaps
-    const mergedIsOff = 'isOff' in input ? (input.isOff ?? existing.isOff) : existing.isOff;
     if (!mergedIsOff) {
       const mergedShiftType = updatedShiftType ?? existing.shiftType;
-      const mergedStartTime = 'startTime' in input ? input.startTime : existing.startTime;
-      const mergedEndTime   = 'endTime'   in input ? input.endTime   : existing.endTime;
-      const effectiveStart  = mergedStartTime ?? mergedShiftType?.startTime;
-      const effectiveEnd    = mergedEndTime   ?? mergedShiftType?.endTime;
+      const effectiveStart  = mergedShiftType?.startTime;
+      const effectiveEnd    = mergedShiftType?.endTime;
 
       if (effectiveStart && effectiveEnd) {
-        const startMins = timeToMinutes(effectiveStart);
-        const endMins   = timeToMinutes(effectiveEnd);
-        if (startMins >= 0 && endMins >= 0 && endMins <= startMins) {
+        const startMins = parseTimeToMinutes(effectiveStart);
+        const endMins   = parseTimeToMinutes(effectiveEnd);
+        if (startMins == null || endMins == null || endMins <= startMins) {
           throw Object.assign(
-            new Error('L\'heure de fin doit être après l\'heure de début'),
+            new Error('Les horaires du type de shift sont invalides'),
             { status: 400 },
           );
         }
@@ -420,9 +544,9 @@ class ShiftSettingsService {
           });
 
           for (const other of others) {
-            const otherStart = other.startTime ?? other.shiftType?.startTime ?? '';
-            const otherEnd   = other.endTime   ?? other.shiftType?.endTime   ?? '';
-            if (timesOverlap(effectiveStart, effectiveEnd, otherStart, otherEnd)) {
+            const otherStart = other.shiftType?.startTime ?? '';
+            const otherEnd   = other.shiftType?.endTime ?? '';
+            if (rangesOverlap(effectiveStart, effectiveEnd, otherStart, otherEnd)) {
               throw Object.assign(
                 new Error('Un autre membre du staff a déjà un shift qui se chevauche ce jour-là.'),
                 { status: 409 },
@@ -446,11 +570,14 @@ class ShiftSettingsService {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data: Record<string, any> = {};
     if ('shiftTypeId' in input) data.shiftTypeId = input.shiftTypeId;
-    if ('startTime'   in input) data.startTime   = input.startTime;
-    if ('endTime'     in input) data.endTime     = input.endTime;
     if ('isOff'       in input) data.isOff       = input.isOff;
     if ('isActive'    in input) data.isActive    = input.isActive;
     if ('notes'       in input) data.notes       = input.notes;
+    // Clear deprecated per-schedule hour overrides — ShiftType is the source of truth.
+    if (!mergedIsOff) {
+      data.startTime = null;
+      data.endTime   = null;
+    }
 
     const updated = await prisma.staffSchedule.update({
       where:   { id },
@@ -475,37 +602,51 @@ class ShiftSettingsService {
       userId,
     );
 
-    return mapRow(updated);
+    return mapRow(updated, await archiveService.canHardDeleteStaffSchedule(updated.id));
+  }
+
+  async archiveScheduleEntry(id: string, userId?: string, input?: ArchiveReasonInput) {
+    const updated = await archiveService.archiveStaffSchedule(id, userId, input);
+    if (!updated) return null;
+    const row = await prisma.staffSchedule.findUnique({
+      where:   { id },
+      include: SCHEDULE_INCLUDE,
+    });
+    if (!row) return null;
+    return mapRow(row, await archiveService.canHardDeleteStaffSchedule(id));
+  }
+
+  async restoreScheduleEntry(id: string, userId?: string, input?: ArchiveReasonInput) {
+    const updated = await archiveService.restoreStaffSchedule(id, userId, input);
+    if (!updated) return null;
+    const row = await prisma.staffSchedule.findUnique({
+      where:   { id },
+      include: SCHEDULE_INCLUDE,
+    });
+    if (!row) return null;
+    return mapRow(row, await archiveService.canHardDeleteStaffSchedule(id));
   }
 
   /**
-   * Soft-deletes a schedule entry (sets isActive=false).
-   * The row is kept for the audit trail.
+   * Soft-deletes or hard-deletes a schedule entry.
+   * Hard delete only when no linked shifts exist.
    */
-  async deleteScheduleEntry(id: string, userId?: string): Promise<boolean> {
-    const existing = await prisma.staffSchedule.findUnique({
-      where:  { id },
-      select: { id: true, staffMemberId: true, dayOfWeek: true, isActive: true },
+  async deleteScheduleEntry(id: string, userId?: string, forceHard = false): Promise<boolean> {
+    const check = await archiveService.canHardDeleteStaffSchedule(id);
+    if (forceHard && check.allowed) {
+      return archiveService.hardDeleteStaffSchedule(id, userId);
+    }
+    if (forceHard && !check.allowed) {
+      throw Object.assign(
+        new Error(`Suppression impossible : ${check.blockers.join(', ')}. Archivez plutôt.`),
+        { status: 409, blockers: check.blockers },
+      );
+    }
+
+    const archived = await archiveService.archiveStaffSchedule(id, userId, {
+      reason: 'Archivé via suppression',
     });
-    if (!existing) return false;
-
-    await prisma.staffSchedule.update({
-      where: { id },
-      data:  { isActive: false },
-    });
-
-    await this.audit(
-      {
-        entityType: 'StaffSchedule',
-        entityId:   id,
-        action:     'DELETE',
-        oldValue:   { staffMemberId: existing.staffMemberId, dayOfWeek: existing.dayOfWeek },
-        reason:     'Soft delete via DELETE endpoint',
-      },
-      userId,
-    );
-
-    return true;
+    return archived != null;
   }
 
   // ── B. Today suggestions ────────────────────────────────────────────────────
@@ -538,9 +679,18 @@ class ShiftSettingsService {
 
     const [rows, todayShifts] = await Promise.all([
       prisma.staffSchedule.findMany({
-        where:   { dayOfWeek: dow, isActive: true },
+        where: {
+          dayOfWeek: dow,
+          ...SCHEDULE_OPERATIONAL_WHERE,
+          staffMember: STAFF_VISIBLE_WHERE,
+        },
         include: SCHEDULE_INCLUDE,
-        orderBy: [{ isOff: 'asc' }, { staffMember: { name: 'asc' } }],
+        orderBy: [
+          { isOff: 'asc' },
+          { startTime: 'asc' },
+          { endTime: 'asc' },
+          { createdAt: 'asc' },
+        ],
       }),
       prisma.shift.findMany({
         where:  { businessDate },
@@ -555,11 +705,13 @@ class ShiftSettingsService {
       }
     }
 
+    const sortedRows = [...rows].sort((a, b) => compareScheduleItems(mapRow(a), mapRow(b)));
+
     return {
       dayOfWeek: dow,
       label:     DAY_LABELS[dow] ?? `Jour ${dow}`,
       autoShiftEnabled: env.AUTO_SHIFT_ENABLED,
-      suggestions: rows.map((s) => {
+      suggestions: sortedRows.map((s) => {
         const shift = shiftByScheduleId.get(s.id);
         return {
           scheduleId:      s.id,
@@ -569,8 +721,8 @@ class ShiftSettingsService {
           shiftTypeLabel:  s.isOff
             ? 'Repos'
             : (s.shiftType?.label ?? s.shiftType?.name ?? null),
-          startTime: s.isOff ? null : (s.startTime ?? s.shiftType?.startTime ?? null),
-          endTime:   s.isOff ? null : (s.endTime   ?? s.shiftType?.endTime   ?? null),
+          startTime: s.isOff ? null : (s.shiftType?.startTime ?? null),
+          endTime:   s.isOff ? null : (s.shiftType?.endTime   ?? null),
           status:    resolveTodayShiftStatus(s, now, businessDate, tz, shiftByScheduleId),
           shiftId:   shift?.id ?? null,
         };

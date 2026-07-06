@@ -17,6 +17,7 @@ env.example
 
 # Node
 node_modules/
+**/.cache/
 
 # Build outputs
 dist/

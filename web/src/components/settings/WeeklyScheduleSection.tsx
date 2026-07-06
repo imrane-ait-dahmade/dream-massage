@@ -3,7 +3,10 @@
 import { useState } from 'react';
 import { Plus, Pencil, Trash2, Save, X, CheckCircle, XCircle, Users, Moon } from 'lucide-react';
 import type { ShiftTypeSetting, StaffMember, WeeklyScheduleDay, StaffScheduleItem } from '@/lib/types';
-import { createShiftSchedule, updateShiftSchedule, deleteShiftSchedule } from '@/lib/api';
+import { createShiftSchedule, updateShiftSchedule, deleteShiftSchedule, archiveShiftSchedule, restoreShiftSchedule } from '@/lib/api';
+import { ArchiveActionMenu } from './ArchiveActionMenu';
+import { ArchivedBadge } from './VisibilityTabs';
+import { filterAllowedShiftTypes } from '@/lib/shift-period';
 
 interface Props {
   shiftTypes: ShiftTypeSetting[];
@@ -11,8 +14,6 @@ interface Props {
   days: WeeklyScheduleDay[];
   onRefresh: () => void;
 }
-
-const HH_MM = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 const DAY_OPTIONS = [
   { value: '1', label: 'Lundi' },
@@ -31,43 +32,70 @@ interface AddFormState {
   dayOfWeek: string;
   shiftTypeId: string;
   isOff: boolean;
-  startTime: string;
-  endTime: string;
   notes: string;
 }
 
 const BLANK_ADD: AddFormState = {
   staffMemberId: '', dayOfWeek: '1', shiftTypeId: '',
-  isOff: false, startTime: '', endTime: '', notes: '',
+  isOff: false, notes: '',
 };
+
+function ShiftTypeHoursPreview({
+  shiftTypes,
+  shiftTypeId,
+}: {
+  shiftTypes: ShiftTypeSetting[];
+  shiftTypeId: string;
+}) {
+  const st = shiftTypes.find((t) => t.id === shiftTypeId);
+  if (!st) return null;
+  return (
+    <div className="rounded-lg border border-stone-100 bg-stone-50 px-3 py-2 text-xs text-stone-600">
+      <span className="font-medium text-stone-800">{st.label ?? st.name}</span>
+      <span className="text-stone-400"> · Horaires : </span>
+      <span className="font-mono text-stone-700">{st.startTime} → {st.endTime}</span>
+    </div>
+  );
+}
 
 interface AddFormProps {
   shiftTypes: ShiftTypeSetting[];
   staff: StaffMember[];
+  initialDayOfWeek: number;
+  dayLabel: string;
+  lockDay?: boolean;
   onCancel: () => void;
   onSaved: () => void;
   onError: (msg: string) => void;
 }
 
-function AddForm({ shiftTypes, staff, onCancel, onSaved, onError }: AddFormProps) {
-  const [s, setS] = useState<AddFormState>(BLANK_ADD);
+function AddForm({
+  shiftTypes,
+  staff,
+  initialDayOfWeek,
+  dayLabel,
+  lockDay = true,
+  onCancel,
+  onSaved,
+  onError,
+}: AddFormProps) {
+  const [s, setS] = useState<AddFormState>({
+    ...BLANK_ADD,
+    dayOfWeek: String(initialDayOfWeek),
+  });
   const [saving, setSaving] = useState(false);
 
-  const activeShiftTypes = shiftTypes.filter((st) => st.isActive);
+  const activeShiftTypes = filterAllowedShiftTypes(shiftTypes);
 
   async function handleSave() {
     if (!s.staffMemberId) { onError('Veuillez sélectionner une assistante'); return; }
     if (!s.isOff && !s.shiftTypeId) { onError('Veuillez sélectionner un type de shift'); return; }
-    if (s.startTime && !HH_MM.test(s.startTime)) { onError('Heure début invalide (HH:mm)'); return; }
-    if (s.endTime && !HH_MM.test(s.endTime)) { onError('Heure fin invalide (HH:mm)'); return; }
     setSaving(true);
     try {
       await createShiftSchedule({
         staffMemberId: s.staffMemberId,
         shiftTypeId: s.isOff ? null : (s.shiftTypeId || null),
         dayOfWeek: Number(s.dayOfWeek),
-        startTime: s.startTime || null,
-        endTime: s.endTime || null,
         isOff: s.isOff,
         notes: s.notes || null,
       });
@@ -80,8 +108,17 @@ function AddForm({ shiftTypes, staff, onCancel, onSaved, onError }: AddFormProps
   }
 
   return (
-    <div className="space-y-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
-      <p className="text-sm font-semibold text-stone-800">Assigner une assistante</p>
+    <div className="space-y-3">
+      <div>
+        <p className="text-sm font-semibold text-stone-800">
+          {lockDay ? `Planifier — ${dayLabel}` : 'Assigner une assistante'}
+        </p>
+        {lockDay && (
+          <p className="mt-0.5 text-xs text-stone-400">
+            Jour présélectionné · choisissez l&apos;assistante et Matin ou Soir
+          </p>
+        )}
+      </div>
 
       <label className="block space-y-1">
         <span className="text-xs font-medium text-stone-500">Assistante*</span>
@@ -97,8 +134,13 @@ function AddForm({ shiftTypes, staff, onCancel, onSaved, onError }: AddFormProps
         </select>
       </label>
 
-      <div className="grid grid-cols-2 gap-3">
-        <label className="space-y-1">
+      {lockDay ? (
+        <div className="flex items-center justify-between rounded-lg border border-stone-100 bg-stone-50 px-3 py-2">
+          <span className="text-xs font-medium text-stone-500">Jour</span>
+          <span className="text-sm font-semibold text-stone-800">{dayLabel}</span>
+        </div>
+      ) : (
+        <label className="block space-y-1">
           <span className="text-xs font-medium text-stone-500">Jour*</span>
           <select
             value={s.dayOfWeek}
@@ -110,58 +152,40 @@ function AddForm({ shiftTypes, staff, onCancel, onSaved, onError }: AddFormProps
             ))}
           </select>
         </label>
-
-        <div className="flex items-end pb-2">
-          <label className="flex items-center gap-2 text-sm text-stone-700">
-            <input
-              type="checkbox"
-              checked={s.isOff}
-              onChange={(e) => setS((prev) => ({ ...prev, isOff: e.target.checked, shiftTypeId: '' }))}
-              className="h-4 w-4 rounded"
-            />
-            Repos
-          </label>
-        </div>
-      </div>
-
-      {!s.isOff && (
-        <label className="block space-y-1">
-          <span className="text-xs font-medium text-stone-500">Type de shift*</span>
-          <select
-            value={s.shiftTypeId}
-            onChange={(e) => setS((prev) => ({ ...prev, shiftTypeId: e.target.value }))}
-            className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
-          >
-            <option value="">— Sélectionner —</option>
-            {activeShiftTypes.map((st) => (
-              <option key={st.id} value={st.id}>
-                {st.label ?? st.name} ({st.startTime}–{st.endTime})
-              </option>
-            ))}
-          </select>
-        </label>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
-        <label className="space-y-1">
-          <span className="text-xs font-medium text-stone-500">Début (optionnel)</span>
-          <input
-            type="time"
-            value={s.startTime}
-            onChange={(e) => setS((prev) => ({ ...prev, startTime: e.target.value }))}
-            className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
-          />
-        </label>
-        <label className="space-y-1">
-          <span className="text-xs font-medium text-stone-500">Fin (optionnel)</span>
-          <input
-            type="time"
-            value={s.endTime}
-            onChange={(e) => setS((prev) => ({ ...prev, endTime: e.target.value }))}
-            className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
-          />
-        </label>
-      </div>
+      <label className="flex items-center gap-2 text-sm text-stone-700">
+        <input
+          type="checkbox"
+          checked={s.isOff}
+          onChange={(e) => setS((prev) => ({ ...prev, isOff: e.target.checked, shiftTypeId: '' }))}
+          className="h-4 w-4 rounded"
+        />
+        Repos
+      </label>
+
+      {!s.isOff && (
+        <>
+          <label className="block space-y-1">
+            <span className="text-xs font-medium text-stone-500">Type de shift*</span>
+            <select
+              value={s.shiftTypeId}
+              onChange={(e) => setS((prev) => ({ ...prev, shiftTypeId: e.target.value }))}
+              className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+            >
+              <option value="">— Sélectionner —</option>
+              {activeShiftTypes.map((st) => (
+                <option key={st.id} value={st.id}>
+                  {st.label ?? st.name} ({st.startTime}–{st.endTime})
+                </option>
+              ))}
+            </select>
+          </label>
+          {s.shiftTypeId && (
+            <ShiftTypeHoursPreview shiftTypes={shiftTypes} shiftTypeId={s.shiftTypeId} />
+          )}
+        </>
+      )}
 
       <label className="block space-y-1">
         <span className="text-xs font-medium text-stone-500">Notes (optionnel)</span>
@@ -174,19 +198,21 @@ function AddForm({ shiftTypes, staff, onCancel, onSaved, onError }: AddFormProps
       </label>
 
       <p className="text-[11px] text-stone-400">
-        Le planning définit qui travaille chaque jour. Les shifts réels s&apos;ouvrent et se ferment automatiquement selon ces horaires.
+        Les horaires sont définis dans Types de shifts (Matin / Soir).
       </p>
 
       <div className="flex gap-2">
         <button
+          type="button"
           onClick={() => void handleSave()}
           disabled={saving}
-          className="flex items-center gap-1.5 rounded-xl bg-stone-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-stone-700 disabled:opacity-50"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-stone-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-stone-700 disabled:opacity-50"
         >
           <Save className="h-3.5 w-3.5" />
-          {saving ? 'Enregistrement…' : 'Assigner'}
+          {saving ? 'Enregistrement…' : 'Enregistrer'}
         </button>
         <button
+          type="button"
           onClick={onCancel}
           className="flex items-center gap-1.5 rounded-xl border border-stone-200 px-4 py-2 text-sm font-semibold text-stone-600 transition-colors hover:bg-stone-50"
         >
@@ -203,8 +229,6 @@ function AddForm({ shiftTypes, staff, onCancel, onSaved, onError }: AddFormProps
 interface EditItemState {
   shiftTypeId: string;
   isOff: boolean;
-  startTime: string;
-  endTime: string;
   notes: string;
 }
 
@@ -220,24 +244,18 @@ function EditItemForm({ item, shiftTypes, onCancel, onSaved, onError }: EditItem
   const [s, setS] = useState<EditItemState>({
     shiftTypeId: item.shiftTypeId ?? '',
     isOff: item.isOff,
-    startTime: item.startTime ?? '',
-    endTime: item.endTime ?? '',
     notes: item.notes ?? '',
   });
   const [saving, setSaving] = useState(false);
 
-  const activeShiftTypes = shiftTypes.filter((st) => st.isActive);
+  const activeShiftTypes = filterAllowedShiftTypes(shiftTypes);
 
   async function handleSave() {
     if (!s.isOff && !s.shiftTypeId) { onError('Veuillez sélectionner un type de shift'); return; }
-    if (s.startTime && !HH_MM.test(s.startTime)) { onError('Heure début invalide (HH:mm)'); return; }
-    if (s.endTime && !HH_MM.test(s.endTime)) { onError('Heure fin invalide (HH:mm)'); return; }
     setSaving(true);
     try {
       await updateShiftSchedule(item.id, {
         shiftTypeId: s.isOff ? null : (s.shiftTypeId || null),
-        startTime: s.startTime || null,
-        endTime: s.endTime || null,
         isOff: s.isOff,
         notes: s.notes || null,
       });
@@ -262,43 +280,27 @@ function EditItemForm({ item, shiftTypes, onCancel, onSaved, onError }: EditItem
       </label>
 
       {!s.isOff && (
-        <label className="block space-y-1">
-          <span className="text-xs font-medium text-stone-500">Type de shift*</span>
-          <select
-            value={s.shiftTypeId}
-            onChange={(e) => setS((prev) => ({ ...prev, shiftTypeId: e.target.value }))}
-            className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
-          >
-            <option value="">— Sélectionner —</option>
-            {activeShiftTypes.map((st) => (
-              <option key={st.id} value={st.id}>
-                {st.label ?? st.name} ({st.startTime}–{st.endTime})
-              </option>
-            ))}
-          </select>
-        </label>
+        <>
+          <label className="block space-y-1">
+            <span className="text-xs font-medium text-stone-500">Type de shift*</span>
+            <select
+              value={s.shiftTypeId}
+              onChange={(e) => setS((prev) => ({ ...prev, shiftTypeId: e.target.value }))}
+              className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+            >
+              <option value="">— Sélectionner —</option>
+              {activeShiftTypes.map((st) => (
+                <option key={st.id} value={st.id}>
+                  {st.label ?? st.name} ({st.startTime}–{st.endTime})
+                </option>
+              ))}
+            </select>
+          </label>
+          {s.shiftTypeId && (
+            <ShiftTypeHoursPreview shiftTypes={shiftTypes} shiftTypeId={s.shiftTypeId} />
+          )}
+        </>
       )}
-
-      <div className="grid grid-cols-2 gap-2">
-        <label className="space-y-1">
-          <span className="text-xs font-medium text-stone-500">Début</span>
-          <input
-            type="time"
-            value={s.startTime}
-            onChange={(e) => setS((prev) => ({ ...prev, startTime: e.target.value }))}
-            className="w-full rounded-lg border border-stone-200 bg-white px-2 py-1.5 text-sm focus:border-stone-400 focus:outline-none"
-          />
-        </label>
-        <label className="space-y-1">
-          <span className="text-xs font-medium text-stone-500">Fin</span>
-          <input
-            type="time"
-            value={s.endTime}
-            onChange={(e) => setS((prev) => ({ ...prev, endTime: e.target.value }))}
-            className="w-full rounded-lg border border-stone-200 bg-white px-2 py-1.5 text-sm focus:border-stone-400 focus:outline-none"
-          />
-        </label>
-      </div>
 
       <label className="block space-y-1">
         <span className="text-xs font-medium text-stone-500">Notes</span>
@@ -347,20 +349,7 @@ interface ScheduleItemRowProps {
 function ScheduleItemRow({
   item, shiftTypes, isEditing, onToggleEdit, onCancelEdit, onSavedEdit, onDeleteSuccess, onError,
 }: ScheduleItemRowProps) {
-  const [deleting, setDeleting] = useState(false);
-
-  async function doDelete() {
-    if (!window.confirm(`Retirer ${item.staffMemberName} du planning ce jour ?`)) return;
-    setDeleting(true);
-    try {
-      await deleteShiftSchedule(item.id);
-      onDeleteSuccess();
-    } catch (err) {
-      onError((err as Error).message);
-    } finally {
-      setDeleting(false);
-    }
-  }
+  const isArchived = item.isArchived ?? !!item.archivedAt;
 
   return (
     <div className="py-2 text-sm">
@@ -372,16 +361,19 @@ function ScheduleItemRow({
               : <Users className="h-3.5 w-3.5 text-stone-500" />}
           </div>
           <div className="min-w-0">
-            <p className="truncate font-medium text-stone-800">{item.staffMemberName}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="truncate font-medium text-stone-800">{item.staffMemberName}</p>
+              {isArchived && <ArchivedBadge />}
+            </div>
             <p className="truncate text-xs text-stone-400">
               {item.isOff ? (
                 <span className="font-medium text-amber-600">Repos</span>
               ) : (
                 <>
-                  {item.shiftTypeLabel ?? '—'}
-                  {item.startTime && item.endTime
-                    ? ` · ${item.startTime}→${item.endTime}`
-                    : null}
+                  <span>{item.shiftTypeLabel ?? '—'}</span>
+                  {item.startTime && item.endTime && (
+                    <span className="text-stone-400"> · {item.startTime} → {item.endTime}</span>
+                  )}
                 </>
               )}
             </p>
@@ -395,14 +387,23 @@ function ScheduleItemRow({
           >
             <Pencil className="h-3.5 w-3.5" />
           </button>
-          <button
-            onClick={() => void doDelete()}
-            disabled={deleting}
-            className="rounded-md p-1 text-stone-400 transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
-            title="Retirer"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+          <ArchiveActionMenu
+            isArchived={isArchived}
+            canHardDelete={item.canHardDelete}
+            hardDeleteBlockers={item.hardDeleteBlockers}
+            onArchive={async (reason) => {
+              await archiveShiftSchedule(item.id, reason || undefined);
+              onDeleteSuccess();
+            }}
+            onRestore={async () => {
+              await restoreShiftSchedule(item.id);
+              onDeleteSuccess();
+            }}
+            onHardDelete={async () => {
+              await deleteShiftSchedule(item.id, true);
+              onDeleteSuccess();
+            }}
+          />
         </div>
       </div>
 
@@ -419,16 +420,92 @@ function ScheduleItemRow({
   );
 }
 
+// ── Plan modal ─────────────────────────────────────────────────────────────────
+
+interface PlanModalProps {
+  dayOfWeek: number;
+  dayLabel: string;
+  shiftTypes: ShiftTypeSetting[];
+  staff: StaffMember[];
+  onCancel: () => void;
+  onSaved: () => void;
+  onError: (msg: string) => void;
+}
+
+function PlanModal({ dayOfWeek, dayLabel, shiftTypes, staff, onCancel, onSaved, onError }: PlanModalProps) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-3 sm:items-center sm:p-4"
+      role="dialog"
+      aria-modal="true"
+      onClick={onCancel}
+    >
+      <div
+        className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-stone-200 bg-white p-4 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <AddForm
+          key={dayOfWeek}
+          shiftTypes={shiftTypes}
+          staff={staff}
+          initialDayOfWeek={dayOfWeek}
+          dayLabel={dayLabel}
+          lockDay
+          onCancel={onCancel}
+          onSaved={onSaved}
+          onError={onError}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ── Day card plan button ───────────────────────────────────────────────────────
+
+function DayPlanButton({
+  dayLabel,
+  hasItems,
+  disabled,
+  onClick,
+}: {
+  dayLabel: string;
+  hasItems: boolean;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  const shortLabel = dayLabel.toLowerCase();
+
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      title={hasItems ? `Ajouter une assignation — ${dayLabel}` : `Planifier ${dayLabel}`}
+      className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-stone-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-stone-600 transition-colors hover:border-stone-300 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      <Plus className="h-3 w-3" />
+      {hasItems ? '+ Ajouter' : `+ Planifier ${shortLabel}`}
+    </button>
+  );
+}
+
 // ── Main export ────────────────────────────────────────────────────────────────
 
 export function WeeklyScheduleSection({ shiftTypes, staff, days, onRefresh }: Props) {
-  const [adding, setAdding] = useState(false);
+  const [planModalDay, setPlanModalDay] = useState<{ dayOfWeek: number; label: string } | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   const noStaff = staff.length === 0;
   const noShiftTypes = shiftTypes.length === 0;
+  const canPlan = !noStaff && !noShiftTypes;
+
+  function openPlanModal(dayOfWeek: number, label: string) {
+    setError(null);
+    setSuccess(null);
+    setPlanModalDay({ dayOfWeek, label });
+  }
 
   function flashSuccess(msg: string) {
     setSuccess(msg);
@@ -436,7 +513,7 @@ export function WeeklyScheduleSection({ shiftTypes, staff, days, onRefresh }: Pr
   }
 
   function onMutationSuccess(msg: string) {
-    setAdding(false);
+    setPlanModalDay(null);
     setEditingItemId(null);
     setError(null);
     flashSuccess(msg);
@@ -445,8 +522,8 @@ export function WeeklyScheduleSection({ shiftTypes, staff, days, onRefresh }: Pr
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-stone-400">
-        Le planning définit qui travaille chaque jour. Les shifts réels s&apos;ouvrent et se ferment automatiquement selon ces horaires.
+      <p className="text-xs text-stone-500">
+        Assignez une assistante à Matin ou Soir par jour. Les horaires viennent des types de shift.
       </p>
 
       {success && (
@@ -460,7 +537,7 @@ export function WeeklyScheduleSection({ shiftTypes, staff, days, onRefresh }: Pr
         <div className="flex items-center gap-2 rounded-xl border border-red-100 bg-red-50 px-4 py-2.5 text-sm text-red-600">
           <XCircle className="h-4 w-4 shrink-0" />
           {error}
-          <button onClick={() => setError(null)} className="ml-auto shrink-0 hover:opacity-70">
+          <button type="button" onClick={() => setError(null)} className="ml-auto shrink-0 hover:opacity-70">
             <X className="h-3.5 w-3.5" />
           </button>
         </div>
@@ -478,36 +555,60 @@ export function WeeklyScheduleSection({ shiftTypes, staff, days, onRefresh }: Pr
         </div>
       )}
 
-      {!noStaff && !noShiftTypes && adding && (
-        <AddForm
+      {planModalDay && canPlan && (
+        <PlanModal
+          dayOfWeek={planModalDay.dayOfWeek}
+          dayLabel={planModalDay.label}
           shiftTypes={shiftTypes}
           staff={staff}
-          onCancel={() => { setAdding(false); setError(null); }}
+          onCancel={() => { setPlanModalDay(null); setError(null); }}
           onSaved={() => onMutationSuccess('Planning mis à jour')}
           onError={setError}
         />
       )}
 
       {/* Day cards */}
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {days.map((day) => (
           <div
             key={day.dayOfWeek}
             className="overflow-hidden rounded-2xl border border-stone-100 bg-white shadow-sm"
           >
-            <div className="flex items-center justify-between border-b border-stone-50 bg-stone-50/50 px-4 py-3">
+            <div className="flex items-center justify-between gap-2 border-b border-stone-50 bg-stone-50/50 px-3 py-2.5 sm:px-4">
               <span className="text-sm font-semibold text-stone-700">{day.label}</span>
-              <span className="text-xs text-stone-400">
-                {day.items.length === 0
-                  ? 'Aucun'
-                  : `${day.items.length} entrée${day.items.length > 1 ? 's' : ''}`}
-              </span>
+              <div className="flex items-center gap-2">
+                {day.items.length > 0 && (
+                  <>
+                    <span className="text-xs text-stone-400">
+                      {day.items.length} entrée{day.items.length > 1 ? 's' : ''}
+                    </span>
+                    <DayPlanButton
+                      dayLabel={day.label}
+                      hasItems
+                      disabled={!canPlan}
+                      onClick={() => openPlanModal(day.dayOfWeek, day.label)}
+                    />
+                  </>
+                )}
+              </div>
             </div>
 
             {day.items.length === 0 ? (
-              <p className="px-4 py-4 text-center text-xs text-stone-300">Aucune assignation</p>
+              <div className="flex flex-col items-center gap-2 px-3 py-3 sm:px-4">
+                <p className="text-xs text-stone-400">Aucune assignation</p>
+                {canPlan && (
+                  <button
+                    type="button"
+                    onClick={() => openPlanModal(day.dayOfWeek, day.label)}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-stone-300 px-4 py-2 text-xs font-semibold text-stone-600 transition-colors hover:border-stone-400 hover:bg-stone-50"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Planifier ce jour
+                  </button>
+                )}
+              </div>
             ) : (
-              <div className="divide-y divide-stone-50 px-4">
+              <div className="divide-y divide-stone-50 px-3 sm:px-4">
                 {day.items.map((item) => (
                   <ScheduleItemRow
                     key={item.id}
@@ -528,16 +629,6 @@ export function WeeklyScheduleSection({ shiftTypes, staff, days, onRefresh }: Pr
           </div>
         ))}
       </div>
-
-      {!noStaff && !noShiftTypes && !adding && (
-        <button
-          onClick={() => { setAdding(true); setError(null); setSuccess(null); }}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-stone-300 py-3 text-sm font-medium text-stone-500 transition-colors hover:border-stone-400 hover:text-stone-700"
-        >
-          <Plus className="h-4 w-4" />
-          Assigner au planning
-        </button>
-      )}
     </div>
   );
 }

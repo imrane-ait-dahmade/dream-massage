@@ -3,7 +3,10 @@
 import { useState } from 'react';
 import { Plus, Pencil, Clock, CheckCircle, XCircle, Save, X } from 'lucide-react';
 import type { ShiftTypeSetting } from '@/lib/types';
-import { createShiftType, updateShiftType } from '@/lib/api';
+import { createShiftType, updateShiftType, archiveShiftType, restoreShiftType, hardDeleteShiftType } from '@/lib/api';
+import { findShiftTypeOverlapError, validateShiftTypeTimeRange } from '@/lib/shift-time-ranges';
+import { ArchiveActionMenu } from './ArchiveActionMenu';
+import { ArchivedBadge } from './VisibilityTabs';
 
 interface Props {
   shiftTypes: ShiftTypeSetting[];
@@ -28,12 +31,13 @@ const BLANK: CreateState = {
 };
 
 interface CreateFormProps {
+  allShiftTypes: ShiftTypeSetting[];
   onCancel: () => void;
   onSaved: (msg: string) => void;
   onError: (msg: string) => void;
 }
 
-function CreateForm({ onCancel, onSaved, onError }: CreateFormProps) {
+function CreateForm({ allShiftTypes, onCancel, onSaved, onError }: CreateFormProps) {
   const [s, setS] = useState<CreateState>(BLANK);
   const [saving, setSaving] = useState(false);
 
@@ -51,6 +55,19 @@ function CreateForm({ onCancel, onSaved, onError }: CreateFormProps) {
     if (!label) { onError('Le libellé est requis'); return; }
     if (!HH_MM.test(start)) { onError('Heure début invalide (format HH:mm)'); return; }
     if (!HH_MM.test(end)) { onError('Heure fin invalide (format HH:mm)'); return; }
+    const rangeErr = validateShiftTypeTimeRange(start, end);
+    if (rangeErr) { onError(rangeErr); return; }
+    const overlapErr = findShiftTypeOverlapError(
+      { name, startTime: start, endTime: end },
+      allShiftTypes.map((st) => ({
+        id: st.id,
+        name: st.name,
+        startTime: st.startTime,
+        endTime: st.endTime,
+        isActive: st.isActive,
+      })),
+    );
+    if (overlapErr) { onError(overlapErr); return; }
     setSaving(true);
     try {
       await createShiftType({
@@ -78,7 +95,7 @@ function CreateForm({ onCancel, onSaved, onError }: CreateFormProps) {
           <span className="text-xs font-medium text-stone-500">Nom technique*</span>
           <input
             type="text"
-            placeholder="ex: matin"
+            placeholder="MATIN ou SOIR"
             value={s.name}
             onChange={field('name')}
             className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
@@ -172,12 +189,13 @@ interface EditState {
 
 interface EditFormProps {
   shiftType: ShiftTypeSetting;
+  allShiftTypes: ShiftTypeSetting[];
   onCancel: () => void;
   onSaved: (msg: string) => void;
   onError: (msg: string) => void;
 }
 
-function EditForm({ shiftType: st, onCancel, onSaved, onError }: EditFormProps) {
+function EditForm({ shiftType: st, allShiftTypes, onCancel, onSaved, onError }: EditFormProps) {
   const [s, setS] = useState<EditState>({
     label: st.label ?? st.name,
     startTime: st.startTime,
@@ -199,6 +217,19 @@ function EditForm({ shiftType: st, onCancel, onSaved, onError }: EditFormProps) 
     if (!label) { onError('Le libellé est requis'); return; }
     if (!HH_MM.test(start)) { onError('Heure début invalide (format HH:mm)'); return; }
     if (!HH_MM.test(end)) { onError('Heure fin invalide (format HH:mm)'); return; }
+    const rangeErr = validateShiftTypeTimeRange(start, end);
+    if (rangeErr) { onError(rangeErr); return; }
+    const overlapErr = findShiftTypeOverlapError(
+      { id: st.id, name: st.name, startTime: start, endTime: end },
+      allShiftTypes.map((t) => ({
+        id: t.id,
+        name: t.name,
+        startTime: t.startTime,
+        endTime: t.endTime,
+        isActive: t.isActive,
+      })),
+    );
+    if (overlapErr) { onError(overlapErr); return; }
     setSaving(true);
     try {
       await updateShiftType(st.id, {
@@ -316,7 +347,7 @@ export function ShiftTypesSection({ shiftTypes, onRefresh }: Props) {
   return (
     <div className="space-y-3">
       <p className="text-xs text-stone-400">
-        Les types de shifts définissent les périodes de travail comme Matin, Soir ou Journée.
+        Matin et Soir ne doivent pas se chevaucher. Modifiez les horaires ici — le planning les réutilise.
       </p>
 
       {success && (
@@ -338,6 +369,7 @@ export function ShiftTypesSection({ shiftTypes, onRefresh }: Props) {
 
       {creating && (
         <CreateForm
+          allShiftTypes={shiftTypes}
           onCancel={() => { setCreating(false); setError(null); }}
           onSaved={onSaved}
           onError={setError}
@@ -356,6 +388,7 @@ export function ShiftTypesSection({ shiftTypes, onRefresh }: Props) {
               <EditForm
                 key={st.id}
                 shiftType={st}
+                allShiftTypes={shiftTypes}
                 onCancel={() => { setEditId(null); setError(null); }}
                 onSaved={onSaved}
                 onError={setError}
@@ -371,7 +404,8 @@ export function ShiftTypesSection({ shiftTypes, onRefresh }: Props) {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-semibold text-stone-900">{st.label ?? st.name}</p>
-                    {st.isActive ? (
+                    {(st.isArchived ?? st.archivedAt) && <ArchivedBadge />}
+                    {st.isActive && !(st.isArchived ?? st.archivedAt) ? (
                       <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-semibold text-green-700">
                         Actif
                       </span>
@@ -394,6 +428,23 @@ export function ShiftTypesSection({ shiftTypes, onRefresh }: Props) {
                   >
                     <Pencil className="h-3.5 w-3.5" />
                   </button>
+                  <ArchiveActionMenu
+                    isArchived={!!(st.isArchived ?? st.archivedAt)}
+                    canHardDelete={st.canHardDelete}
+                    hardDeleteBlockers={st.hardDeleteBlockers}
+                    onArchive={async (reason) => {
+                      await archiveShiftType(st.id, reason || undefined);
+                      onSaved('Type archivé');
+                    }}
+                    onRestore={async () => {
+                      await restoreShiftType(st.id);
+                      onSaved('Type restauré');
+                    }}
+                    onHardDelete={async () => {
+                      await hardDeleteShiftType(st.id);
+                      onSaved('Type supprimé');
+                    }}
+                  />
                 </div>
               </div>
             ),

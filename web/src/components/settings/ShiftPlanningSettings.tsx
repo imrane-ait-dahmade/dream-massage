@@ -4,9 +4,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { RefreshCw } from 'lucide-react';
 import type { ShiftTypeSetting, StaffMember, WeeklyScheduleDay, TodayShiftSuggestion } from '@/lib/types';
 import { getShiftTypes, getStaffMembers, getShiftSchedule, getTodayShiftSuggestions } from '@/lib/api';
+import { sortScheduleDays, sortTodaySuggestions } from '@/lib/schedule-sort';
 import { TodayShiftSuggestions } from './TodayShiftSuggestions';
 import { ShiftTypesSection } from './ShiftTypesSection';
 import { WeeklyScheduleSection } from './WeeklyScheduleSection';
+import { ShiftManualControls } from './ShiftManualControls';
+import { VisibilityTabs } from './VisibilityTabs';
 
 interface PlanningData {
   shiftTypes: ShiftTypeSetting[];
@@ -32,31 +35,36 @@ export function ShiftPlanningSettings() {
   const [data, setData] = useState<PlanningData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [scheduleVisibility, setScheduleVisibility] = useState<'active' | 'archived' | 'all'>('active');
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const [stRes, staffRes, scheduleRes, todayRes] = await Promise.all([
-        getShiftTypes(),
-        getStaffMembers(),
-        getShiftSchedule(),
+        getShiftTypes('active'),
+        getStaffMembers('active'),
+        getShiftSchedule({ visibility: scheduleVisibility }),
         getTodayShiftSuggestions(),
       ]);
       setData({
         shiftTypes: stRes.items,
         staff: staffRes.items,
-        days: scheduleRes.days,
+        days: sortScheduleDays(scheduleRes.days),
         todayLabel: todayRes.label,
         autoShiftEnabled: todayRes.autoShiftEnabled,
-        todaySuggestions: todayRes.suggestions,
+        todaySuggestions: sortTodaySuggestions(todayRes.suggestions),
       });
     } catch (e) {
       setError((e as Error).message || 'Impossible de charger le planning.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [scheduleVisibility]);
+
+  const refresh = useCallback(() => {
+    void load();
+  }, [load]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -93,8 +101,6 @@ export function ShiftPlanningSettings() {
 
   if (!data) return null;
 
-  const refresh = () => void load();
-
   return (
     <div className="space-y-8">
       {loading && (
@@ -112,11 +118,18 @@ export function ShiftPlanningSettings() {
         />
       </SubSection>
 
+      <SubSection title="Actions shift">
+        <ShiftManualControls staff={data.staff} onChanged={refresh} />
+      </SubSection>
+
       <SubSection title="Types de shifts">
         <ShiftTypesSection shiftTypes={data.shiftTypes} onRefresh={refresh} />
       </SubSection>
 
       <SubSection title="Planning hebdomadaire">
+        <div className="mb-3">
+          <VisibilityTabs value={scheduleVisibility} onChange={setScheduleVisibility} />
+        </div>
         <WeeklyScheduleSection
           shiftTypes={data.shiftTypes}
           staff={data.staff}

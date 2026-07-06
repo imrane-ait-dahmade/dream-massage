@@ -10,7 +10,7 @@ Automatically opens and closes `Shift` records based on the weekly `StaffSchedul
 
 1. Owner configures the weekly planning via `POST /api/settings/shifts/schedule`:
    - Which `StaffMember` works on which day of the week (`dayOfWeek` 1=Mon … 7=Sun)
-   - Which `ShiftType` (Matin 10:00–15:00, Soir 15:00–22:00, Journée 10:00–22:00)
+   - Which `ShiftType` (Matin 08:00–15:00, Soir 15:00–23:45). A full day = Matin + Soir rows for the same staff.
    - Optional time overrides (`startTime`, `endTime` as HH:mm)
 
 2. The auto-shift job checks every `AUTO_SHIFT_CHECK_INTERVAL_MS` (default: 15 min / 900000 ms).
@@ -50,16 +50,22 @@ Automatically opens and closes `Shift` records based on the weekly `StaffSchedul
 
 **Overlap formula**: schedule A and B overlap if `startA < endB AND startB < endA`.
 
-**Example rejected**:
+**Example rejected** (overlap between two staff on same day):
 ```
-Fatima  Monday  Matin    10:00–15:00
-Zahra   Monday  Journée  10:00–22:00   ← rejected: overlaps Matin 10:00–15:00
+Fatima  Monday  Matin   08:00–15:00
+Zahra   Monday  Matin   10:00–15:00   ← rejected: overlaps Fatima 08:00–15:00
 ```
 
-**Example allowed** (no overlap):
+**Example allowed** (same staff, both periods — no overlap):
 ```
-Fatima  Monday  Matin   10:00–15:00
-Zahra   Monday  Soir    15:00–22:00   ← allowed: starts exactly when Matin ends
+Staff A Monday  Matin   08:00–15:00
+Staff A Monday  Soir    15:00–23:45   ← allowed: different period, adjacent windows
+```
+
+**Example allowed** (different staff, no overlap):
+```
+Fatima  Monday  Matin   08:00–15:00
+Zahra   Monday  Soir    15:00–23:45   ← allowed: starts when Matin ends
 ```
 
 ---

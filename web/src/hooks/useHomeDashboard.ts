@@ -58,8 +58,17 @@ export function useHomeDashboard() {
         }
       });
 
+    const pollId = setInterval(() => {
+      getHomeDashboard(filters)
+        .then((res) => {
+          if (!cancelled) setData(res);
+        })
+        .catch(() => {});
+    }, 60_000);
+
     return () => {
       cancelled = true;
+      clearInterval(pollId);
     };
   }, [filters]);
 

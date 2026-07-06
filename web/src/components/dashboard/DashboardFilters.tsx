@@ -62,7 +62,6 @@ const PERIODS = [
   { value: 'all',     label: 'Toute la journée' },
   { value: 'matin',   label: 'Matin' },
   { value: 'soir',    label: 'Soir' },
-  { value: 'journee', label: 'Journée' },
   { value: 'custom',  label: 'Perso' },
 ] as const;
 

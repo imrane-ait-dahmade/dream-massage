@@ -54,22 +54,28 @@ CREATE UNIQUE INDEX unique_open_shift
   WHERE status = 'OPEN';
 ```
 
-### 5. One active schedule entry per staff member per day
+### 5. One active schedule entry per staff member per day per period
 
-Prevents conflicting planning rows: each staff member can have at most one active
-schedule entry per ISO day-of-week. Deactivated (historical) rows are excluded so
-the audit trail is preserved without causing index violations.
+Each staff member can have at most one active Matin and one active Soir row per ISO
+day-of-week. The same person may have both periods on the same day. Rest-day (is_off)
+rows remain unique per staff + day.
 
 ```sql
-CREATE UNIQUE INDEX unique_active_staff_schedule_per_day
+DROP INDEX IF EXISTS unique_active_staff_schedule_per_day;
+
+CREATE UNIQUE INDEX unique_active_staff_schedule_per_day_period
+  ON staff_schedules (staff_member_id, day_of_week, shift_type_id)
+  WHERE is_active = true AND is_off = false AND shift_type_id IS NOT NULL;
+
+CREATE UNIQUE INDEX unique_active_staff_off_per_day
   ON staff_schedules (staff_member_id, day_of_week)
-  WHERE is_active = true;
+  WHERE is_active = true AND is_off = true;
 ```
 
-**Enforcement order**: `shift-settings.service.ts` deactivates the previous active
-entry for the same `(staffMemberId, dayOfWeek)` pair before inserting a new one.
-This index is the database-level safety net — it prevents race conditions if two
-concurrent requests slip past the service-layer check.
+**Enforcement order**: `shift-settings.service.ts` rejects duplicate same period and
+deactivates only the previous row for the same `(staffMemberId, dayOfWeek, shiftTypeId)`
+before inserting. Migration `20260706120000_staff_schedule_per_period` splits legacy
+Journée rows into Matin + Soir.
 
 ### 6. No duplicate auto-shift for same schedule and business date
 

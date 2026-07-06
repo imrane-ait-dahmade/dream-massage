@@ -3,9 +3,10 @@ import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { primeCalculationService } from '../prime/prime-calculation.service';
 import { shiftService } from './shift.service';
+import { runAutoShiftCheck } from './auto-shift.service';
 import { getAutoShiftStatus } from '../../jobs/auto-shift.job';
 import type { AuthRequest } from '../../middleware/auth.middleware';
-import { requireOwner } from '../../middleware/auth.middleware';
+import { requireOwnerAdmin } from '../../middleware/auth.middleware';
 
 const router = Router();
 
@@ -58,6 +59,15 @@ router.get('/automation/status', (_req: Request, res: Response) => {
 
 // POST /api/shifts/automation/run is registered in index.ts (secret header auth).
 
+// ── POST /api/shifts/automation/check ─────────────────────────────────────────
+// Owner/Admin manual trigger from the dashboard UI.
+
+router.post('/automation/check', (_req: Request, res: Response) => {
+  runAutoShiftCheck()
+    .then((result) => res.json({ ok: true, ...result }))
+    .catch((err: unknown) => handleError(res, err));
+});
+
 // ── GET /api/shifts/open ───────────────────────────────────────────────────────
 // Returns the currently open shift or { shift: null } if none is open.
 // Registered before /:id routes so Express doesn't treat "open" as an ID.
@@ -72,7 +82,7 @@ router.get('/open', (_req: Request, res: Response) => {
 // ── POST /api/shifts/open ─────────────────────────────────────────────────────
 // Manual open — OWNER-only troubleshooting. Production uses auto-shift from planning.
 
-router.post('/open', requireOwner, (req: Request, res: Response) => {
+router.post('/open', requireOwnerAdmin, (req: Request, res: Response) => {
   const parsed = shiftOpenSchema.safeParse(req.body);
   if (!parsed.success) {
     const msg = parsed.error.issues
@@ -97,7 +107,7 @@ router.post('/open', requireOwner, (req: Request, res: Response) => {
 // ── POST /api/shifts/:id/close ────────────────────────────────────────────────
 // Manual close — OWNER-only troubleshooting. Production uses auto-shift from planning.
 
-router.post('/:id/close', requireOwner, (req: Request, res: Response) => {
+router.post('/:id/close', requireOwnerAdmin, (req: Request, res: Response) => {
   const parsed = shiftCloseSchema.safeParse(req.body);
   if (!parsed.success) {
     const msg = parsed.error.issues

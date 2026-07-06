@@ -30,6 +30,32 @@ export interface OpenShift {
   id: string;
   staffMemberName: string;
   startedAt: string;
+  endedAt?: string | null;
+  scheduledEndAt?: string | null;
+}
+
+export interface AutoShiftCheckResult {
+  opened: boolean;
+  closed: boolean;
+  closedIds: string[];
+  openFound: boolean;
+  activeShiftId: string | null;
+  message: string;
+  checkedAt: string;
+  openedCount?: number;
+  closedCount?: number;
+}
+
+export interface ShiftAutomationStatus {
+  autoShiftEnabled: boolean;
+  intervalMs: number;
+  shopOpenTime: string;
+  shopCloseTime: string;
+  timezone: string;
+  allowMultipleOpenShifts: boolean;
+  lastRunAt: string | null;
+  lastResult: AutoShiftCheckResult | null;
+  lastError: string | null;
 }
 
 export interface DashboardState {
@@ -166,6 +192,11 @@ export interface StaffMember {
   isActive: boolean;
   notes: string | null;
   createdAt: string;
+  archivedAt?: string | null;
+  archiveReason?: string | null;
+  isArchived?: boolean;
+  canHardDelete?: boolean;
+  hardDeleteBlockers?: string[];
 }
 
 export type SettingsUserRole = 'OWNER' | 'ADMIN' | 'ASSISTANT';
@@ -222,6 +253,11 @@ export interface ShiftTypeSetting {
   isActive: boolean;
   sortOrder: number;
   createdAt: string;
+  archivedAt?: string | null;
+  archiveReason?: string | null;
+  isArchived?: boolean;
+  canHardDelete?: boolean;
+  hardDeleteBlockers?: string[];
 }
 
 export interface CommissionRuleSetting {
@@ -263,12 +299,19 @@ export interface StaffScheduleItem {
   staffMemberId: string;
   staffMemberName: string;
   shiftTypeId: string | null;
+  shiftTypeName?: string | null;
   shiftTypeLabel: string | null;
   startTime: string | null;
   endTime: string | null;
   isOff: boolean;
   isActive: boolean;
   notes: string | null;
+  createdAt?: string;
+  archivedAt?: string | null;
+  archiveReason?: string | null;
+  isArchived?: boolean;
+  canHardDelete?: boolean;
+  hardDeleteBlockers?: string[];
 }
 
 export interface WeeklyScheduleDay {
@@ -297,7 +340,7 @@ export interface HomeDashboardFilters {
   preset:        string;   // today | yesterday | week | month | year | custom
   from:          string;
   to:            string;
-  period:       'all' | 'matin' | 'soir' | 'journee' | 'custom';
+  period:       'all' | 'matin' | 'soir' | 'custom';
   periodStart?:  string;
   periodEnd?:    string;
   chair:         string;

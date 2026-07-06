@@ -42,19 +42,23 @@ model User {
 
 // Physical staff member assigned to shifts. May have an optional ASSISTANT login (read-only).
 model StaffMember {
-  id        String   @id @default(uuid())
-  name      String   @db.VarChar(100)
-  phone     String?  @db.VarChar(30)
-  isActive  Boolean  @default(true) @map("is_active")
-  notes     String?  @db.Text
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id            String    @id @default(uuid())
+  name          String    @db.VarChar(100)
+  phone         String?   @db.VarChar(30)
+  isActive      Boolean   @default(true) @map("is_active")
+  notes         String?   @db.Text
+  archivedAt    DateTime? @map("archived_at")
+  archivedById  String?   @map("archived_by_id")
+  archiveReason String?   @map("archive_reason") @db.Text
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
 
   user      User?
   shifts    Shift[]
   schedules StaffSchedule[]
 
   @@index([isActive])
+  @@index([archivedAt])
   @@map("staff_members")
 }
 
@@ -74,7 +78,7 @@ model Shift {
   differenceCash Decimal?    @map("difference_cash") @db.Decimal(10, 2)
   notes          String?     @db.Text
 
-  // ── Shift type (optional: Matin / Soir / Journée) ────────────────────────
+  // ── Shift type (optional: Matin / Soir) ────────────────────────────────────
   shiftTypeId    String?  @map("shift_type_id")
 
   // ── Auto-shift tracking (populated when opened from StaffSchedule) ─────────
@@ -85,6 +89,10 @@ model Shift {
   openedAutomatically Boolean   @default(false) @map("opened_automatically")
   closedAutomatically Boolean   @default(false) @map("closed_automatically")
   autoCloseReason     String?   @map("auto_close_reason") @db.VarChar(100)
+
+  archivedAt    DateTime? @map("archived_at")
+  archivedById  String?   @map("archived_by_id")
+  archiveReason String?   @map("archive_reason") @db.Text
 
   // ── Prime snapshot (populated at shift close by shift.service.ts) ─────────
   grossRevenue   Decimal? @map("gross_revenue")   @db.Decimal(10, 2)
@@ -115,6 +123,7 @@ model Shift {
   @@index([shiftTypeId])
   @@index([staffScheduleId])
   @@index([businessDate])
+  @@index([archivedAt])
   @@map("shifts")
 }
 
@@ -196,6 +205,9 @@ model PricingPlan {
   currency        String   @default("MAD") @db.VarChar(10)
   isActive        Boolean  @default(true) @map("is_active")
   sortOrder       Int      @default(0) @map("sort_order")
+  archivedAt      DateTime? @map("archived_at")
+  archivedById    String?   @map("archived_by_id")
+  archiveReason   String?   @map("archive_reason") @db.Text
   createdByUserId String?  @map("created_by_user_id")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
@@ -206,6 +218,7 @@ model PricingPlan {
   commissionRules  CommissionRule[]
 
   @@index([isActive])
+  @@index([archivedAt])
   @@map("pricing_plans")
 }
 
@@ -382,7 +395,7 @@ model SettingsAuditLog {
 
 // ── Prime / Commission models ─────────────────────────────────────────────────
 
-// Shift type template (Matin, Soir, Journée).
+// Shift type template (Matin, Soir).
 // Assigned to a shift at open time so the correct target-bonus rule is selected.
 model ShiftType {
   id        String   @id @default(uuid())
@@ -392,6 +405,9 @@ model ShiftType {
   endTime   String   @map("end_time") @db.VarChar(5)     // HH:mm
   isActive  Boolean  @default(true) @map("is_active")
   sortOrder Int      @default(0) @map("sort_order")
+  archivedAt    DateTime? @map("archived_at")
+  archivedById  String?   @map("archived_by_id")
+  archiveReason String?   @map("archive_reason") @db.Text
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -400,6 +416,7 @@ model ShiftType {
   schedules  StaffSchedule[]
 
   @@index([isActive])
+  @@index([archivedAt])
   @@map("shift_types")
 }
 
@@ -481,11 +498,15 @@ model StaffSchedule {
   staffMemberId String    @map("staff_member_id")
   shiftTypeId   String?   @map("shift_type_id")
   dayOfWeek     Int       @map("day_of_week")               // 1=Monday … 7=Sunday (ISO 8601)
-  startTime     String?   @map("start_time") @db.VarChar(5) // HH:mm override; null = use ShiftType default
-  endTime       String?   @map("end_time") @db.VarChar(5)   // HH:mm override; null = use ShiftType default
+  // Deprecated: hours come from ShiftType only. Kept for legacy rows; new writes store null.
+  startTime     String?   @map("start_time") @db.VarChar(5)
+  endTime       String?   @map("end_time") @db.VarChar(5)
   isOff         Boolean   @default(false) @map("is_off")
   isActive      Boolean   @default(true) @map("is_active")
   notes         String?   @db.Text
+  archivedAt    DateTime? @map("archived_at")
+  archivedById  String?   @map("archived_by_id")
+  archiveReason String?   @map("archive_reason") @db.Text
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
@@ -497,6 +518,7 @@ model StaffSchedule {
   @@index([shiftTypeId])
   @@index([dayOfWeek])
   @@index([isActive])
+  @@index([archivedAt])
   @@map("staff_schedules")
 }
 

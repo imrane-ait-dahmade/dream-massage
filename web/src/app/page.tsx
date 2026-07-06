@@ -95,11 +95,7 @@ function DashboardContent() {
   if (!state) return <LoadingScreen />;
 
   const currentShift = data?.currentShift ?? null;
-  const openShift = currentShift
-    ? { id: currentShift.id, staffMemberName: currentShift.staffMemberName ?? '', startedAt: currentShift.startedAt }
-    : state.openShift;
-
-  const hasOpenShift = !!(currentShift ?? openShift);
+  const hasOpenShift = !!currentShift;
   const activeSessions = data?.summary?.activeSessionsCount ?? state.todayStats.activeChairs;
   const offlineChairs  = data?.summary?.offlineChairs ?? state.todayStats.offlineChairs;
   const outOfRuleSessions = data?.summary?.outOfRuleSessionsCount ?? 0;
@@ -122,7 +118,7 @@ function DashboardContent() {
         <DashboardSummaryCards summary={data?.summary} loading={loading} />
 
         {/* ── 3. Current shift card ────────────────────────────────────────── */}
-        <ShiftSummary currentShift={currentShift} openShift={openShift} />
+        <ShiftSummary currentShift={currentShift} />
 
         {/* ── 4. Alerts ────────────────────────────────────────────────────── */}
         <AlertsSection

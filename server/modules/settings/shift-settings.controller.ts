@@ -4,6 +4,8 @@ import { shiftSettingsService } from './shift-settings.service';
 import { scheduleCreateSchema, scheduleUpdateSchema } from './shift-settings.types';
 import { parseBody, handleError } from '../../utils/controller-helpers';
 import type { AuthRequest } from '../../middleware/auth.middleware';
+import { parseVisibilityFilter } from '../archive/archive-filters';
+import { archiveReasonSchema } from '../archive/archive.types';
 
 // Canonical shift-type CRUD lives at /api/settings/prime/shift-types.
 // This router handles schedule management and today suggestions only.
@@ -16,12 +18,15 @@ function userId(req: Request): string | undefined {
 
 // ── A. Staff Schedule ─────────────────────────────────────────────────────────
 
-// GET /api/settings/shifts/schedule[?staffMemberId=...]
+// GET /api/settings/shifts/schedule[?staffMemberId=...&visibility=active|archived|all]
 router.get('/schedule', (req: Request, res: Response) => {
   const staffMemberId =
     typeof req.query.staffMemberId === 'string' ? req.query.staffMemberId : undefined;
+  const visibility = parseVisibilityFilter(
+    typeof req.query.visibility === 'string' ? req.query.visibility : undefined,
+  );
   shiftSettingsService
-    .getSchedule(staffMemberId)
+    .getSchedule(staffMemberId, visibility)
     .then((data) => res.json(data))
     .catch((err: unknown) => handleError(res, err, 'Failed to load schedule'));
 });
@@ -62,10 +67,49 @@ router.patch('/schedule/:id', (req: Request, res: Response) => {
     .catch((err: unknown) => handleError(res, err, 'Failed to update schedule entry'));
 });
 
-// DELETE /api/settings/shifts/schedule/:id
-router.delete('/schedule/:id', (req: Request, res: Response) => {
+// PATCH /api/settings/shifts/schedule/:id/archive
+router.patch('/schedule/:id/archive', (req: Request, res: Response) => {
+  const parsed = parseBody(archiveReasonSchema, req.body ?? {});
+  if (!parsed.ok) {
+    res.status(400).json({ ok: false, error: parsed.error });
+    return;
+  }
   shiftSettingsService
-    .deleteScheduleEntry(req.params.id, userId(req))
+    .archiveScheduleEntry(req.params.id, userId(req), parsed.data)
+    .then((result) => {
+      if (!result) {
+        res.status(404).json({ ok: false, error: 'Schedule entry not found' });
+        return;
+      }
+      res.json(result);
+    })
+    .catch((err: unknown) => handleError(res, err, 'Failed to archive schedule entry'));
+});
+
+// PATCH /api/settings/shifts/schedule/:id/restore
+router.patch('/schedule/:id/restore', (req: Request, res: Response) => {
+  const parsed = parseBody(archiveReasonSchema, req.body ?? {});
+  if (!parsed.ok) {
+    res.status(400).json({ ok: false, error: parsed.error });
+    return;
+  }
+  shiftSettingsService
+    .restoreScheduleEntry(req.params.id, userId(req), parsed.data)
+    .then((result) => {
+      if (!result) {
+        res.status(404).json({ ok: false, error: 'Schedule entry not found' });
+        return;
+      }
+      res.json(result);
+    })
+    .catch((err: unknown) => handleError(res, err, 'Failed to restore schedule entry'));
+});
+
+// DELETE /api/settings/shifts/schedule/:id?hard=true
+router.delete('/schedule/:id', (req: Request, res: Response) => {
+  const forceHard = req.query.hard === 'true';
+  shiftSettingsService
+    .deleteScheduleEntry(req.params.id, userId(req), forceHard)
     .then((deleted) => {
       if (!deleted) {
         res.status(404).json({ ok: false, error: 'Schedule entry not found' });

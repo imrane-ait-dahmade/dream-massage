@@ -1,8 +1,9 @@
 import { timingSafeEqual } from 'crypto';
 import type { Request, Response, NextFunction } from 'express';
-import { env } from '../config/env';
+import { getCronSecret } from '../config/env';
 
-const HEADER_NAME = 'x-shift-automation-secret';
+const LEGACY_HEADER = 'x-shift-automation-secret';
+const CRON_HEADER   = 'x-cron-secret';
 
 function secretsMatch(provided: string, expected: string): boolean {
   const a = Buffer.from(provided);
@@ -11,26 +12,44 @@ function secretsMatch(provided: string, expected: string): boolean {
   return timingSafeEqual(a, b);
 }
 
+function extractProvidedSecret(req: Request): string | undefined {
+  const auth = req.headers.authorization;
+  if (typeof auth === 'string' && auth.startsWith('Bearer ')) {
+    return auth.slice(7);
+  }
+  const cronHeader = req.headers[CRON_HEADER];
+  if (typeof cronHeader === 'string') return cronHeader;
+  const legacyHeader = req.headers[LEGACY_HEADER];
+  if (typeof legacyHeader === 'string') return legacyHeader;
+  return undefined;
+}
+
 /**
- * Protects POST /api/shifts/automation/run for GitHub Actions / cron callers.
- * Does not log or echo the secret.
+ * Protects cron/automation endpoints (GitHub Actions, external schedulers).
+ * Accepts Authorization: Bearer, x-cron-secret, or legacy x-shift-automation-secret.
  */
-export function requireShiftAutomationSecret(
+export function requireCronSecret(
   req: Request,
   res: Response,
   next: NextFunction,
 ): void {
-  const configured = env.SHIFT_AUTOMATION_SECRET;
+  const configured = getCronSecret();
   if (!configured) {
-    res.status(401).json({ ok: false, error: 'Unauthorized' });
+    res.status(503).json({
+      ok:    false,
+      error: 'Automation secret not configured (set CRON_SECRET or SHIFT_AUTOMATION_SECRET)',
+    });
     return;
   }
 
-  const provided = req.headers[HEADER_NAME];
-  if (typeof provided !== 'string' || !secretsMatch(provided, configured)) {
+  const provided = extractProvidedSecret(req);
+  if (!provided || !secretsMatch(provided, configured)) {
     res.status(401).json({ ok: false, error: 'Unauthorized' });
     return;
   }
 
   next();
 }
+
+/** @deprecated Use requireCronSecret */
+export const requireShiftAutomationSecret = requireCronSecret;

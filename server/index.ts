@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { type Request, type Response } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
@@ -16,12 +16,15 @@ import {
   getLastShellySyncAt,
   getSimulationTick,
 } from './jobs/mock-realtime.job';
-import { startAutoShiftJob, stopAutoShiftJob, runAutoShiftSyncJob } from './jobs/auto-shift.job';
+import { startAutoShiftJob, stopAutoShiftJob } from './jobs/auto-shift.job';
+import { runAutoShiftCheck } from './modules/shifts/auto-shift.service';
 import { processSimulationTick } from './jobs/fake-power-simulation.job';
 import { shellyService, isShellyConfigured, getMissingFields } from './modules/shelly/shelly.service';
 import { corsOriginFn } from './config/cors';
 import { requireAuth, requireOwnerAdmin } from './middleware/auth.middleware';
-import { requireShiftAutomationSecret } from './middleware/shift-automation.middleware';
+import { requireCronSecret } from './middleware/shift-automation.middleware';
+import { prisma } from './prisma';
+import { getTimezone } from './utils/time';
 import authRouter from './modules/auth/auth.controller';
 import chairRouter from './modules/chairs/chair.controller';
 import settingsRouter from './modules/settings/settings.controller';
@@ -44,12 +47,25 @@ app.use(cookieParser());
 
 // ── Health (public) ────────────────────────────────────────────────────────────
 
-app.get('/health', (_req, res) => {
-  res.json({
-    ok: true,
-    service: 'dream-massage-realtime-server',
+app.get('/health', async (_req, res) => {
+  let dbOk = false;
+  let dbError: string | null = null;
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    dbOk = true;
+  } catch (err) {
+    dbError = err instanceof Error ? err.message : String(err);
+  }
+
+  const status = dbOk ? 200 : 503;
+  res.status(status).json({
+    ok:        dbOk,
+    service:   'dream-massage-realtime-server',
     timestamp: new Date().toISOString(),
-    uptime: Math.floor(process.uptime()),
+    timezone:  getTimezone(),
+    uptime:    Math.floor(process.uptime()),
+    database:  dbOk ? 'connected' : 'unavailable',
+    ...(dbError ? { dbError } : {}),
   });
 });
 
@@ -241,15 +257,21 @@ app.use('/api/settings', requireAuth, requireOwnerAdmin, settingsRouter);
 
 // ── Shifts (protected) ─────────────────────────────────────────────────────────
 
-// Automation run — secret header only (no JWT). Registered before the protected router.
-app.post('/api/shifts/automation/run', requireShiftAutomationSecret, (_req, res) => {
-  runAutoShiftSyncJob()
+// ── Internal automation (secret — no JWT) ─────────────────────────────────────
+
+function handleAutoShiftTrigger(_req: Request, res: Response): void {
+  runAutoShiftCheck()
     .then((result) => res.json({ ok: true, ...result }))
     .catch((err: unknown) => {
-      logger.error('[auto-shift] Manual run via secret failed:', String(err));
+      logger.error('[auto-shift] External trigger failed:', String(err));
       res.status(500).json({ ok: false, error: 'Internal server error' });
     });
-});
+}
+
+app.post('/internal/jobs/auto-shift', requireCronSecret, handleAutoShiftTrigger);
+
+// Legacy path — kept for existing GitHub workflow during migration.
+app.post('/api/shifts/automation/run', requireCronSecret, handleAutoShiftTrigger);
 
 app.use('/api/shifts', requireAuth, requireOwnerAdmin, shiftRouter);
 

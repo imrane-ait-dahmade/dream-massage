@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
-import { settingsService } from './settings.service';
+import { settingsService, parseStaffVisibility } from './settings.service';
 import {
   chairUpdateSchema,
   detectionConfigSchema,
@@ -16,6 +16,8 @@ import primeSettingsRouter from './prime-settings.controller';
 import shiftSettingsRouter from './shift-settings.controller';
 import sessionSettingsRouter from './session-settings.controller';
 import userSettingsRouter from './user-settings.controller';
+import maintenanceRouter from '../archive/maintenance.controller';
+import { archiveReasonSchema } from '../archive/archive.types';
 
 const router = Router();
 
@@ -24,6 +26,7 @@ router.use('/prime',   primeSettingsRouter);
 router.use('/shifts',  shiftSettingsRouter);
 router.use('/session', sessionSettingsRouter);
 router.use('/users',   userSettingsRouter);
+router.use('/maintenance', maintenanceRouter);
 
 function userId(req: Request): string | undefined {
   return (req as AuthRequest).user?.id;
@@ -191,10 +194,13 @@ router.patch('/pricing/rule', (req: Request, res: Response) => {
 
 // ── D. Staff members ───────────────────────────────────────────────────────────
 
-// GET /api/settings/staff
-router.get('/staff', (_req: Request, res: Response) => {
+// GET /api/settings/staff?visibility=active|archived|all
+router.get('/staff', (req: Request, res: Response) => {
+  const visibility = parseStaffVisibility(
+    typeof req.query.visibility === 'string' ? req.query.visibility : undefined,
+  );
   settingsService
-    .getStaff()
+    .getStaff(visibility)
     .then((data) => res.json(data))
     .catch((err: unknown) =>
       res
@@ -247,6 +253,68 @@ router.patch('/staff/:staffMemberId', (req: Request, res: Response) => {
         .status(500)
         .json({ ok: false, error: 'Failed to update staff member', detail: String(err) }),
     );
+});
+
+// PATCH /api/settings/staff/:staffMemberId/archive
+router.patch('/staff/:staffMemberId/archive', (req: Request, res: Response) => {
+  const parsed = parseBody(archiveReasonSchema, req.body ?? {});
+  if (!parsed.ok) {
+    res.status(400).json({ ok: false, error: parsed.error });
+    return;
+  }
+  settingsService
+    .archiveStaff(req.params.staffMemberId, userId(req), parsed.data)
+    .then((result) => {
+      if (!result) {
+        res.status(404).json({ ok: false, error: 'Staff member not found' });
+        return;
+      }
+      res.json(result);
+    })
+    .catch((err: unknown) => {
+      const status = (err as { status?: number }).status ?? 500;
+      res.status(status).json({ ok: false, error: (err as Error).message });
+    });
+});
+
+// PATCH /api/settings/staff/:staffMemberId/restore
+router.patch('/staff/:staffMemberId/restore', (req: Request, res: Response) => {
+  const parsed = parseBody(archiveReasonSchema, req.body ?? {});
+  if (!parsed.ok) {
+    res.status(400).json({ ok: false, error: parsed.error });
+    return;
+  }
+  settingsService
+    .restoreStaff(req.params.staffMemberId, userId(req), parsed.data)
+    .then((result) => {
+      if (!result) {
+        res.status(404).json({ ok: false, error: 'Staff member not found' });
+        return;
+      }
+      res.json(result);
+    })
+    .catch((err: unknown) => {
+      const status = (err as { status?: number }).status ?? 500;
+      res.status(status).json({ ok: false, error: (err as Error).message });
+    });
+});
+
+// DELETE /api/settings/staff/:staffMemberId — hard delete only when safe
+router.delete('/staff/:staffMemberId', (req: Request, res: Response) => {
+  settingsService
+    .hardDeleteStaff(req.params.staffMemberId, userId(req))
+    .then((deleted) => {
+      if (!deleted) {
+        res.status(404).json({ ok: false, error: 'Staff member not found' });
+        return;
+      }
+      res.json({ ok: true });
+    })
+    .catch((err: unknown) => {
+      const status = (err as { status?: number }).status ?? 500;
+      const blockers = (err as { blockers?: string[] }).blockers;
+      res.status(status).json({ ok: false, error: (err as Error).message, blockers });
+    });
 });
 
 // ── E. System info ─────────────────────────────────────────────────────────────
