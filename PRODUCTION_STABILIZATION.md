@@ -141,8 +141,6 @@ This creates:
 - 5 chairs, pricing plans, shift types
 - Staff members + weekly schedule (when `SEED_SHIFT_TABLE=true`)
 
-**Never** set `DEMO_DATA_ENABLED=true` in production.
-
 ---
 
 ## Verification Checklist
