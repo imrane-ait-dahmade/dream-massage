@@ -17,6 +17,10 @@ import {
 import type { AutoShiftCheckResult } from './auto-shift.types';
 import { SCHEDULE_OPERATIONAL_WHERE } from '../archive/archive-filters';
 
+function autoShiftLog(message: string): void {
+  logger.info(`AUTO_SHIFT: ${message}`);
+}
+
 // ── Timezone helpers (schedule windows) ────────────────────────────────────────
 
 function todayDayOfWeek(tz: string): number {
@@ -68,7 +72,14 @@ class AutoShiftService {
         select:  { id: true },
         orderBy: { createdAt: 'asc' },
       });
-      return owner?.id ?? null;
+      if (owner) return owner.id;
+
+      const admin = await prisma.user.findFirst({
+        where:   { role: 'ADMIN', isActive: true },
+        select:  { id: true },
+        orderBy: { createdAt: 'asc' },
+      });
+      return admin?.id ?? null;
     } catch {
       return null;
     }
@@ -194,7 +205,15 @@ class AutoShiftService {
     const shopOpenAt   = buildScheduledDatetime(businessDate, env.AUTO_SHIFT_SHOP_OPEN_TIME, tz);
     const closeCtx     = buildCloseContext(tz, businessDate);
 
+    autoShiftLog(`CurrentTime: ${now.toISOString()}`);
+    autoShiftLog(`Timezone: ${tz}`);
+    autoShiftLog(`BusinessDate: ${businessDate}`);
+    autoShiftLog(`DayOfWeek: ${dow}`);
+    autoShiftLog(`ShopOpenAt: ${shopOpenAt.toISOString()}`);
+
     if (now < shopOpenAt) {
+      autoShiftLog('ShouldOpen: false');
+      autoShiftLog(`Reason: before shop open (${env.AUTO_SHIFT_SHOP_OPEN_TIME})`);
       logger.info(
         `[auto-shift] Before shop open (${env.AUTO_SHIFT_SHOP_OPEN_TIME}) — skipping open scan`,
       );
@@ -209,17 +228,36 @@ class AutoShiftService {
       },
       include: {
         staffMember: { select: { id: true, name: true } },
-        shiftType:   { select: { id: true, startTime: true, endTime: true } },
+        shiftType:   { select: { id: true, name: true, startTime: true, endTime: true } },
       },
     });
+
+    const openShifts = await shiftService.listOpenShifts();
+    autoShiftLog(
+      `PlanningFound: count=${schedules.length} ` +
+      `slots=[${schedules.map((s) =>
+        `${s.staffMember.name}/${s.shiftType?.name ?? '?'}(${s.shiftType?.startTime ?? '?'}-${s.shiftType?.endTime ?? '?'})`,
+      ).join(', ')}]`,
+    );
+    autoShiftLog(
+      `ExistingOpenShift: count=${openShifts.length} ` +
+      `ids=[${openShifts.map((s) => `${s.id}:${s.staffMember.name}`).join(', ')}]`,
+    );
+    autoShiftLog(`OwnerUserId: ${ownerId ?? 'none'}`);
 
     let opened = 0;
 
     for (const schedule of schedules) {
       const startHHmm = schedule.shiftType?.startTime;
       const endHHmm   = schedule.shiftType?.endTime;
+      const shiftTypeName = schedule.shiftType?.name ?? 'unknown';
+
+      autoShiftLog(`SelectedStaff: ${schedule.staffMember.name} (scheduleId=${schedule.id})`);
+      autoShiftLog(`SelectedShiftType: ${shiftTypeName} (${startHHmm ?? '?'}–${endHHmm ?? '?'})`);
 
       if (!startHHmm || !endHHmm) {
+        autoShiftLog('ShouldOpen: false');
+        autoShiftLog('Reason: schedule shift type has no start/end time');
         logger.warn(
           `[auto-shift] Schedule ${schedule.id} (${schedule.staffMember.name}) ` +
           `has no start/end time — skipping`,
@@ -229,15 +267,32 @@ class AutoShiftService {
 
       const scheduledStartAt = buildScheduledDatetime(businessDate, startHHmm, tz);
       const scheduledEndAt   = buildScheduledDatetime(businessDate, endHHmm, tz);
+      const effectiveOpenAt  = scheduledStartAt > shopOpenAt ? shopOpenAt : scheduledStartAt;
 
-      if (now >= scheduledEndAt) continue;
+      if (now < effectiveOpenAt) {
+        autoShiftLog('ShouldOpen: false');
+        autoShiftLog(`Reason: before effective open time (${effectiveOpenAt.toISOString()})`);
+        continue;
+      }
+
+      if (now >= scheduledEndAt) {
+        autoShiftLog('ShouldOpen: false');
+        autoShiftLog(`Reason: past scheduled end (${scheduledEndAt.toISOString()})`);
+        continue;
+      }
 
       const existing = await prisma.shift.findFirst({
         where:  { staffScheduleId: schedule.id, businessDate },
         select: { id: true, status: true, endedAt: true },
       });
 
+      autoShiftLog(
+        `ExistingShiftForSlot: ${existing ? `${existing.id} status=${existing.status}` : 'none'}`,
+      );
+
       if (existing?.status === 'OPEN' && existing.endedAt === null) {
+        autoShiftLog('ShouldOpen: false');
+        autoShiftLog('Reason: shift already OPEN for this schedule and business date');
         continue;
       }
 
@@ -249,11 +304,13 @@ class AutoShiftService {
       );
 
       if (!ownerId) {
-        logger.error('[auto-shift] No active OWNER user found — cannot auto-open shift');
+        autoShiftLog('ShouldOpen: false');
+        autoShiftLog('Reason: no active OWNER or ADMIN user for openedByUserId');
+        logger.error('[auto-shift] No active OWNER/ADMIN user found — cannot auto-open shift');
         continue;
       }
 
-      const effectiveStartedAt = scheduledStartAt > shopOpenAt ? shopOpenAt : scheduledStartAt;
+      const effectiveStartedAt = effectiveOpenAt;
 
       if (existing?.status === 'CLOSED') {
         const reopened = await shiftService.reopenScheduledShift(existing.id, {
@@ -263,11 +320,16 @@ class AutoShiftService {
           businessDate,
         });
         if (reopened) {
+          autoShiftLog('ShouldOpen: true');
+          autoShiftLog(`Reason: re-opened CLOSED shift ${existing.id}`);
           logger.info(
             `[auto-shift] Re-opened shift ${existing.id} for ${schedule.staffMember.name} ` +
             `(${startHHmm}–${endHHmm}, ${businessDate})`,
           );
           opened++;
+        } else {
+          autoShiftLog('ShouldOpen: false');
+          autoShiftLog(`Reason: reopenScheduledShift failed for ${existing.id}`);
         }
         continue;
       }
@@ -288,6 +350,8 @@ class AutoShiftService {
         },
       });
 
+      autoShiftLog('ShouldOpen: true');
+      autoShiftLog(`Reason: created new OPEN shift for ${schedule.staffMember.name}`);
       logger.info(
         `[auto-shift] Opened shift for ${schedule.staffMember.name} ` +
         `(${startHHmm}–${endHHmm}, ${businessDate})`,
@@ -295,6 +359,7 @@ class AutoShiftService {
       opened++;
     }
 
+    autoShiftLog(`OpenScanResult: opened=${opened}`);
     return opened;
   }
 
@@ -303,9 +368,22 @@ class AutoShiftService {
    */
   async runAutoShiftCheck(now: Date = new Date()): Promise<AutoShiftCheckResult> {
     const checkedAt = now.toISOString();
+    const tz        = getTimezone();
+    const businessDate = getBusinessDate(tz);
+
+    autoShiftLog(`CurrentTime: ${checkedAt}`);
+    autoShiftLog(`Timezone: ${tz}`);
+    autoShiftLog(`BusinessDate: ${businessDate}`);
+
     const ownerId   = await this.resolveOwnerUserId();
+    autoShiftLog(`OwnerUserId: ${ownerId ?? 'none'}`);
 
     const closeResult = await this.closeEligibleOpenShifts(now, { ownerId });
+    autoShiftLog(
+      `CloseScan: openFound=${closeResult.openFound} closed=${closeResult.closed} ` +
+      `closedIds=[${closeResult.closedIds.join(', ')}]`,
+    );
+
     const openedCount = await this.openDueShifts(now, ownerId);
 
     const active = await shiftService.getOpenShift();
@@ -316,6 +394,8 @@ class AutoShiftService {
       parts.push(`openFound=${closeResult.openFound}`);
     }
     const message = parts.length > 0 ? parts.join(', ') : 'no changes';
+
+    autoShiftLog(`FinalDecision: opened=${openedCount > 0} openedCount=${openedCount} activeShiftId=${active?.id ?? 'none'} message=${message}`);
 
     if (openedCount > 0 || closeResult.closed > 0) {
       logger.info(`[auto-shift] Check: ${message}`);
