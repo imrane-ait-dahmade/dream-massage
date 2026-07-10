@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { getHomeDashboard } from '@/lib/api';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { getHomeDashboard, ApiError } from '@/lib/api';
 import type { HomeDashboardFilters, HomeDashboardResponse } from '@/lib/types';
 
 function todayISO(): string {
@@ -24,72 +24,110 @@ export function defaultFilters(): HomeDashboardFilters {
   };
 }
 
+const FALLBACK_POLL_MS = 60_000;
+const BACKOFF_MS = [5_000, 15_000, 30_000, 60_000] as const;
+
 export function useHomeDashboard() {
-  // Separate "applied" filters (what the effect uses) from the public setter
   const [filters, _setFiltersInternal] = useState<HomeDashboardFilters>(defaultFilters());
   const [data, setData] = useState<HomeDashboardResponse | null>(null);
-  const [loading, setLoading] = useState(true); // true from initial load
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Wrapped setter — marks loading before changing filters so the spinner shows immediately.
-  // Must NOT be called from inside useEffect (only from event handlers / user interactions).
+  const inFlightRef = useRef<AbortController | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const backoffRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const backoffIdxRef = useRef(0);
+  const visibleRef = useRef(true);
+  const filtersRef = useRef(filters);
+  filtersRef.current = filters;
+
   const setFilters = useCallback((update: HomeDashboardFilters | ((prev: HomeDashboardFilters) => HomeDashboardFilters)) => {
     setLoading(true);
     setError(null);
     _setFiltersInternal(update);
   }, []);
 
-  // Fetch whenever applied filters change.
-  // No setState calls in the effect body — only inside callbacks.
+  const load = useCallback(async (reason: string) => {
+    if (!visibleRef.current && reason !== 'visible' && reason !== 'filters') return;
+    if (inFlightRef.current) return;
+
+    const ac = new AbortController();
+    inFlightRef.current = ac;
+    const applied = filtersRef.current;
+
+    try {
+      const res = await getHomeDashboard(applied);
+      if (ac.signal.aborted) return;
+      setData(res);
+      setLoading(false);
+      setError(null);
+      backoffIdxRef.current = 0;
+    } catch (err: unknown) {
+      if (ac.signal.aborted) return;
+      const msg =
+        err instanceof ApiError && err.kind === 'unavailable'
+          ? 'Service temporairement indisponible. Nouvelle tentative automatique.'
+          : err instanceof Error
+            ? err.message
+            : 'Erreur de chargement';
+      setError(msg);
+      setLoading(false);
+
+      const delay =
+        err instanceof ApiError && err.kind === 'unavailable'
+          ? (err.retryAfterSec ?? 60) * 1000
+          : BACKOFF_MS[Math.min(backoffIdxRef.current, BACKOFF_MS.length - 1)];
+      backoffIdxRef.current = Math.min(backoffIdxRef.current + 1, BACKOFF_MS.length - 1);
+      if (backoffRef.current) clearTimeout(backoffRef.current);
+      backoffRef.current = setTimeout(() => {
+        void load('backoff');
+      }, delay);
+    } finally {
+      if (inFlightRef.current === ac) inFlightRef.current = null;
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
+    visibleRef.current = typeof document === 'undefined' || document.visibilityState !== 'hidden';
 
-    getHomeDashboard(filters)
-      .then((res) => {
-        if (!cancelled) {
-          setData(res);
-          setLoading(false);
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Erreur de chargement');
-          setLoading(false);
-        }
-      });
+    void load('filters');
 
-    const pollId = setInterval(() => {
-      getHomeDashboard(filters)
-        .then((res) => {
-          if (!cancelled) setData(res);
-        })
-        .catch(() => {});
-    }, 60_000);
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(() => {
+      if (!cancelled && visibleRef.current) void load('poll');
+    }, FALLBACK_POLL_MS);
+
+    const onVisibility = () => {
+      visibleRef.current = document.visibilityState === 'visible';
+      if (visibleRef.current) void load('visible');
+    };
+    document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
       cancelled = true;
-      clearInterval(pollId);
+      document.removeEventListener('visibilitychange', onVisibility);
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+      if (backoffRef.current) clearTimeout(backoffRef.current);
+      if (inFlightRef.current) {
+        inFlightRef.current.abort();
+        inFlightRef.current = null;
+      }
     };
-  }, [filters]);
+  }, [filters, load]);
 
   const reset = useCallback(() => {
     setFilters(defaultFilters());
   }, [setFilters]);
 
-  // Refetch with the current filters — safe to call from event handlers
   const refetch = useCallback(() => {
     setLoading(true);
     setError(null);
-    getHomeDashboard(filters)
-      .then((res) => {
-        setData(res);
-        setLoading(false);
-      })
-      .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : 'Erreur de chargement');
-        setLoading(false);
-      });
-  }, [filters]);
+    void load('refetch');
+  }, [load]);
 
   return { data, loading, error, filters, setFilters, reset, refetch };
 }

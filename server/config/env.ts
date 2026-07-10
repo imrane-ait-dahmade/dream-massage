@@ -8,7 +8,8 @@ config({ path: join(process.cwd(), '..', '.env'), override: false });
 const envSchema = z.object({
   PORT: z.string().default('4000').transform((v) => parseInt(v, 10)),
   APP_TIMEZONE: z.string().default('Africa/Casablanca'),
-  SYNC_INTERVAL_MS: z.string().default('1000').transform((v) => parseInt(v, 10)),
+  // Job loop cadence. Default 5000 — was 1000 and caused ~60 dashboard DB reads/min.
+  SYNC_INTERVAL_MS: z.string().default('5000').transform((v) => parseInt(v, 10)),
   FRONTEND_ORIGIN: z.string().default('http://localhost:3000'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
@@ -28,11 +29,35 @@ const envSchema = z.object({
     .string()
     .default('false')
     .transform((v) => v === 'true'),
-  // How often to poll Shelly Cloud (ms). Dashboard still broadcasts every SYNC_INTERVAL_MS.
-  // Shelly Cloud rate-limits aggressive polling; 5000ms is a safe default.
+  // How often to poll Shelly Cloud (ms). Must not imply a DB round-trip per tick.
   SHELLY_POLL_INTERVAL_MS: z
     .string()
     .default('5000')
+    .transform((v) => parseInt(v, 10)),
+  // Safety reload of chairs/sessions from DB (ms). Not every Shelly tick.
+  SHELLY_DB_RECONCILE_INTERVAL_MS: z
+    .string()
+    .default('60000')
+    .transform((v) => parseInt(v, 10)),
+  // Flush aggregated min/max/avg power to DB at most this often per active chair.
+  POWER_METRICS_FLUSH_INTERVAL_MS: z
+    .string()
+    .default('60000')
+    .transform((v) => parseInt(v, 10)),
+  // Short in-process cache for dashboard/home API responses.
+  DASHBOARD_CACHE_TTL_MS: z
+    .string()
+    .default('15000')
+    .transform((v) => parseInt(v, 10)),
+  // Socket.IO heartbeat + client REST fallback cadence when WS is down.
+  DASHBOARD_FALLBACK_REFRESH_MS: z
+    .string()
+    .default('60000')
+    .transform((v) => parseInt(v, 10)),
+  // Circuit breaker open duration after consecutive temporary DB errors.
+  DB_ERROR_BACKOFF_MAX_MS: z
+    .string()
+    .default('60000')
     .transform((v) => parseInt(v, 10)),
   // ── Auto-shift job ────────────────────────────────────────────────────────────
   AUTO_SHIFT_ENABLED: z

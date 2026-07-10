@@ -412,46 +412,80 @@ function ChairDetailContent() {
     }
   }, [chairId]);
 
-  // Initial load + 15-second background refresh
+  // Initial load + 60-second background refresh (live updates via Socket.IO)
   useEffect(() => {
-    void fetchOverview();
-    const id = setInterval(() => { void fetchOverview(); }, 15_000);
-    return () => clearInterval(id);
+    let cancelled = false;
+    let inFlight = false;
+
+    const run = async () => {
+      if (inFlight || document.visibilityState === 'hidden') return;
+      inFlight = true;
+      try {
+        await fetchOverview();
+      } finally {
+        inFlight = false;
+      }
+    };
+
+    void run();
+    const id = setInterval(() => {
+      if (!cancelled) void run();
+    }, 60_000);
+
+    const onVis = () => {
+      if (document.visibilityState === 'visible' && !cancelled) void run();
+    };
+    document.addEventListener('visibilitychange', onVis);
+
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVis);
+    };
   }, [fetchOverview]);
 
-  // WebSocket: patch live chair status from dashboard broadcasts
+  // WebSocket: patch live chair status from dashboard broadcasts (debounced)
   useEffect(() => {
     const socket = createSocket();
+    let debounceId: ReturnType<typeof setTimeout> | null = null;
 
     socket.on('dashboard:update', (state: DashboardState) => {
-      setOverview((prev) => {
-        if (!prev) return prev;
-        const live = state.chairs.find((c) => c.id === prev.chair.id);
-        if (!live) return prev;
-        return {
-          ...prev,
-          chair: {
-            ...prev.chair,
-            status: live.status,
-            powerWatts: live.powerWatts,
-            isOnline: live.isOnline,
-            currentSession: live.sessionStartedAt
-              ? {
-                  id: prev.chair.currentSession?.id ?? '',
-                  startedAt: live.sessionStartedAt,
-                  elapsedSeconds: live.elapsedSeconds,
-                  startedAtLabel: new Date(live.sessionStartedAt).toLocaleTimeString('fr-FR', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  }),
-                }
-              : null,
-          },
-        };
-      });
+      if (document.visibilityState === 'hidden') return;
+      if (debounceId) clearTimeout(debounceId);
+      debounceId = setTimeout(() => {
+        setOverview((prev) => {
+          if (!prev) return prev;
+          const live = state.chairs.find((c) => c.id === prev.chair.id);
+          if (!live) return prev;
+          return {
+            ...prev,
+            chair: {
+              ...prev.chair,
+              status: live.status,
+              powerWatts: live.powerWatts,
+              isOnline: live.isOnline,
+              currentSession: live.sessionStartedAt
+                ? {
+                    id: prev.chair.currentSession?.id ?? '',
+                    startedAt: live.sessionStartedAt,
+                    elapsedSeconds: live.elapsedSeconds,
+                    startedAtLabel: new Date(live.sessionStartedAt).toLocaleTimeString('fr-FR', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    }),
+                  }
+                : null,
+            },
+          };
+        });
+      }, 750);
     });
 
-    return () => { socket.disconnect(); };
+    return () => {
+      if (debounceId) clearTimeout(debounceId);
+      socket.off('dashboard:update');
+      socket.disconnect();
+    };
   }, []);
 
   if (loading) return <LoadingScreen />;

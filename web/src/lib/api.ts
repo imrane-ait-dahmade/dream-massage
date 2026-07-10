@@ -40,19 +40,28 @@ export type ApiErrorKind =
   | 'unauthorized'
   | 'forbidden'
   | 'server'
+  | 'unavailable'
   | 'client';
 
 export class ApiError extends Error {
   readonly kind: ApiErrorKind;
   readonly status?: number;
   readonly url: string;
+  readonly retryAfterSec?: number;
 
-  constructor(message: string, kind: ApiErrorKind, url: string, status?: number) {
+  constructor(
+    message: string,
+    kind: ApiErrorKind,
+    url: string,
+    status?: number,
+    retryAfterSec?: number,
+  ) {
     super(message);
     this.name = 'ApiError';
     this.kind = kind;
     this.url = url;
     this.status = status;
+    this.retryAfterSec = retryAfterSec;
   }
 }
 
@@ -265,6 +274,17 @@ async function apiRequest<T>(url: string, init?: RequestInit): Promise<T> {
   }
   if (res.status === 403) {
     throw new ApiError('Accès refusé.', 'forbidden', url, 403);
+  }
+  if (res.status === 503) {
+    const retryRaw = res.headers.get('Retry-After');
+    const retryAfterSec = retryRaw ? Math.max(1, parseInt(retryRaw, 10) || 60) : 60;
+    throw new ApiError(
+      'Service temporairement indisponible. Nouvelle tentative automatique.',
+      'unavailable',
+      url,
+      503,
+      retryAfterSec,
+    );
   }
   if (!res.ok) {
     let msg = `Erreur serveur (HTTP ${res.status})`;
