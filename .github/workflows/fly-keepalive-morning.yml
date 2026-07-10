@@ -1,0 +1,84 @@
+name: Fly - Keep alive morning
+
+# Pings /health every 15 min during the critical morning window so the machine
+# stays reachable even if Fly auto_stop is enabled in production (fly.toml in
+# the repo sets auto_stop_machines = "off", but an older deploy may differ).
+# 08:00–12:00 Africa/Casablanca (Morocco, UTC+1).
+# Incoming HTTP also triggers auto_start_machines when the machine was stopped.
+on:
+  schedule:
+    - cron: "0,15,30,45 8-11 * * *"
+      timezone: "Africa/Casablanca"
+    - cron: "0 12 * * *"
+      timezone: "Africa/Casablanca"
+  workflow_dispatch: {}
+
+env:
+  FLY_APP: dream-massage
+  PROD_URL: https://dream-massage.fly.dev
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Ensure jq is available
+        run: |
+          if command -v jq >/dev/null 2>&1; then
+            echo "jq is already available: $(jq --version)"
+          else
+            sudo apt-get update -y
+            sudo apt-get install -y jq
+          fi
+
+      - name: Ping health endpoint
+        run: |
+          set +e
+          URL="${PROD_URL}/health"
+          echo "==> Keep-alive ping: $URL"
+          echo "Time UTC: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          HTTP=$(curl -sS -o /tmp/keepalive.json -w "%{http_code}" \
+            --connect-timeout 20 --max-time 45 "$URL")
+          BODY=$(cat /tmp/keepalive.json 2>/dev/null || echo "{}")
+          echo "HTTP status : $HTTP"
+          echo "Response    : $BODY"
+
+          if [ "$HTTP" = "200" ]; then
+            OK=$(echo "$BODY" | jq -r '.ok // false' 2>/dev/null || echo "false")
+            if [ "$OK" = "true" ]; then
+              echo "==> Keep-alive OK (app responding)."
+              exit 0
+            fi
+            echo "::warning::HTTP 200 but health ok!=true."
+            exit 0
+          fi
+
+          # 502/503 can mean the proxy is waking the machine — not a hard failure.
+          echo "::warning::Keep-alive got HTTP $HTTP — machine may still be starting."
+          exit 0
+
+      - name: Ensure machine is started (fallback)
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          if [ -z "${FLY_API_TOKEN:-}" ]; then
+            echo "FLY_API_TOKEN not set — skipping machine start fallback."
+            exit 0
+          fi
+
+          set +e
+          STOPPED=$(flyctl machines list -a "$FLY_APP" --json 2>/dev/null | jq '[.[] | select(.state != "started")] | length')
+          if [ "${STOPPED:-0}" -eq 0 ]; then
+            echo "All machines already started — no fallback needed."
+            exit 0
+          fi
+
+          echo "==> $STOPPED machine(s) not started — attempting flyctl machine start..."
+          flyctl machines list -a "$FLY_APP" --json | jq -r '.[] | select(.state != "started") | .id' | while read -r ID; do
+            [ -z "$ID" ] && continue
+            echo "Starting $ID..."
+            flyctl machine start "$ID" -a "$FLY_APP" 2>&1 || true
+          done

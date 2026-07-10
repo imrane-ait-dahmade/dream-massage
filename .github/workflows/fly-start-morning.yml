@@ -1,17 +1,18 @@
 name: Fly - Start morning
 
-# Starts the dream-massage Fly machine(s) before opening.
-# GitHub Actions cron is always UTC. Morocco is UTC+1 year-round (no DST
-# since 2018), except for a fixed clock pause during Ramadan when it aligns
-# with UTC+0. This schedule targets 08:00 Morocco standard time (UTC+1).
-# 08:00 UTC+1 = 07:00 UTC
+# Starts dream-massage Fly machine(s) before the shop opens at 08:00.
+# GitHub Actions cron uses the timezone field (Africa/Casablanca = Morocco,
+# UTC+1 year-round; no DST since 2018).
+# 07:55 Morocco = 5 minutes before opening.
 on:
   schedule:
-    - cron: "0 7 * * *"
+    - cron: "55 7 * * *"
+      timezone: "Africa/Casablanca"
   workflow_dispatch: {}
 
 env:
   FLY_APP: dream-massage
+  PROD_URL: https://dream-massage.fly.dev
   TARGET_STATE: started
 
 jobs:
@@ -39,13 +40,19 @@ jobs:
             sudo apt-get install -y jq
           fi
 
+      - name: Machines before start
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          echo "==> Machines BEFORE start ($(date -u +%Y-%m-%dT%H:%M:%SZ) UTC):"
+          flyctl machines list -a "$FLY_APP" --json | jq -r '.[] | "  \(.id)  \(.name)  state=\(.state)"'
+
       - name: Start Fly machine(s)
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
           # Intentionally NOT using `set -e`: a single machine already being
-          # in the target state must not abort the whole job. Every command
-          # that can legitimately fail is checked explicitly instead.
+          # in the target state must not abort the whole job.
           set +e
           set -u
           set -o pipefail
@@ -71,6 +78,8 @@ jobs:
           echo "Found $MACHINE_COUNT machine(s)."
 
           FAILED=0
+          STARTED=0
+          SKIPPED=0
 
           while IFS=$'\t' read -r ID NAME STATE; do
             echo "-------------------------------------------"
@@ -80,6 +89,7 @@ jobs:
             if [ "$STATE" = "$TARGET_STATE" ]; then
               echo "Action        : none (already started)"
               echo "Final state   : $STATE"
+              SKIPPED=$((SKIPPED + 1))
               continue
             fi
 
@@ -89,8 +99,10 @@ jobs:
 
             if [ $RC -eq 0 ]; then
               echo "$OUTPUT"
-            elif echo "$OUTPUT" | grep -qi "already.*started"; then
+              STARTED=$((STARTED + 1))
+            elif echo "$OUTPUT" | grep -qiE "already.*started|is already in a started state"; then
               echo "Machine reports it is already started (race condition) - treated as success."
+              SKIPPED=$((SKIPPED + 1))
             else
               echo "::error::Failed to start machine $ID"
               echo "$OUTPUT"
@@ -102,6 +114,8 @@ jobs:
           done < <(echo "$MACHINES_JSON" | jq -r '.[] | [.id, .name, .state] | @tsv')
 
           echo "-------------------------------------------"
+          echo "Summary: started=$STARTED skipped=$SKIPPED failed=$FAILED"
+
           if [ "$FAILED" -eq 1 ]; then
             echo "::error::One or more machines failed to start."
             exit 1
@@ -110,9 +124,41 @@ jobs:
           echo "==> Done. All machines are in the target state ($TARGET_STATE)."
           exit 0
 
-      - name: Warm up app after start
+      - name: Health check (warm up + verify)
         run: |
-          echo "Waiting 10s for machines to become reachable..."
+          set +e
+          URL="${PROD_URL}/health"
+          echo "==> Health check: $URL"
+          echo "Waiting 10s for app process to bind..."
           sleep 10
-          echo "==> HEAD request to https://dream-massage.fly.dev"
-          curl -I https://dream-massage.fly.dev || true
+
+          for attempt in 1 2 3 4 5 6; do
+            echo "--- Health attempt $attempt/6 ---"
+            HTTP=$(curl -sS -o /tmp/health.json -w "%{http_code}" \
+              --connect-timeout 15 --max-time 30 "$URL")
+            BODY=$(cat /tmp/health.json 2>/dev/null || echo "{}")
+            echo "HTTP status : $HTTP"
+            echo "Response    : $BODY"
+
+            if [ "$HTTP" = "200" ]; then
+              OK=$(echo "$BODY" | jq -r '.ok // false' 2>/dev/null || echo "false")
+              if [ "$OK" = "true" ]; then
+                echo "==> Health check PASSED (ok=true, database connected)."
+                exit 0
+              fi
+              echo "HTTP 200 but ok!=true — app may still be starting."
+            else
+              echo "Non-200 response — machine or app may still be booting."
+            fi
+            sleep 10
+          done
+
+          echo "::warning::Health check did not return ok=true after 6 attempts. Machine may be started but app/DB slow — verify manually."
+          exit 0
+
+      - name: Machines after start
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          echo "==> Machines AFTER start ($(date -u +%Y-%m-%dT%H:%M:%SZ) UTC):"
+          flyctl machines list -a "$FLY_APP" --json | jq -r '.[] | "  \(.id)  \(.name)  state=\(.state)"'
