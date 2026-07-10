@@ -79,7 +79,7 @@ function AlertsSection({ offlineChairs, outOfRuleSessions, noOpenShift, hasSessi
 function DashboardContent() {
   const router = useRouter();
 
-  const { state, connStatus, lastUpdated } = useDashboard();
+  const { state, connStatus, lastUpdated, serviceMessage } = useDashboard();
   const { data, loading, error, filters, setFilters, reset, refetch } = useHomeDashboard();
 
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -112,7 +112,12 @@ function DashboardContent() {
 
       <main className="mx-auto max-w-6xl space-y-4 px-3 py-4 md:px-4 md:py-5">
         {/* Connection warning */}
-        <ConnectionStatusBar status={connStatus} lastUpdated={lastUpdated} />
+        <ConnectionStatusBar status={connStatus} lastUpdated={lastUpdated} serviceMessage={serviceMessage} />
+        {error && (
+          <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            {error}
+          </div>
+        )}
 
         {/* ── 2. Summary KPI cards ─────────────────────────────────────────── */}
         <DashboardSummaryCards summary={data?.summary} loading={loading} />

@@ -9,6 +9,15 @@ primary_region = "iad"
 [env]
   PORT = "8080"
   NODE_ENV = "production"
+  # Neon egress controls (non-sensitive). Secrets stay in `fly secrets`.
+  SYNC_INTERVAL_MS = "5000"
+  SHELLY_POLL_INTERVAL_MS = "5000"
+  SHELLY_DB_RECONCILE_INTERVAL_MS = "60000"
+  POWER_METRICS_FLUSH_INTERVAL_MS = "60000"
+  DASHBOARD_CACHE_TTL_MS = "15000"
+  DASHBOARD_FALLBACK_REFRESH_MS = "60000"
+  DB_ERROR_BACKOFF_MAX_MS = "60000"
+  AUTO_SHIFT_CHECK_INTERVAL_MS = "900000"
 
 [deploy]
   release_command = "npx prisma migrate deploy"

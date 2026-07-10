@@ -1,46 +1,27 @@
 import { Prisma } from '@prisma/client';
-import type { ChairDetectionConfig, ChairSession, ChairStatus } from '@prisma/client';
+import type { ChairStatus } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { env } from '../../config/env';
 import { logger } from '../../utils/logger';
 import { pricingService } from '../pricing/pricing.service';
+import { usageMetrics } from '../../utils/usage-metrics';
 import type { PowerReading } from './chair.types';
-
-// ── Internal types ─────────────────────────────────────────────────────────────
-
-type ChairWithConfig = Prisma.ChairGetPayload<{
-  include: { detectionConfigs: true };
-}>;
-
-interface DetectionConfig {
-  id: string;
-  startThresholdWatts: number;
-  stopThresholdWatts: number;
-  startConfirmSeconds: number;
-  stopConfirmSeconds: number;
-  activationDelaySeconds: number;
-  baselinePowerWatts: number | null;
-}
-
-interface EffectiveConfig extends DetectionConfig {
-  // TODO: production ignores effectiveXxx overrides — these fields equal the DB values.
-  // Only the simulation sets them to shorter durations via SIMULATION_FAST_MODE.
-  effectiveStartConfirmSeconds: number;
-  effectiveStopConfirmSeconds: number;
-}
-
-// Safe defaults used when a chair has no active detection config.
-const FALLBACK_CONFIG: DetectionConfig = {
-  id: 'fallback',
-  startThresholdWatts: 7,
-  stopThresholdWatts: 5,
-  startConfirmSeconds: 30,
-  stopConfirmSeconds: 180,
-  activationDelaySeconds: 30,
-  baselinePowerWatts: 2.1,
-};
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
+import {
+  decideTransition,
+  powerChanged,
+  type TransitionKind,
+} from './chair-state.logic';
+import {
+  bindSessionMem,
+  clearSessionMem,
+  getChairMem,
+  hydrateRuntimeCache,
+  isRuntimeHydrated,
+  sampleSessionPower,
+  upsertChairMem,
+  type ChairMem,
+  type DetectionConfigMem,
+} from './chair-runtime-cache';
 
 function mergeAnomalyTypes(existing: string | null, added: string | null): string | null {
   if (!existing && !added) return null;
@@ -53,249 +34,340 @@ function mergeAnomalyTypes(existing: string | null, added: string | null): strin
   return parts.join(',');
 }
 
-// ── Service ────────────────────────────────────────────────────────────────────
+interface EffectiveConfig extends DetectionConfigMem {
+  effectiveStartConfirmSeconds: number;
+  effectiveStopConfirmSeconds: number;
+}
+
+function toEffective(cfg: DetectionConfigMem): EffectiveConfig {
+  return {
+    ...cfg,
+    effectiveStartConfirmSeconds: env.SIMULATION_FAST_MODE ? 5 : cfg.startConfirmSeconds,
+    effectiveStopConfirmSeconds: env.SIMULATION_FAST_MODE ? 10 : cfg.stopConfirmSeconds,
+  };
+}
+
+/** Test/observability: last tick DB write count (0 = memory-only tick). */
+let lastTickDbWrites = 0;
+export function getLastTickDbWrites(): number {
+  return lastTickDbWrites;
+}
 
 export class ChairStateService {
-  async processChairReading(chairId: string, reading: PowerReading): Promise<void> {
+  /**
+   * Process one Shelly reading for a chair.
+   * Uses in-memory state; writes DB only on real business transitions
+   * (or when live fields must be marked dirty for periodic flush).
+   */
+  async processChairReading(chairId: string, reading: PowerReading): Promise<TransitionKind> {
+    lastTickDbWrites = 0;
     const now = reading.recordedAt ?? new Date();
 
-    const chair = await prisma.chair.findUnique({
-      where: { id: chairId },
-      include: {
-        detectionConfigs: { where: { isActive: true }, take: 1 },
-      },
+    if (!isRuntimeHydrated()) {
+      await hydrateRuntimeCache();
+      usageMetrics.incr('dbReads');
+    }
+
+    let chair = getChairMem(chairId);
+    if (!chair) {
+      // Chair may have been enabled after hydrate — one-shot load
+      usageMetrics.incr('dbReads');
+      lastTickDbWrites += 1; // count as DB access
+      const row = await prisma.chair.findUnique({
+        where: { id: chairId },
+        include: {
+          detectionConfigs: { where: { isActive: true }, take: 1 },
+          sessions: { where: { status: 'ACTIVE' }, take: 1, orderBy: { startedAt: 'desc' } },
+        },
+      });
+      if (!row || !row.isEnabled) {
+        logger.warn(`[state-machine] Chair ${chairId} not found or disabled`);
+        return 'NONE';
+      }
+      // Re-hydrate all to stay consistent
+      await hydrateRuntimeCache();
+      chair = getChairMem(chairId);
+      if (!chair) return 'NONE';
+    }
+
+    if (!chair.isEnabled) return 'NONE';
+    if (chair.status === 'MAINTENANCE' || chair.status === 'ERROR') return 'NONE';
+
+    const effective = toEffective(chair.config);
+    const kind = decideTransition({
+      status: chair.status,
+      powerWatts: reading.powerWatts,
+      isOnline: reading.isOnline,
+      startThresholdWatts: effective.startThresholdWatts,
+      stopThresholdWatts: effective.stopThresholdWatts,
+      startConfirmSeconds: effective.effectiveStartConfirmSeconds,
+      stopConfirmSeconds: effective.effectiveStopConfirmSeconds,
+      maybeActiveSinceMs: chair.maybeActiveSince?.getTime() ?? null,
+      maybeFinishedSinceMs: chair.maybeFinishedSince?.getTime() ?? null,
+      nowMs: now.getTime(),
     });
 
-    if (!chair) {
-      logger.warn(`[state-machine] Chair ${chairId} not found`);
-      return;
+    // ── Offline ──────────────────────────────────────────────────────────────
+    if (kind === 'OFFLINE') {
+      await this._handleOffline(chair, now);
+      return kind;
     }
-    if (!chair.isEnabled) return;
-    // MAINTENANCE and ERROR states are only changed by explicit admin actions.
-    if (chair.status === 'MAINTENANCE' || chair.status === 'ERROR') return;
-
-    const rawCfg: ChairDetectionConfig | undefined = chair.detectionConfigs[0];
-    if (!rawCfg) {
-      logger.warn(`[state-machine] ${chair.name}: no active detection config — using defaults`);
+    if (kind === 'ONLINE_RECOVERY') {
+      await this._handleOnlineRecovery(chair, now);
+      // Continue with recovered status on same reading
+      return this.processChairReading(chairId, reading);
     }
 
-    const config: DetectionConfig = rawCfg
-      ? {
-          id: rawCfg.id,
-          startThresholdWatts: rawCfg.startThresholdWatts,
-          stopThresholdWatts: rawCfg.stopThresholdWatts,
-          startConfirmSeconds: rawCfg.startConfirmSeconds,
-          stopConfirmSeconds: rawCfg.stopConfirmSeconds,
-          activationDelaySeconds: rawCfg.activationDelaySeconds,
-          baselinePowerWatts: rawCfg.baselinePowerWatts,
-        }
-      : FALLBACK_CONFIG;
+    // Update in-memory live fields (no DB yet)
+    const liveChanged =
+      powerChanged(chair.currentPowerWatts, reading.powerWatts) ||
+      chair.isOnline !== true ||
+      (reading.relayIsOn !== undefined && reading.relayIsOn !== chair.relayIsOn);
 
-    // TODO: production removes SIMULATION_FAST_MODE branch — always uses DB config values.
-    const effective: EffectiveConfig = {
-      ...config,
-      effectiveStartConfirmSeconds: env.SIMULATION_FAST_MODE ? 5 : config.startConfirmSeconds,
-      effectiveStopConfirmSeconds: env.SIMULATION_FAST_MODE ? 10 : config.stopConfirmSeconds,
-    };
-
-    // ── Offline handling ───────────────────────────────────────────────────────
-    if (!reading.isOnline) {
-      if (chair.status !== 'OFFLINE') {
-        await this._handleOffline(chair, now);
-      }
-      return;
+    chair.isOnline = true;
+    chair.lastSyncedAt = now;
+    chair.lastOnlineAt = now;
+    if (liveChanged) {
+      chair.currentPowerWatts = reading.powerWatts;
+      if (reading.relayIsOn !== undefined) chair.relayIsOn = reading.relayIsOn;
+      chair.dirtyLive = true;
     }
 
-    // ── Online recovery from OFFLINE ──────────────────────────────────────────
-    let currentStatus: ChairStatus = chair.status;
-    if (currentStatus === 'OFFLINE') {
-      currentStatus = await this._handleOnlineRecovery(chair, now);
+    // Active session: aggregate power in memory only
+    if (chair.status === 'ACTIVE' || chair.status === 'MAYBE_FINISHED') {
+      sampleSessionPower(chair, reading.powerWatts);
     }
 
-    // ── Update live-state fields on the chair row ──────────────────────────────
-    const liveData: Prisma.ChairUpdateInput = {
-      currentPowerWatts: reading.powerWatts,
-      isOnline: true,
-      lastSyncedAt: now,
-      lastOnlineAt: now,
-    };
-    if (reading.relayIsOn !== undefined) liveData.relayIsOn = reading.relayIsOn;
-    await prisma.chair.update({ where: { id: chairId }, data: liveData });
+    if (kind === 'NONE' || kind === 'POWER_SAMPLE_ONLY') {
+      // No business transition — zero DB writes this tick
+      upsertChairMem(chair);
+      return kind;
+    }
 
-    // ── State machine ──────────────────────────────────────────────────────────
-    switch (currentStatus) {
-      case 'IDLE':
-        await this._processIdle(chair, reading.powerWatts, effective, now);
+    // Real transition → DB write
+    usageMetrics.incr('stateTransitions');
+    switch (kind) {
+      case 'IDLE_TO_MAYBE_ACTIVE':
+        await this._idleToMaybeActive(chair, reading.powerWatts, now);
         break;
-      case 'MAYBE_ACTIVE':
-        await this._processMaybeActive(chair, reading.powerWatts, effective, now);
+      case 'MAYBE_ACTIVE_TO_IDLE':
+        await this._maybeActiveToIdle(chair, reading.powerWatts, now);
         break;
-      case 'ACTIVE':
-        await this._processActive(chair, reading.powerWatts, effective, now);
+      case 'MAYBE_ACTIVE_TO_ACTIVE':
+        await this._startSession(chair, reading.powerWatts, effective, now);
         break;
-      case 'MAYBE_FINISHED':
-        await this._processMaybeFinished(chair, reading.powerWatts, effective, now);
+      case 'ACTIVE_TO_MAYBE_FINISHED':
+        await this._activeToMaybeFinished(chair, reading.powerWatts, now);
+        break;
+      case 'MAYBE_FINISHED_TO_ACTIVE':
+        await this._maybeFinishedToActive(chair, reading.powerWatts, now);
+        break;
+      case 'MAYBE_FINISHED_TO_IDLE':
+        await this._endSession(chair, reading.powerWatts, now);
         break;
       default:
         break;
     }
+
+    upsertChairMem(chair);
+    return kind;
   }
 
-  // ── State handlers ─────────────────────────────────────────────────────────
+  // ── Transitions ────────────────────────────────────────────────────────────
 
-  private async _processIdle(
-    chair: ChairWithConfig,
-    powerWatts: number,
-    cfg: EffectiveConfig,
-    now: Date,
-  ): Promise<void> {
-    if (powerWatts >= cfg.startThresholdWatts) {
-      await prisma.chair.update({
-        where: { id: chair.id },
-        data: { status: 'MAYBE_ACTIVE', maybeActiveSince: now, stateChangedAt: now },
-      });
-      await this._event(chair.id, null, 'START_DETECTED', 'IDLE', 'MAYBE_ACTIVE', powerWatts, null, now);
-      logger.info(`[state-machine] ${chair.name}: IDLE → MAYBE_ACTIVE (${powerWatts.toFixed(1)}W)`);
-    }
+  private async _idleToMaybeActive(chair: ChairMem, powerWatts: number, now: Date): Promise<void> {
+    chair.status = 'MAYBE_ACTIVE';
+    chair.maybeActiveSince = now;
+    chair.stateChangedAt = now;
+    chair.dirtyLive = false; // status write covers live fields
+    lastTickDbWrites += 2;
+    usageMetrics.incr('dbWrites', 2);
+    await prisma.chair.update({
+      where: { id: chair.id },
+      data: {
+        status: 'MAYBE_ACTIVE',
+        maybeActiveSince: now,
+        stateChangedAt: now,
+        currentPowerWatts: powerWatts,
+        isOnline: true,
+        lastSyncedAt: now,
+        lastOnlineAt: now,
+      },
+      select: { id: true },
+    });
+    await this._event(chair.id, null, 'START_DETECTED', 'IDLE', 'MAYBE_ACTIVE', powerWatts, null, now);
+    logger.info(`[state-machine] ${chair.name}: IDLE → MAYBE_ACTIVE (${powerWatts.toFixed(1)}W)`);
   }
 
-  private async _processMaybeActive(
-    chair: ChairWithConfig,
-    powerWatts: number,
-    cfg: EffectiveConfig,
-    now: Date,
-  ): Promise<void> {
-    if (powerWatts < cfg.startThresholdWatts) {
-      await prisma.chair.update({
-        where: { id: chair.id },
-        data: { status: 'IDLE', maybeActiveSince: null, stateChangedAt: now },
-      });
-      await this._event(chair.id, null, 'START_CANCELLED', 'MAYBE_ACTIVE', 'IDLE', powerWatts, null, now);
-      logger.info(`[state-machine] ${chair.name}: MAYBE_ACTIVE → IDLE (power dropped ${powerWatts.toFixed(1)}W)`);
-      return;
-    }
-
-    const elapsed = (now.getTime() - chair.maybeActiveSince!.getTime()) / 1000;
-    if (elapsed >= cfg.effectiveStartConfirmSeconds) {
-      await this._startSession(chair, powerWatts, cfg, now);
-    }
+  private async _maybeActiveToIdle(chair: ChairMem, powerWatts: number, now: Date): Promise<void> {
+    chair.status = 'IDLE';
+    chair.maybeActiveSince = null;
+    chair.stateChangedAt = now;
+    lastTickDbWrites += 2;
+    usageMetrics.incr('dbWrites', 2);
+    await prisma.chair.update({
+      where: { id: chair.id },
+      data: {
+        status: 'IDLE',
+        maybeActiveSince: null,
+        stateChangedAt: now,
+        currentPowerWatts: powerWatts,
+        isOnline: true,
+        lastSyncedAt: now,
+      },
+      select: { id: true },
+    });
+    await this._event(chair.id, null, 'START_CANCELLED', 'MAYBE_ACTIVE', 'IDLE', powerWatts, null, now);
+    logger.info(`[state-machine] ${chair.name}: MAYBE_ACTIVE → IDLE (power dropped ${powerWatts.toFixed(1)}W)`);
   }
 
-  private async _processActive(
-    chair: ChairWithConfig,
-    powerWatts: number,
-    cfg: EffectiveConfig,
-    now: Date,
-  ): Promise<void> {
-    const session = await this._findActiveSession(chair.id, chair.currentSessionId);
-
+  private async _activeToMaybeFinished(chair: ChairMem, powerWatts: number, now: Date): Promise<void> {
+    const session = chair.session;
     if (!session) {
-      logger.warn(`[state-machine] ${chair.name}: ACTIVE but no session found — recovering to IDLE`);
+      logger.warn(`[state-machine] ${chair.name}: ACTIVE but no session — recovering to IDLE`);
+      chair.status = 'IDLE';
+      chair.currentSessionId = null;
+      chair.stateChangedAt = now;
+      lastTickDbWrites += 1;
+      usageMetrics.incr('dbWrites');
       await prisma.chair.update({
         where: { id: chair.id },
         data: { status: 'IDLE', currentSessionId: null, stateChangedAt: now },
+        select: { id: true },
       });
       return;
     }
 
-    const newMin = Math.min(session.minPowerWatts ?? powerWatts, powerWatts);
-    const newMax = Math.max(session.maxPowerWatts ?? powerWatts, powerWatts);
+    const newMin = Math.min(session.power.min ?? powerWatts, powerWatts);
+    const newMax = Math.max(session.power.max ?? powerWatts, powerWatts);
+    session.power.min = newMin;
+    session.power.max = newMax;
+    session.dirtyMetrics = false;
 
-    if (powerWatts <= cfg.stopThresholdWatts) {
-      await prisma.$transaction(async (tx) => {
-        await tx.chairSession.update({
-          where: { id: session.id },
-          data: { minPowerWatts: newMin, maxPowerWatts: newMax },
-        });
-        await tx.chair.update({
-          where: { id: chair.id },
-          data: { status: 'MAYBE_FINISHED', maybeFinishedSince: now, stateChangedAt: now },
-        });
-        await tx.chairEvent.create({
-          data: {
-            chairId: chair.id,
-            sessionId: session.id,
-            eventType: 'LOW_POWER_DETECTED',
-            fromStatus: 'ACTIVE',
-            toStatus: 'MAYBE_FINISHED',
-            powerWatts,
-            createdAt: now,
-          },
-        });
-      });
-      logger.info(
-        `[state-machine] ${chair.name}: ACTIVE → MAYBE_FINISHED (${powerWatts.toFixed(1)}W ≤ ${cfg.stopThresholdWatts}W)`,
-      );
-    } else if (newMin !== (session.minPowerWatts ?? powerWatts) || newMax !== (session.maxPowerWatts ?? powerWatts)) {
-      await prisma.chairSession.update({
+    chair.status = 'MAYBE_FINISHED';
+    chair.maybeFinishedSince = now;
+    chair.stateChangedAt = now;
+
+    lastTickDbWrites += 3;
+    usageMetrics.incr('dbWrites', 3);
+    await prisma.$transaction(async (tx) => {
+      await tx.chairSession.update({
         where: { id: session.id },
         data: { minPowerWatts: newMin, maxPowerWatts: newMax },
+        select: { id: true },
       });
-    }
+      await tx.chair.update({
+        where: { id: chair.id },
+        data: {
+          status: 'MAYBE_FINISHED',
+          maybeFinishedSince: now,
+          stateChangedAt: now,
+          currentPowerWatts: powerWatts,
+          isOnline: true,
+          lastSyncedAt: now,
+        },
+        select: { id: true },
+      });
+      await tx.chairEvent.create({
+        data: {
+          chairId: chair.id,
+          sessionId: session.id,
+          eventType: 'LOW_POWER_DETECTED',
+          fromStatus: 'ACTIVE',
+          toStatus: 'MAYBE_FINISHED',
+          powerWatts,
+          createdAt: now,
+        },
+        select: { id: true },
+      });
+    });
+    logger.info(
+      `[state-machine] ${chair.name}: ACTIVE → MAYBE_FINISHED (${powerWatts.toFixed(1)}W)`,
+    );
   }
 
-  private async _processMaybeFinished(
-    chair: ChairWithConfig,
-    powerWatts: number,
-    cfg: EffectiveConfig,
-    now: Date,
-  ): Promise<void> {
-    const session = await this._findActiveSession(chair.id, chair.currentSessionId);
-
-    if (!session) {
-      logger.warn(`[state-machine] ${chair.name}: MAYBE_FINISHED but no session — recovering to IDLE`);
-      await prisma.chair.update({
-        where: { id: chair.id },
-        data: { status: 'IDLE', currentSessionId: null, maybeFinishedSince: null, stateChangedAt: now },
-      });
-      return;
-    }
-
-    if (powerWatts > cfg.stopThresholdWatts) {
-      await prisma.chair.update({
-        where: { id: chair.id },
-        data: { status: 'ACTIVE', maybeFinishedSince: null, stateChangedAt: now },
-      });
-      await this._event(chair.id, session.id, 'POWER_RECOVERED', 'MAYBE_FINISHED', 'ACTIVE', powerWatts, null, now);
-      logger.info(`[state-machine] ${chair.name}: MAYBE_FINISHED → ACTIVE (recovered ${powerWatts.toFixed(1)}W)`);
-      return;
-    }
-
-    const elapsed = (now.getTime() - chair.maybeFinishedSince!.getTime()) / 1000;
-    if (elapsed >= cfg.effectiveStopConfirmSeconds) {
-      await this._endSession(chair, session, powerWatts, now);
-    }
+  private async _maybeFinishedToActive(chair: ChairMem, powerWatts: number, now: Date): Promise<void> {
+    const sessionId = chair.session?.id ?? null;
+    chair.status = 'ACTIVE';
+    chair.maybeFinishedSince = null;
+    chair.stateChangedAt = now;
+    lastTickDbWrites += 2;
+    usageMetrics.incr('dbWrites', 2);
+    await prisma.chair.update({
+      where: { id: chair.id },
+      data: {
+        status: 'ACTIVE',
+        maybeFinishedSince: null,
+        stateChangedAt: now,
+        currentPowerWatts: powerWatts,
+        isOnline: true,
+        lastSyncedAt: now,
+      },
+      select: { id: true },
+    });
+    await this._event(chair.id, sessionId, 'POWER_RECOVERED', 'MAYBE_FINISHED', 'ACTIVE', powerWatts, null, now);
+    logger.info(`[state-machine] ${chair.name}: MAYBE_FINISHED → ACTIVE (recovered ${powerWatts.toFixed(1)}W)`);
   }
-
-  // ── Session lifecycle ───────────────────────────────────────────────────────
 
   private async _startSession(
-    chair: ChairWithConfig,
+    chair: ChairMem,
     powerWatts: number,
     cfg: EffectiveConfig,
     now: Date,
   ): Promise<void> {
     const maybeActiveSince = chair.maybeActiveSince!;
 
-    // Guard: never create a second ACTIVE session for the same chair
+    usageMetrics.incr('dbReads');
+    lastTickDbWrites += 1;
     const existing = await prisma.chairSession.findFirst({
       where: { chairId: chair.id, status: 'ACTIVE' },
+      select: {
+        id: true,
+        startedAt: true,
+        anomalyType: true,
+        minPowerWatts: true,
+        maxPowerWatts: true,
+        startPowerWatts: true,
+      },
     });
     if (existing) {
       logger.warn(`[state-machine] ${chair.name}: active session already exists — correcting chair state`);
+      chair.status = 'ACTIVE';
+      chair.currentSessionId = existing.id;
+      chair.maybeActiveSince = null;
+      chair.stateChangedAt = now;
+      bindSessionMem(chair, {
+        id: existing.id,
+        startedAt: existing.startedAt,
+        anomalyType: existing.anomalyType,
+        startPower: existing.startPowerWatts ?? powerWatts,
+      });
+      lastTickDbWrites += 1;
+      usageMetrics.incr('dbWrites');
       await prisma.chair.update({
         where: { id: chair.id },
-        data: { status: 'ACTIVE', currentSessionId: existing.id, maybeActiveSince: null, stateChangedAt: now },
+        data: {
+          status: 'ACTIVE',
+          currentSessionId: existing.id,
+          maybeActiveSince: null,
+          stateChangedAt: now,
+        },
+        select: { id: true },
       });
       return;
     }
 
+    usageMetrics.incr('dbReads');
+    lastTickDbWrites += 1;
     const openShift = await prisma.shift.findFirst({
       where: { status: 'OPEN', endedAt: null },
       orderBy: { startedAt: 'desc' },
+      select: { id: true },
     });
     const anomalyType: string | null = openShift ? null : 'NO_OPEN_SHIFT';
 
+    lastTickDbWrites += 4;
+    usageMetrics.incr('dbWrites', 4);
     const session = await prisma.$transaction(async (tx) => {
       const s = await tx.chairSession.create({
         data: {
@@ -308,6 +380,7 @@ export class ChairStateService {
           startPowerWatts: powerWatts,
           minPowerWatts: powerWatts,
           maxPowerWatts: powerWatts,
+          avgPowerWatts: powerWatts,
           detectionConfigId: cfg.id !== 'fallback' ? cfg.id : null,
           detectionSnapshot: {
             startThresholdWatts: cfg.startThresholdWatts,
@@ -320,10 +393,20 @@ export class ChairStateService {
           },
           anomalyType,
         },
+        select: { id: true, startedAt: true, anomalyType: true },
       });
       await tx.chair.update({
         where: { id: chair.id },
-        data: { status: 'ACTIVE', currentSessionId: s.id, maybeActiveSince: null, stateChangedAt: now },
+        data: {
+          status: 'ACTIVE',
+          currentSessionId: s.id,
+          maybeActiveSince: null,
+          stateChangedAt: now,
+          currentPowerWatts: powerWatts,
+          isOnline: true,
+          lastSyncedAt: now,
+        },
+        select: { id: true },
       });
       await tx.chairEvent.create({
         data: {
@@ -334,6 +417,7 @@ export class ChairStateService {
           powerWatts,
           createdAt: now,
         },
+        select: { id: true },
       });
       await tx.chairEvent.create({
         data: {
@@ -345,8 +429,19 @@ export class ChairStateService {
           message: anomalyType === 'NO_OPEN_SHIFT' ? 'Started with no open shift' : null,
           createdAt: now,
         },
+        select: { id: true },
       });
       return s;
+    });
+
+    chair.status = 'ACTIVE';
+    chair.maybeActiveSince = null;
+    chair.stateChangedAt = now;
+    bindSessionMem(chair, {
+      id: session.id,
+      startedAt: session.startedAt,
+      anomalyType: session.anomalyType,
+      startPower: powerWatts,
     });
 
     if (anomalyType === 'NO_OPEN_SHIFT') {
@@ -356,12 +451,29 @@ export class ChairStateService {
     }
   }
 
-  private async _endSession(
-    chair: ChairWithConfig,
-    session: ChairSession,
-    powerWatts: number,
-    now: Date,
-  ): Promise<void> {
+  private async _endSession(chair: ChairMem, powerWatts: number, now: Date): Promise<void> {
+    const session = chair.session;
+    if (!session) {
+      logger.warn(`[state-machine] ${chair.name}: MAYBE_FINISHED but no session — recovering to IDLE`);
+      chair.status = 'IDLE';
+      chair.currentSessionId = null;
+      chair.maybeFinishedSince = null;
+      chair.stateChangedAt = now;
+      lastTickDbWrites += 1;
+      usageMetrics.incr('dbWrites');
+      await prisma.chair.update({
+        where: { id: chair.id },
+        data: {
+          status: 'IDLE',
+          currentSessionId: null,
+          maybeFinishedSince: null,
+          stateChangedAt: now,
+        },
+        select: { id: true },
+      });
+      return;
+    }
+
     const maybeFinishedSince = chair.maybeFinishedSince!;
     const durationSeconds = Math.max(
       0,
@@ -369,10 +481,15 @@ export class ChairStateService {
     );
 
     const pricing = await pricingService.calculateSessionPrice(durationSeconds);
-
-    // Merge anomalyType from session start (e.g. NO_OPEN_SHIFT) with pricing anomaly
     const mergedAnomalyType = mergeAnomalyTypes(session.anomalyType, pricing.anomalyType);
 
+    const avg =
+      session.power.count > 0
+        ? Math.round((session.power.sum / session.power.count) * 100) / 100
+        : powerWatts;
+
+    lastTickDbWrites += 4;
+    usageMetrics.incr('dbWrites', 4);
     await prisma.$transaction(async (tx) => {
       await tx.chairSession.update({
         where: { id: session.id },
@@ -385,10 +502,14 @@ export class ChairStateService {
           endedAt: maybeFinishedSince,
           durationSeconds,
           endPowerWatts: powerWatts,
+          minPowerWatts: session.power.min,
+          maxPowerWatts: session.power.max,
+          avgPowerWatts: avg,
           matchedPlanId: pricing.matchedPlanId,
           expectedAmount: pricing.expectedAmount,
           pricingSnapshot: pricing.pricingSnapshot as Prisma.InputJsonValue,
         },
+        select: { id: true },
       });
       await tx.chair.update({
         where: { id: chair.id },
@@ -398,7 +519,11 @@ export class ChairStateService {
           maybeFinishedSince: null,
           maybeActiveSince: null,
           stateChangedAt: now,
+          currentPowerWatts: powerWatts,
+          isOnline: true,
+          lastSyncedAt: now,
         },
+        select: { id: true },
       });
       await tx.chairEvent.create({
         data: {
@@ -410,6 +535,7 @@ export class ChairStateService {
           powerWatts,
           createdAt: now,
         },
+        select: { id: true },
       });
       await tx.chairEvent.create({
         data: {
@@ -420,39 +546,81 @@ export class ChairStateService {
           message: `${durationSeconds}s → ${pricing.expectedAmount} MAD${mergedAnomalyType ? ` [${mergedAnomalyType}]` : ''}`,
           createdAt: now,
         },
+        select: { id: true },
       });
     });
 
+    chair.status = 'IDLE';
+    chair.maybeFinishedSince = null;
+    chair.maybeActiveSince = null;
+    chair.stateChangedAt = now;
+    clearSessionMem(chair);
+
     logger.info(
       `[state-machine] ${chair.name}: session ${session.id.slice(-8)} FINISHED` +
-      ` (${durationSeconds}s, ${pricing.expectedAmount} MAD, ${pricing.billingStatus}` +
-      `${mergedAnomalyType ? `, anomaly=${mergedAnomalyType}` : ''})`,
+        ` (${durationSeconds}s, ${pricing.expectedAmount} MAD, ${pricing.billingStatus}` +
+        `${mergedAnomalyType ? `, anomaly=${mergedAnomalyType}` : ''})`,
     );
   }
 
-  // ── Offline / recovery ──────────────────────────────────────────────────────
-
-  private async _handleOffline(chair: ChairWithConfig, now: Date): Promise<void> {
+  private async _handleOffline(chair: ChairMem, now: Date): Promise<void> {
+    const prev = chair.status;
+    chair.statusBeforeOffline = prev;
+    chair.status = 'OFFLINE';
+    chair.offlineSince = now;
+    chair.isOnline = false;
+    chair.lastSyncedAt = now;
+    lastTickDbWrites += 2;
+    usageMetrics.incr('dbWrites', 2);
     await prisma.chair.update({
       where: { id: chair.id },
       data: {
         status: 'OFFLINE',
-        statusBeforeOffline: chair.status,
+        statusBeforeOffline: prev,
         offlineSince: now,
         isOnline: false,
         lastSyncedAt: now,
       },
+      select: { id: true },
     });
-    await this._event(chair.id, null, 'DEVICE_OFFLINE', chair.status, 'OFFLINE', null, null, now);
-    logger.info(`[state-machine] ${chair.name}: → OFFLINE (was ${chair.status})`);
+    await this._event(chair.id, null, 'DEVICE_OFFLINE', prev, 'OFFLINE', null, null, now);
+    logger.info(`[state-machine] ${chair.name}: → OFFLINE (was ${prev})`);
   }
 
-  private async _handleOnlineRecovery(chair: ChairWithConfig, now: Date): Promise<ChairStatus> {
+  private async _handleOnlineRecovery(chair: ChairMem, now: Date): Promise<void> {
+    usageMetrics.incr('dbReads');
+    lastTickDbWrites += 1;
     const activeSession = await prisma.chairSession.findFirst({
       where: { chairId: chair.id, status: 'ACTIVE' },
+      select: {
+        id: true,
+        startedAt: true,
+        anomalyType: true,
+        startPowerWatts: true,
+        minPowerWatts: true,
+      },
     });
     const restored: ChairStatus = activeSession ? 'ACTIVE' : 'IDLE';
 
+    chair.status = restored;
+    chair.isOnline = true;
+    chair.lastOnlineAt = now;
+    chair.offlineSince = null;
+    chair.statusBeforeOffline = null;
+    chair.currentSessionId = activeSession?.id ?? null;
+    if (activeSession) {
+      bindSessionMem(chair, {
+        id: activeSession.id,
+        startedAt: activeSession.startedAt,
+        anomalyType: activeSession.anomalyType,
+        startPower: activeSession.startPowerWatts ?? activeSession.minPowerWatts ?? 0,
+      });
+    } else {
+      clearSessionMem(chair);
+    }
+
+    lastTickDbWrites += 2;
+    usageMetrics.incr('dbWrites', 2);
     await prisma.chair.update({
       where: { id: chair.id },
       data: {
@@ -463,29 +631,19 @@ export class ChairStateService {
         statusBeforeOffline: null,
         currentSessionId: activeSession?.id ?? null,
       },
+      select: { id: true },
     });
-    await this._event(chair.id, activeSession?.id ?? null, 'DEVICE_ONLINE', 'OFFLINE', restored, null, null, now);
+    await this._event(
+      chair.id,
+      activeSession?.id ?? null,
+      'DEVICE_ONLINE',
+      'OFFLINE',
+      restored,
+      null,
+      null,
+      now,
+    );
     logger.info(`[state-machine] ${chair.name}: OFFLINE → ${restored} (recovered)`);
-    return restored;
-  }
-
-  // ── Helpers ─────────────────────────────────────────────────────────────────
-
-  private async _findActiveSession(
-    chairId: string,
-    currentSessionId: string | null,
-  ): Promise<ChairSession | null> {
-    if (currentSessionId) {
-      const s = await prisma.chairSession.findFirst({
-        where: { id: currentSessionId, status: 'ACTIVE' },
-      });
-      if (s) return s;
-    }
-    // Recovery path: scan by chair
-    return prisma.chairSession.findFirst({
-      where: { chairId, status: 'ACTIVE' },
-      orderBy: { startedAt: 'desc' },
-    });
   }
 
   private async _event(
@@ -498,6 +656,7 @@ export class ChairStateService {
     message: string | null,
     createdAt: Date,
   ): Promise<void> {
+    usageMetrics.incr('dbWrites');
     await prisma.chairEvent.create({
       data: {
         chairId,
@@ -509,8 +668,11 @@ export class ChairStateService {
         message,
         createdAt,
       },
+      select: { id: true },
     });
   }
 }
 
 export const chairStateService = new ChairStateService();
+
+export { transitionNeedsDbWrite, decideTransition } from './chair-state.logic';

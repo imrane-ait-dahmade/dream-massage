@@ -2,6 +2,10 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { getTimezone } from '../../utils/time';
 import { STAFF_VISIBLE_WHERE, SESSION_OPERATIONAL_WHERE } from '../archive/archive-filters';
+import { cacheGet, cacheSet, cacheInvalidate } from '../../utils/memory-cache';
+import { withDbCircuit } from '../../utils/db-circuit-breaker';
+import { usageMetrics } from '../../utils/usage-metrics';
+import { env } from '../../config/env';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -222,6 +226,33 @@ function warningFor(status: string): string | null {
 
 export class HomeDashboardService {
   async get(raw: HomeDashboardParams) {
+    const cacheKey = `home-dashboard:${JSON.stringify({
+      preset: raw.preset,
+      from: raw.from,
+      to: raw.to,
+      period: raw.period,
+      periodStart: raw.periodStart,
+      periodEnd: raw.periodEnd,
+      chair: raw.chair,
+      staffMemberId: raw.staffMemberId,
+      shiftTypeId: raw.shiftTypeId,
+      shiftId: raw.shiftId,
+      status: raw.status,
+      chartPeriod: raw.chartPeriod,
+    })}`;
+    const cached = cacheGet<Awaited<ReturnType<HomeDashboardService['_getUncached']>>>(cacheKey);
+    if (cached) return cached;
+
+    const data = await withDbCircuit(() => this._getUncached(raw));
+    cacheSet(cacheKey, data, env.DASHBOARD_CACHE_TTL_MS);
+    return data;
+  }
+
+  invalidateCache(): void {
+    cacheInvalidate('home-dashboard:');
+  }
+
+  private async _getUncached(raw: HomeDashboardParams) {
     const tz    = getTimezone();
     const today = todayInTz(tz);
 
@@ -337,6 +368,7 @@ export class HomeDashboardService {
         where:   sessionWhere,
         select:  SESSION_SELECT,
         orderBy: { startedAt: 'desc' },
+        take:    500,
       }),
       prisma.staffMember.findMany({
         where:   STAFF_VISIBLE_WHERE,
@@ -445,7 +477,8 @@ export class HomeDashboardService {
     const liveChairs = this.buildLiveChairs(dbChairs);
     const byChair    = this.buildTotalsByChair(filtered, dbChairs);
     const chart      = this.buildChart(filtered, chartPeriod, from, tz);
-    const sessionsTable = this.buildSessionsTable(filtered);
+    const sessionsTable = this.buildSessionsTable(filtered.slice(0, 50));
+    usageMetrics.incr('dbReads', 8);
 
     // ── Filter options ────────────────────────────────────────────────────────
     const seenShiftIds = new Set<string>();
@@ -888,11 +921,11 @@ export class HomeDashboardService {
   }
 
   // ── Sessions table ─────────────────────────────────────────────────────────────
-  // Returns ALL sessions matching the applied filters, ordered by startedAt DESC.
-  // No row cap — the client displays the full list and scrolls the page.
+  // Recent sessions only (max 50) — full history belongs in archive/pagination.
 
   private buildSessionsTable(sessions: SessionRow[]) {
-    const items = sessions.map((s) => {
+    const capped = sessions.slice(0, 50);
+    const items = capped.map((s) => {
       const finalAmount =
         s.status === 'ACTIVE'           ? 0 :
         s.correctedAmount !== null       ? Number(s.correctedAmount) :

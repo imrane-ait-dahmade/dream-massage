@@ -25,6 +25,8 @@ import { requireAuth, requireOwnerAdmin } from './middleware/auth.middleware';
 import { requireCronSecret } from './middleware/shift-automation.middleware';
 import { prisma } from './prisma';
 import { getTimezone } from './utils/time';
+import { usageMetrics } from './utils/usage-metrics';
+import { DbUnavailableError } from './utils/db-circuit-breaker';
 import authRouter from './modules/auth/auth.controller';
 import chairRouter from './modules/chairs/chair.controller';
 import settingsRouter from './modules/settings/settings.controller';
@@ -80,26 +82,64 @@ app.use('/api/assistant', requireAuth, assistantRouter);
 
 app.use('/api/dashboard', requireAuth, requireOwnerAdmin);
 app.get('/api/dashboard/state', (_req, res) => {
+  const started = Date.now();
+  usageMetrics.incr('apiCalls');
   dashboardService
     .getState()
-    .then((state) => res.json(state))
+    .then((state) => {
+      const body = JSON.stringify(state);
+      const bytes = Buffer.byteLength(body);
+      usageMetrics.incr('apiResponseBytes', bytes);
+      if (bytes > 100_000) {
+        logger.warn(`[api-size] route=/api/dashboard/state bytes=${bytes} durationMs=${Date.now() - started}`);
+      }
+      res.type('json').send(body);
+    })
     .catch((err) => {
-      res.status(500).json({ ok: false, error: 'Failed to read dashboard state', detail: String(err) });
+      if (err instanceof DbUnavailableError) {
+        res.setHeader('Retry-After', String(err.retryAfterSec));
+        res.status(503).json({
+          ok: false,
+          error: 'Service temporairement indisponible. Nouvelle tentative automatique.',
+        });
+        return;
+      }
+      res.status(500).json({ ok: false, error: 'Failed to read dashboard state' });
     });
 });
 
 app.get('/api/dashboard/revenue-stats', (req, res) => {
+  const started = Date.now();
+  usageMetrics.incr('apiCalls');
   const raw = typeof req.query.period === 'string' ? req.query.period : 'week';
   const period = ['day', 'week', 'month', 'year'].includes(raw) ? raw : 'week';
   revenueStatsService
     .get(period)
-    .then((stats) => res.json(stats))
+    .then((stats) => {
+      const body = JSON.stringify(stats);
+      const bytes = Buffer.byteLength(body);
+      usageMetrics.incr('apiResponseBytes', bytes);
+      if (bytes > 100_000) {
+        logger.warn(`[api-size] route=/api/dashboard/revenue-stats bytes=${bytes} durationMs=${Date.now() - started}`);
+      }
+      res.type('json').send(body);
+    })
     .catch((err) => {
-      res.status(500).json({ ok: false, error: 'Failed to compute revenue stats', detail: String(err) });
+      if (err instanceof DbUnavailableError) {
+        res.setHeader('Retry-After', String(err.retryAfterSec));
+        res.status(503).json({
+          ok: false,
+          error: 'Service temporairement indisponible. Nouvelle tentative automatique.',
+        });
+        return;
+      }
+      res.status(500).json({ ok: false, error: 'Failed to compute revenue stats' });
     });
 });
 
 app.get('/api/dashboard/home', (req, res) => {
+  const started = Date.now();
+  usageMetrics.incr('apiCalls');
   const q = req.query;
   const str = (k: string) => (typeof q[k] === 'string' ? (q[k] as string) : undefined);
   homeDashboardService
@@ -117,9 +157,25 @@ app.get('/api/dashboard/home', (req, res) => {
       status:        str('status'),
       chartPeriod:   str('chartPeriod'),
     })
-    .then((data) => res.json(data))
+    .then((data) => {
+      const body = JSON.stringify(data);
+      const bytes = Buffer.byteLength(body);
+      usageMetrics.incr('apiResponseBytes', bytes);
+      if (bytes > 100_000) {
+        logger.warn(`[api-size] route=/api/dashboard/home bytes=${bytes} durationMs=${Date.now() - started}`);
+      }
+      res.type('json').send(body);
+    })
     .catch((err: unknown) => {
-      res.status(500).json({ ok: false, error: 'Failed to compute home dashboard', detail: String(err) });
+      if (err instanceof DbUnavailableError) {
+        res.setHeader('Retry-After', String(err.retryAfterSec));
+        res.status(503).json({
+          ok: false,
+          error: 'Service temporairement indisponible. Nouvelle tentative automatique.',
+        });
+        return;
+      }
+      res.status(500).json({ ok: false, error: 'Failed to compute home dashboard' });
     });
 });
 

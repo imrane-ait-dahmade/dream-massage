@@ -82,6 +82,14 @@ function ConnectionPill({
       </div>
     );
   }
+  if (status === 'unavailable') {
+    return (
+      <div className="flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-semibold text-amber-300 ring-1 ring-amber-500/25">
+        <WifiOff className="h-3 w-3" />
+        <span className="hidden sm:block">Indisponible</span>
+      </div>
+    );
+  }
   return (
     <div
       className="flex items-center gap-1.5 rounded-full bg-red-500/15 px-2.5 py-1 text-xs font-semibold text-red-400 ring-1 ring-red-500/25"

@@ -1,6 +1,15 @@
 import { elapsedSeconds, nowISO, getTimezone } from '../../utils/time';
 import { prisma } from '../../prisma';
 import { SESSION_OPERATIONAL_WHERE } from '../archive/archive-filters';
+import { cacheGet, cacheSet, cacheInvalidate } from '../../utils/memory-cache';
+import { usageMetrics } from '../../utils/usage-metrics';
+import {
+  withDbCircuit,
+  DbUnavailableError,
+  allowDbAttempt,
+} from '../../utils/db-circuit-breaker';
+import { getAllChairMem, isRuntimeHydrated } from '../chairs/chair-runtime-cache';
+import { env } from '../../config/env';
 
 export type ChairStatus =
   | 'IDLE'
@@ -42,6 +51,8 @@ export interface DashboardState {
   chairs: ChairState[];
 }
 
+const STATE_CACHE_KEY = 'dashboard:state';
+
 function warningFor(status: ChairStatus): string | null {
   if (status === 'MAYBE_FINISHED') return 'Possible end detected';
   if (status === 'OFFLINE') return 'Device unreachable';
@@ -50,33 +61,51 @@ function warningFor(status: ChairStatus): string | null {
 }
 
 export class DashboardService {
+  /**
+   * Returns live dashboard state.
+   * Prefers in-memory chair runtime when hydrated; caches full payload 15s.
+   * Throws DbUnavailableError when DB is down — never a fake empty dashboard.
+   */
   async getState(): Promise<DashboardState> {
+    const cached = cacheGet<DashboardState>(STATE_CACHE_KEY);
+    if (cached) return cached;
+
+    if (!allowDbAttempt() && isRuntimeHydrated()) {
+      // Serve memory-only snapshot without hitting Neon
+      const mem = this._memoryChairs();
+      const state: DashboardState = {
+        serverTime: nowISO(),
+        connection: 'live',
+        todayStats: {
+          expectedRevenue: 0,
+          sessionsCount: 0,
+          activeChairs: mem.filter((c) => c.status === 'ACTIVE' || c.status === 'MAYBE_FINISHED').length,
+          offlineChairs: mem.filter((c) => c.status === 'OFFLINE').length,
+        },
+        openShift: null,
+        chairs: mem,
+      };
+      return state;
+    }
+
     try {
-      return await this._dbState();
+      const state = await withDbCircuit(() => this._dbState());
+      cacheSet(STATE_CACHE_KEY, state, env.DASHBOARD_CACHE_TTL_MS);
+      return state;
     } catch (err) {
-      // DB unavailable — return safe empty state rather than crashing the broadcast loop
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error('[dashboard] DB read failed, returning empty state:', msg);
-      return this._emptyState();
+      if (err instanceof DbUnavailableError) throw err;
+      // Non-temporary: still surface as unavailable rather than empty fake data
+      console.error('[dashboard] DB read failed:', err instanceof Error ? err.message : String(err));
+      throw new DbUnavailableError('Database temporarily unavailable', 60);
     }
   }
 
-  private async _dbState(): Promise<DashboardState> {
-    // ── Chairs + their active session ────────────────────────────────────────
-    const dbChairs = await prisma.chair.findMany({
-      where: { isEnabled: true },
-      orderBy: { name: 'asc' },
-      include: {
-        sessions: {
-          where: { status: 'ACTIVE' },
-          take: 1,
-          orderBy: { startedAt: 'desc' },
-        },
-      },
-    });
+  invalidateCache(): void {
+    cacheInvalidate(STATE_CACHE_KEY);
+  }
 
-    const chairs: ChairState[] = dbChairs.map((c) => {
-      const session = c.sessions[0] ?? null;
+  private _memoryChairs(): ChairState[] {
+    return getAllChairMem().map((c) => {
       const status = c.status as ChairStatus;
       return {
         id: c.id,
@@ -85,39 +114,86 @@ export class DashboardService {
         status,
         powerWatts: c.currentPowerWatts ?? 0,
         isOnline: c.isOnline,
-        sessionStartedAt: session ? session.startedAt.toISOString() : null,
-        elapsedSeconds: session ? elapsedSeconds(session.startedAt) : 0,
+        sessionStartedAt: c.session ? c.session.startedAt.toISOString() : null,
+        elapsedSeconds: c.session ? elapsedSeconds(c.session.startedAt) : 0,
         warning: warningFor(status),
       };
     });
+  }
 
-    // ── Today's session stats ─────────────────────────────────────────────────
+  private async _dbState(): Promise<DashboardState> {
+    usageMetrics.incr('dbReads', 3);
+
+    // Prefer memory for live chair fields when available
+    let chairs: ChairState[];
+    if (isRuntimeHydrated()) {
+      chairs = this._memoryChairs();
+    } else {
+      const dbChairs = await prisma.chair.findMany({
+        where: { isEnabled: true },
+        orderBy: { name: 'asc' },
+        select: {
+          id: true,
+          name: true,
+          displayName: true,
+          status: true,
+          currentPowerWatts: true,
+          isOnline: true,
+          sessions: {
+            where: { status: 'ACTIVE' },
+            take: 1,
+            orderBy: { startedAt: 'desc' },
+            select: { startedAt: true },
+          },
+        },
+      });
+
+      chairs = dbChairs.map((c) => {
+        const session = c.sessions[0] ?? null;
+        const status = c.status as ChairStatus;
+        return {
+          id: c.id,
+          name: c.name,
+          displayName: c.displayName,
+          status,
+          powerWatts: c.currentPowerWatts ?? 0,
+          isOnline: c.isOnline,
+          sessionStartedAt: session ? session.startedAt.toISOString() : null,
+          elapsedSeconds: session ? elapsedSeconds(session.startedAt) : 0,
+          warning: warningFor(status),
+        };
+      });
+    }
+
+    // Aggregate today stats in PostgreSQL — do not download all rows
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
-    const todaySessions = await prisma.chairSession.findMany({
+    const todayAgg = await prisma.chairSession.aggregate({
       where: {
         ...SESSION_OPERATIONAL_WHERE,
         startedAt: { gte: todayStart },
         status: { notIn: ['CANCELLED'] },
       },
-      select: { status: true, expectedAmount: true },
+      _count: { _all: true },
+      _sum: { expectedAmount: true },
     });
 
-    const sessionsCount = todaySessions.length;
+    const sessionsCount = todayAgg._count._all;
     const expectedRevenue =
-      Math.round(
-        todaySessions.reduce((sum, s) => sum + Number(s.expectedAmount ?? 0), 0) * 100,
-      ) / 100;
+      Math.round(Number(todayAgg._sum.expectedAmount ?? 0) * 100) / 100;
     const activeChairs = chairs.filter(
       (c) => c.status === 'ACTIVE' || c.status === 'MAYBE_FINISHED',
     ).length;
     const offlineChairs = chairs.filter((c) => c.status === 'OFFLINE').length;
 
-    // ── Open shift ────────────────────────────────────────────────────────────
     const shiftRow = await prisma.shift.findFirst({
       where: { status: 'OPEN', endedAt: null },
-      include: { staffMember: true },
+      select: {
+        id: true,
+        startedAt: true,
+        staffMember: { select: { name: true } },
+      },
       orderBy: { startedAt: 'desc' },
     });
 
@@ -137,20 +213,6 @@ export class DashboardService {
       chairs,
     };
   }
-
-  // Safe fallback when DB is unreachable. Returns structurally valid empty state.
-  private _emptyState(): DashboardState {
-    return {
-      serverTime: nowISO(),
-      connection: 'live',
-      todayStats: { expectedRevenue: 0, sessionsCount: 0, activeChairs: 0, offlineChairs: 0 },
-      openShift: null,
-      chairs: [],
-    };
-  }
-
-  // ── Mock state (kept for reference — remove once DB version is stable) ───────
-  // private _mockState(): DashboardState { ... }
 }
 
 export interface RevenueStats {
@@ -168,10 +230,20 @@ function toLocalDate(date: Date, tz: string): Date {
 
 export class RevenueStatsService {
   async get(period: string): Promise<RevenueStats> {
+    const cacheKey = `dashboard:revenue:${period}`;
+    const cached = cacheGet<RevenueStats>(cacheKey);
+    if (cached) return cached;
+
+    const stats = await withDbCircuit(() => this._compute(period));
+    cacheSet(cacheKey, stats, env.DASHBOARD_CACHE_TTL_MS);
+    return stats;
+  }
+
+  private async _compute(period: string): Promise<RevenueStats> {
+    usageMetrics.incr('dbReads');
     const tz = getTimezone();
     const now = new Date();
     const localNow = toLocalDate(now, tz);
-    // tzOffsetMs: local.getTime() − utc.getTime() (positive = ahead of UTC)
     const tzOffsetMs = localNow.getTime() - now.getTime();
 
     let startUTC: Date;
@@ -200,7 +272,6 @@ export class RevenueStatsService {
       labels = Array.from({ length: daysInMonth }, (_, i) => String(i + 1));
       getBucket = (d) => d.getDate() - 1;
     } else {
-      // year
       const ls = new Date(localNow.getFullYear(), 0, 1, 0, 0, 0);
       startUTC = new Date(ls.getTime() - tzOffsetMs);
       bucketCount = 12;
@@ -215,6 +286,7 @@ export class RevenueStatsService {
         status: { notIn: ['CANCELLED'] },
       },
       select: { startedAt: true, expectedAmount: true, correctedAmount: true },
+      take: 5000,
     });
 
     const revenue = new Array<number>(bucketCount).fill(0);
