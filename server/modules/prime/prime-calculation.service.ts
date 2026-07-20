@@ -153,7 +153,9 @@ export class PrimeCalculationService {
         staffMember: true,
         shiftType: true,
         sessions: {
-          where: { status: 'COMPLETED' },
+          // Operational sessions only — archived/soft-deleted must not inflate
+          // gross revenue or commissions (aligns with dashboard + assistant lists).
+          where: { status: 'COMPLETED', archivedAt: null },
           include: {
             chair:       { select: { name: true } },
             matchedPlan: { select: { id: true, name: true } },

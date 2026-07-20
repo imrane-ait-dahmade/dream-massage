@@ -277,19 +277,26 @@ export class AssistantService {
     const summary = emptySummary();
     Object.assign(summary, buildSummaryFromSessions(rawSessions));
 
+    // Single source of truth for "Total brut": sum of the same sessions shown in the list
+    // (already filtered by SESSION_OPERATIONAL_WHERE → archivedAt: null).
+    // Do NOT use prime.grossRevenue here — it historically included archived COMPLETED
+    // sessions and could diverge from the visible cards (e.g. 100 vs 80 after test deletes).
+    summary.grossRevenue = sessions.reduce((sum, s) => sum + s.finalAmount, 0);
+
     for (const shift of shifts) {
       try {
         const prime = await primeCalculationService.calculateShiftPrimeSummary(shift.id);
-        summary.grossRevenue += prime.totals.grossRevenue;
         summary.planCommission += prime.totals.planCommission;
         summary.targetBonus += prime.totals.targetBonus;
         summary.manualBonus += prime.totals.manualBonus;
         summary.totalPrime += prime.totals.totalPrime;
-        summary.netRevenue += prime.totals.netRevenue;
       } catch {
         // Shift may have no calculable prime yet — skip
       }
     }
+
+    // Net = visible gross − primes (same perimeter as the cards above).
+    summary.netRevenue = Math.round((summary.grossRevenue - summary.totalPrime) * 100) / 100;
 
     const openShift = shifts.find((s) => s.status === 'OPEN') ?? null;
     const currentShift = openShift
