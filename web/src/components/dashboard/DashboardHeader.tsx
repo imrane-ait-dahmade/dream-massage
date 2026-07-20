@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Settings, LogOut, Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import { Settings, LogOut, Wifi, WifiOff, RefreshCw, ClipboardList } from 'lucide-react';
 import type { AuthUser } from '@/lib/api';
 import type { ConnectionStatus } from '@/hooks/useDashboard';
 
@@ -10,9 +10,16 @@ interface Props {
   connStatus: ConnectionStatus;
   lastUpdated: Date | null;
   onLogout: () => void;
+  pendingPlanChangeCount?: number;
 }
 
-export function DashboardHeader({ user, connStatus, lastUpdated, onLogout }: Props) {
+export function DashboardHeader({
+  user,
+  connStatus,
+  lastUpdated,
+  onLogout,
+  pendingPlanChangeCount = 0,
+}: Props) {
   return (
     <>
       {/* Sticky navbar */}
@@ -35,6 +42,19 @@ export function DashboardHeader({ user, connStatus, lastUpdated, onLogout }: Pro
           {/* Right actions */}
           <div className="flex items-center gap-0.5 md:gap-1">
             <Link
+              href="/plan-change-requests"
+              className="relative rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white/10 hover:text-white md:p-2"
+              title="Demandes de modification"
+            >
+              <ClipboardList className="h-4 w-4" />
+              {pendingPlanChangeCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[9px] font-bold text-slate-900">
+                  {pendingPlanChangeCount > 9 ? '9+' : pendingPlanChangeCount}
+                </span>
+              )}
+            </Link>
+
+            <Link
               href="/settings"
               className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white/10 hover:text-white md:p-2"
               title="Paramétrages"
@@ -54,7 +74,6 @@ export function DashboardHeader({ user, connStatus, lastUpdated, onLogout }: Pro
           </div>
         </div>
       </header>
-
     </>
   );
 }

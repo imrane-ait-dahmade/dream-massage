@@ -440,6 +440,7 @@ export interface HomeRecentSession {
   endedAt:          string | null;
   durationSeconds:  number | null;
   status:           string;
+  matchedPlanId:    string | null;
   matchedPlanName:  string | null;
   amount:           number;   // finalAmount for backward compat
   finalAmount:      number;
@@ -554,9 +555,11 @@ export interface AssistantSummary {
 export interface AssistantSessionRow {
   id: string;
   chairName: string;
+  status?: string;
   startedAt: string;
   endedAt: string | null;
   durationSeconds: number | null;
+  matchedPlanId?: string | null;
   matchedPlanName: string | null;
   expectedAmount: number;
   correctedAmount: number | null;
@@ -588,4 +591,62 @@ export interface AssistantSessionsListResponse {
   page: number;
   limit: number;
   total: number;
+}
+
+// ── Session plan change requests ───────────────────────────────────────────────
+
+export type SessionPlanChangeRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface SessionPlanChangeRequest {
+  id: string;
+  status: SessionPlanChangeRequestStatus;
+  reason: string;
+  reviewNote: string | null;
+  reviewedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  originalPlanId: string | null;
+  originalPlanName: string | null;
+  originalDurationSeconds: number | null;
+  originalDurationMinutes: number | null;
+  originalExpectedAmount: number | null;
+  requestedPlanId: string | null;
+  requestedPlanName: string;
+  requestedDurationSeconds: number;
+  requestedDurationMinutes: number;
+  requestedExpectedAmount: number | null;
+  requestedBy: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+  } | null;
+  reviewedBy: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+  } | null;
+  session: {
+    id: string;
+    status: string;
+    startedAt: string;
+    endedAt: string | null;
+    durationSeconds: number | null;
+    matchedPlanId: string | null;
+    expectedAmount: number | null;
+    correctedAmount: number | null;
+    finalAmount: number;
+    remainingAmount: number;
+    chairId: string;
+    chairName: string;
+    chairDisplayName: string | null;
+    staffMember: { id: string; name: string } | null;
+  };
+}
+
+export interface SessionPlanChangeResult {
+  ok: boolean;
+  session: SessionDetail & { remainingAmount?: number };
+  request: SessionPlanChangeRequest;
 }

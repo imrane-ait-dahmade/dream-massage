@@ -4,6 +4,7 @@ import { primeCalculationService } from '../prime/prime-calculation.service';
 import type { AuthUser } from '../auth/auth.service';
 import { getBusinessDate, getDayBoundsUtc } from '../../utils/time';
 import { SESSION_OPERATIONAL_WHERE } from '../archive/archive-filters';
+import { sessionPlanChangeService } from '../sessions/session-plan-change.service';
 import type {
   AssistantAlert,
   AssistantDashboardResponse,
@@ -36,6 +37,7 @@ function mapSessionRow(s: {
   startedAt: Date;
   endedAt: Date | null;
   durationSeconds: number | null;
+  matchedPlanId: string | null;
   expectedAmount: Prisma.Decimal | null;
   correctedAmount: Prisma.Decimal | null;
   billingStatus: string;
@@ -47,9 +49,11 @@ function mapSessionRow(s: {
   return {
     id: s.id,
     chairName: s.chair.name,
+    status: s.status,
     startedAt: s.startedAt.toISOString(),
     endedAt: s.endedAt?.toISOString() ?? null,
     durationSeconds: s.durationSeconds,
+    matchedPlanId: s.matchedPlanId,
     matchedPlanName: s.matchedPlan?.name ?? null,
     expectedAmount: toNum(s.expectedAmount),
     correctedAmount: s.correctedAmount !== null ? toNum(s.correctedAmount) : null,
@@ -400,6 +404,57 @@ export class AssistantService {
       limit,
       total,
     };
+  }
+
+  /** Active pricing plans for ASSISTANT plan-change request UI (read-only). */
+  async listActivePricingPlans(): Promise<
+    Array<{
+      id: string;
+      name: string;
+      durationSeconds: number;
+      priceAmount: number;
+      currency: string;
+      sortOrder: number;
+    }>
+  > {
+    const plans = await prisma.pricingPlan.findMany({
+      where: { isActive: true, archivedAt: null },
+      orderBy: [{ sortOrder: 'asc' }, { durationSeconds: 'asc' }],
+      select: {
+        id: true,
+        name: true,
+        durationSeconds: true,
+        priceAmount: true,
+        currency: true,
+        sortOrder: true,
+      },
+    });
+    return plans.map((p) => ({
+      id: p.id,
+      name: p.name,
+      durationSeconds: p.durationSeconds,
+      priceAmount: Number(p.priceAmount),
+      currency: p.currency,
+      sortOrder: p.sortOrder,
+    }));
+  }
+
+  /** ASSISTANT may only list their own plan-change requests. */
+  async listMyPlanChangeRequests(
+    user: AuthUser,
+    filters?: { status?: 'PENDING' | 'APPROVED' | 'REJECTED' },
+  ) {
+    if (user.role !== 'ASSISTANT') {
+      const err = new Error('Forbidden');
+      (err as Error & { status?: number }).status = 403;
+      throw err;
+    }
+
+    return sessionPlanChangeService.listRequests({
+      requestedByUserId: user.id,
+      status: filters?.status,
+      limit: 100,
+    });
   }
 }
 

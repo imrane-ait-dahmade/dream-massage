@@ -74,4 +74,17 @@ test('calculated billing with amount must be archived', () => {
   assert.equal(r.mustArchive, true);
 });
 
+test('session with plan-change request history must be archived', () => {
+  const r = assessSessionDeletion({
+    shiftId: null,
+    chairEventsCount: 0,
+    billingStatus: 'PENDING',
+    correctedAmount: null,
+    expectedAmount: null,
+    planChangeRequestsCount: 1,
+  });
+  assert.equal(r.mustArchive, true);
+  assert.ok(r.reasons.some((x) => x.includes('plan change')));
+});
+
 console.log('All session-delete.logic tests passed.');

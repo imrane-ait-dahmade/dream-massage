@@ -73,4 +73,27 @@ router.get('/sessions', requireAssistantRouteAccess, (req: Request, res: Respons
     .catch((err: unknown) => handleError(res, err));
 });
 
+// GET /api/assistant/pricing-plans — active plans for ASSISTANT plan-change UI
+router.get('/pricing-plans', requireAssistant, (_req: Request, res: Response) => {
+  assistantService
+    .listActivePricingPlans()
+    .then((items) => res.json({ ok: true, items }))
+    .catch((err: unknown) => handleError(res, err));
+});
+
+// GET /api/assistant/plan-change-requests — ASSISTANT sees only own requests
+router.get('/plan-change-requests', requireAssistant, (req: Request, res: Response) => {
+  const user = (req as AuthRequest).user!;
+  const statusRaw = queryStr(req, 'status');
+  const status =
+    statusRaw === 'PENDING' || statusRaw === 'APPROVED' || statusRaw === 'REJECTED'
+      ? statusRaw
+      : undefined;
+
+  assistantService
+    .listMyPlanChangeRequests(user, { status })
+    .then((requests) => res.json({ ok: true, requests }))
+    .catch((err: unknown) => handleError(res, err));
+});
+
 export default router;

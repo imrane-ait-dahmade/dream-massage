@@ -36,6 +36,8 @@ model User {
   createdCommissionRules  CommissionRule[]        @relation("CommissionRuleCreatedBy")
   createdBonusRules       ShiftTargetBonusRule[]  @relation("BonusRuleCreatedBy")
   createdBonusAdjustments ShiftBonusAdjustment[]  @relation("BonusAdjustmentCreatedBy")
+  sessionPlanChangeRequestsRequested SessionPlanChangeRequest[] @relation("SessionPlanChangeRequestedBy")
+  sessionPlanChangeRequestsReviewed  SessionPlanChangeRequest[] @relation("SessionPlanChangeReviewedBy")
 
   @@map("users")
 }
@@ -216,6 +218,8 @@ model PricingPlan {
   minimumPlanRules PricingRule[]    @relation("MinimumPlan")
   sessions         ChairSession[]
   commissionRules  CommissionRule[]
+  planChangeRequestsAsOriginal  SessionPlanChangeRequest[] @relation("SessionPlanChangeOriginalPlan")
+  planChangeRequestsAsRequested SessionPlanChangeRequest[] @relation("SessionPlanChangeRequestedPlan")
 
   @@index([isActive])
   @@index([archivedAt])
@@ -306,6 +310,7 @@ model ChairSession {
   matchedPlan PricingPlan? @relation(fields: [matchedPlanId], references: [id])
   correctedBy User?        @relation("SessionCorrectedBy", fields: [correctedByUserId], references: [id])
   chairEvents ChairEvent[]
+  planChangeRequests SessionPlanChangeRequest[]
 
   @@index([chairId])
   @@index([shiftId])
@@ -317,6 +322,52 @@ model ChairSession {
   @@index([chairId, startedAt])
   @@index([archivedAt])
   @@map("chair_sessions")
+}
+
+// Audit + approval workflow for changing a session's matched pricing plan.
+// Snapshots keep history readable even if PricingPlan rows are later renamed/archived.
+// See RAW_SQL_CONSTRAINTS.md for unique_pending_plan_change_per_session partial index.
+model SessionPlanChangeRequest {
+  id String @id @default(uuid())
+
+  sessionId String @map("session_id")
+
+  requestedByUserId String? @map("requested_by_user_id")
+  reviewedByUserId  String? @map("reviewed_by_user_id")
+
+  originalPlanId  String? @map("original_plan_id")
+  requestedPlanId String? @map("requested_plan_id")
+
+  originalPlanName         String?  @map("original_plan_name") @db.VarChar(100)
+  requestedPlanName        String   @map("requested_plan_name") @db.VarChar(100)
+  originalDurationSeconds  Int?     @map("original_duration_seconds")
+  requestedDurationSeconds Int      @map("requested_duration_seconds")
+  originalExpectedAmount   Decimal? @map("original_expected_amount") @db.Decimal(10, 2)
+  requestedExpectedAmount  Decimal  @map("requested_expected_amount") @db.Decimal(10, 2)
+
+  reason     String                         @db.Text
+  status     SessionPlanChangeRequestStatus @default(PENDING)
+  reviewNote String?                        @map("review_note") @db.Text
+  reviewedAt DateTime?                      @map("reviewed_at")
+
+  // Detects stale approvals when the session plan changed after the request was created.
+  sessionMatchedPlanIdAtRequest String?   @map("session_matched_plan_id_at_request")
+  sessionUpdatedAtAtRequest     DateTime? @map("session_updated_at_at_request")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  session       ChairSession @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  requestedBy   User?        @relation("SessionPlanChangeRequestedBy", fields: [requestedByUserId], references: [id], onDelete: SetNull)
+  reviewedBy    User?        @relation("SessionPlanChangeReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  originalPlan  PricingPlan? @relation("SessionPlanChangeOriginalPlan", fields: [originalPlanId], references: [id], onDelete: SetNull)
+  requestedPlan PricingPlan? @relation("SessionPlanChangeRequestedPlan", fields: [requestedPlanId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId])
+  @@index([status])
+  @@index([requestedByUserId])
+  @@index([createdAt])
+  @@map("session_plan_change_requests")
 }
 
 // State-transition and pre-session events at the chair level.
@@ -587,4 +638,10 @@ enum LogSeverity {
 enum CommissionType {
   PERCENTAGE
   FIXED_AMOUNT
+}
+
+enum SessionPlanChangeRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

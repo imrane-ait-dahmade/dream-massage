@@ -29,6 +29,9 @@ import type {
   ShiftAutomationStatus,
   AutoShiftCheckResult,
   OpenShift,
+  SessionPlanChangeRequest,
+  SessionPlanChangeRequestStatus,
+  SessionPlanChangeResult,
 } from './types';
 
 const DEV_API_FALLBACK = 'http://localhost:4001';
@@ -909,4 +912,106 @@ export async function getAssistantSessions(params?: {
   if (params?.page !== undefined) qs.set('page', String(params.page));
   if (params?.limit !== undefined) qs.set('limit', String(params.limit));
   return apiRequest(`${BASE}/api/assistant/sessions?${qs}`);
+}
+
+// ── Session plan change ────────────────────────────────────────────────────────
+
+export async function changeSessionPlan(
+  sessionId: string,
+  payload: { requestedPlanId: string; reason?: string },
+): Promise<SessionPlanChangeResult> {
+  return apiRequest(
+    `${BASE}/api/sessions/${encodeURIComponent(sessionId)}/plan`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function createSessionPlanChangeRequest(
+  sessionId: string,
+  payload: { requestedPlanId: string; reason: string },
+): Promise<{ ok: boolean; request: SessionPlanChangeRequest }> {
+  return apiRequest(
+    `${BASE}/api/sessions/${encodeURIComponent(sessionId)}/plan-change-requests`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function listSessionPlanChangeRequests(params?: {
+  status?: SessionPlanChangeRequestStatus;
+  sessionId?: string;
+  limit?: number;
+}): Promise<{ ok: boolean; requests: SessionPlanChangeRequest[] }> {
+  const qs = new URLSearchParams();
+  if (params?.status) qs.set('status', params.status);
+  if (params?.sessionId) qs.set('sessionId', params.sessionId);
+  if (params?.limit !== undefined) qs.set('limit', String(params.limit));
+  const suffix = qs.toString() ? `?${qs}` : '';
+  return apiRequest(`${BASE}/api/session-plan-change-requests${suffix}`);
+}
+
+export async function getSessionPlanChangeRequest(
+  requestId: string,
+): Promise<{ ok: boolean; request: SessionPlanChangeRequest }> {
+  return apiRequest(
+    `${BASE}/api/session-plan-change-requests/${encodeURIComponent(requestId)}`,
+  );
+}
+
+export async function approveSessionPlanChangeRequest(
+  requestId: string,
+  payload?: { reviewNote?: string },
+): Promise<SessionPlanChangeResult> {
+  return apiRequest(
+    `${BASE}/api/session-plan-change-requests/${encodeURIComponent(requestId)}/approve`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload ?? {}),
+    },
+  );
+}
+
+export async function rejectSessionPlanChangeRequest(
+  requestId: string,
+  payload?: { reviewNote?: string },
+): Promise<{ ok: boolean; request: SessionPlanChangeRequest }> {
+  return apiRequest(
+    `${BASE}/api/session-plan-change-requests/${encodeURIComponent(requestId)}/reject`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload ?? {}),
+    },
+  );
+}
+
+export async function getAssistantPricingPlans(): Promise<{
+  ok: boolean;
+  items: Array<{
+    id: string;
+    name: string;
+    durationSeconds: number;
+    priceAmount: number;
+    currency: string;
+    sortOrder: number;
+  }>;
+}> {
+  return apiRequest(`${BASE}/api/assistant/pricing-plans`);
+}
+
+export async function getAssistantPlanChangeRequests(params?: {
+  status?: SessionPlanChangeRequestStatus;
+}): Promise<{ ok: boolean; requests: SessionPlanChangeRequest[] }> {
+  const qs = new URLSearchParams();
+  if (params?.status) qs.set('status', params.status);
+  const suffix = qs.toString() ? `?${qs}` : '';
+  return apiRequest(`${BASE}/api/assistant/plan-change-requests${suffix}`);
 }

@@ -92,6 +92,21 @@ CREATE UNIQUE INDEX unique_auto_shift_per_schedule_day
 **Enforcement order**: `auto-shift.service.ts` checks for an existing row before
 inserting. This index is the database-level safety net against concurrent opens.
 
+### 7. One PENDING session plan-change request per session
+
+Prevents two concurrent open approval requests on the same session.
+
+```sql
+CREATE UNIQUE INDEX unique_pending_plan_change_per_session
+  ON session_plan_change_requests (session_id)
+  WHERE status = 'PENDING';
+```
+
+**Enforcement order**: `session-plan-change.service.ts` rejects a second PENDING
+request before insert. This index is the database-level safety net against races.
+Migration `20260718140000_add_session_plan_change_requests` creates the table and
+this index.
+
 ---
 
 ## When to apply
