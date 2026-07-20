@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Pencil, Search, Trash2, X } from 'lucide-react';
+import { Pencil, Search, Trash2, X, Layers } from 'lucide-react';
 import type { HomeRecentSession } from '@/lib/types';
 import { formatDH, formatElapsed, formatTime } from '@/lib/format';
 import { deleteSession, ApiError } from '@/lib/api';
 import { SessionCorrectionModal } from './SessionCorrectionModal';
 import { SessionDeleteConfirmModal } from './SessionDeleteConfirmModal';
+import { OwnerDirectPlanChangeModal } from './OwnerDirectPlanChangeModal';
 
 // ── Label maps ────────────────────────────────────────────────────────────────
 
@@ -137,6 +138,7 @@ interface Props {
 
 export function RecentSessionsTable({ sessions, total, loading, onCorrect }: Props) {
   const [correcting, setCorrecting] = useState<HomeRecentSession | null>(null);
+  const [changingPlan, setChangingPlan] = useState<HomeRecentSession | null>(null);
   const [deleting, setDeleting] = useState<HomeRecentSession | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -426,6 +428,16 @@ export function RecentSessionsTable({ sessions, total, loading, onCorrect }: Pro
                   <td className="px-2 py-2.5">
                     {s.status !== 'ACTIVE' && (
                       <div className="flex items-center gap-1">
+                        {s.status === 'COMPLETED' && (
+                          <button
+                            onClick={() => setChangingPlan(s)}
+                            title="Modifier le plan"
+                            className="flex items-center gap-1 rounded-lg border border-slate-600 px-2 py-1 text-[10px] font-semibold text-slate-400 hover:border-violet-500/50 hover:bg-violet-500/10 hover:text-violet-300"
+                          >
+                            <Layers className="h-3 w-3" />
+                            <span className="hidden lg:block">Plan</span>
+                          </button>
+                        )}
                         <button
                           onClick={() => setCorrecting(s)}
                           title="Corriger le prix"
@@ -459,6 +471,18 @@ export function RecentSessionsTable({ sessions, total, loading, onCorrect }: Pro
           onClose={() => setCorrecting(null)}
           onSuccess={() => {
             setCorrecting(null);
+            onCorrect?.();
+          }}
+        />
+      )}
+
+      {changingPlan && (
+        <OwnerDirectPlanChangeModal
+          session={changingPlan}
+          onClose={() => setChangingPlan(null)}
+          onSuccess={() => {
+            setChangingPlan(null);
+            showToast('success', 'Plan de session modifié.');
             onCorrect?.();
           }}
         />

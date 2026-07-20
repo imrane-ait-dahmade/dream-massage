@@ -9,6 +9,7 @@ export type SessionDeleteInput = {
   billingStatus: string;
   correctedAmount: number | null;
   expectedAmount: number | null;
+  planChangeRequestsCount?: number;
 };
 
 export type SessionDeleteAssessment = {
@@ -36,6 +37,9 @@ export function assessSessionDeletion(input: SessionDeleteInput): SessionDeleteA
     (input.billingStatus === 'CALCULATED' || input.billingStatus === 'CORRECTED')
   ) {
     reasons.push('billing calculation');
+  }
+  if ((input.planChangeRequestsCount ?? 0) > 0) {
+    reasons.push('plan change request history');
   }
 
   return {

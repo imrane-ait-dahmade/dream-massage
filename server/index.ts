@@ -32,6 +32,7 @@ import chairRouter from './modules/chairs/chair.controller';
 import settingsRouter from './modules/settings/settings.controller';
 import shiftRouter from './modules/shifts/shift.controller';
 import sessionRouter from './modules/sessions/session.controller';
+import sessionPlanChangeRouter from './modules/sessions/session-plan-change.controller';
 import assistantRouter from './modules/assistant/assistant.controller';
 
 const app = express();
@@ -322,9 +323,10 @@ app.post('/api/shifts/automation/run', requireCronSecret, handleAutoShiftTrigger
 
 app.use('/api/shifts', requireAuth, requireOwnerAdmin, shiftRouter);
 
-// ── Sessions (protected) ───────────────────────────────────────────────────────
+// ── Sessions (auth required; role checks applied per-route) ────────────────────
 
-app.use('/api/sessions', requireAuth, requireOwnerAdmin, sessionRouter);
+app.use('/api/sessions', requireAuth, sessionRouter);
+app.use('/api/session-plan-change-requests', requireAuth, sessionPlanChangeRouter);
 
 // ── 404 ────────────────────────────────────────────────────────────────────────
 

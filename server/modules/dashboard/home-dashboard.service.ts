@@ -941,6 +941,7 @@ export class HomeDashboardService {
         durationSeconds:  s.durationSeconds,
         status:           s.status,
         matchedPlanName:  s.matchedPlan?.name        ?? null,
+        matchedPlanId:    s.matchedPlanId,
         amount:           sessionRevenue(s),
         finalAmount,
         expectedAmount:   s.expectedAmount  != null ? Number(s.expectedAmount)  : null,

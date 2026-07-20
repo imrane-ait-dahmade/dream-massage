@@ -162,7 +162,14 @@ export const sessionService = {
   ): Promise<{ mode: 'archived' | 'deleted'; sessionId: string } | null> {
     const session = await prisma.chairSession.findUnique({
       where:   { id: sessionId },
-      include: { _count: { select: { chairEvents: true } } },
+      include: {
+        _count: {
+          select: {
+            chairEvents: true,
+            planChangeRequests: true,
+          },
+        },
+      },
     });
     if (!session) return null;
     if (session.archivedAt) {
@@ -171,11 +178,12 @@ export const sessionService = {
 
     const actorUserId = await resolveActorUserId(actor);
     const assessment = assessSessionDeletion({
-      shiftId:           session.shiftId,
-      chairEventsCount:  session._count.chairEvents,
-      billingStatus:     session.billingStatus,
-      correctedAmount:   session.correctedAmount != null ? Number(session.correctedAmount) : null,
-      expectedAmount:    session.expectedAmount != null ? Number(session.expectedAmount) : null,
+      shiftId:                  session.shiftId,
+      chairEventsCount:         session._count.chairEvents,
+      billingStatus:            session.billingStatus,
+      correctedAmount:          session.correctedAmount != null ? Number(session.correctedAmount) : null,
+      expectedAmount:           session.expectedAmount != null ? Number(session.expectedAmount) : null,
+      planChangeRequestsCount:  session._count.planChangeRequests,
     });
 
     const archiveReason = reason?.trim() || 'Removed from application by admin';

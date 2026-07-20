@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   AlertTriangle,
@@ -11,17 +11,26 @@ import {
   Target,
   Gift,
   ListChecks,
+  RefreshCw,
 } from 'lucide-react';
 import { AuthGuard } from '@/components/AuthGuard';
+import { AssistantPlanChangeRequestModal } from '@/components/assistant/AssistantPlanChangeRequestModal';
 import {
   getAssistantToday,
+  getAssistantPlanChangeRequests,
   logout,
 } from '@/lib/api';
 import type {
   AssistantDashboardResponse,
   AssistantSessionRow,
+  SessionPlanChangeRequest,
 } from '@/lib/types';
 import { formatDH, formatElapsed, formatTimeHHMM } from '@/lib/format';
+import {
+  canRequestPlanChange,
+  planChangeStatusClass,
+  planChangeStatusLabel,
+} from '@/lib/plan-change';
 
 function billingLabel(status: string): string {
   const map: Record<string, string> = {
@@ -33,9 +42,20 @@ function billingLabel(status: string): string {
   return map[status] ?? status;
 }
 
-function SessionRow({ session }: { session: AssistantSessionRow }) {
+function SessionRow({
+  session,
+  request,
+  onRequestChange,
+}: {
+  session: AssistantSessionRow;
+  request: SessionPlanChangeRequest | null;
+  onRequestChange: (session: AssistantSessionRow) => void;
+}) {
   const corrected = session.billingStatus === 'CORRECTED';
   const outOfRule = !!session.anomalyType;
+  const eligible = canRequestPlanChange(session);
+  const pending = request?.status === 'PENDING';
+  const showButton = eligible && !pending;
 
   return (
     <div className="rounded-xl border border-stone-200 bg-white p-3 shadow-sm">
@@ -69,6 +89,15 @@ function SessionRow({ session }: { session: AssistantSessionRow }) {
         {outOfRule && (
           <span className="rounded-md bg-orange-100 px-2 py-0.5 text-orange-800">Hors règle</span>
         )}
+        {request && (
+          <span
+            className={`rounded-md px-2 py-0.5 ring-1 ${planChangeStatusClass(request.status)}`}
+          >
+            {request.status === 'PENDING'
+              ? 'Modification en attente'
+              : planChangeStatusLabel(request.status)}
+          </span>
+        )}
       </div>
 
       {corrected && (
@@ -81,6 +110,29 @@ function SessionRow({ session }: { session: AssistantSessionRow }) {
             <p className="mt-1 text-amber-800">Motif : {session.correctionReason}</p>
           )}
         </div>
+      )}
+
+      {request?.status === 'REJECTED' && request.reviewNote && (
+        <div className="mt-2 rounded-lg bg-red-50 px-2.5 py-2 text-xs text-red-900 ring-1 ring-red-200">
+          Demande refusée — remarque : {request.reviewNote}
+        </div>
+      )}
+
+      {request?.status === 'APPROVED' && (
+        <div className="mt-2 rounded-lg bg-emerald-50 px-2.5 py-2 text-xs text-emerald-900 ring-1 ring-emerald-200">
+          Demande validée — nouveau plan : {request.requestedPlanName} (
+          {formatDH(request.requestedExpectedAmount ?? 0)})
+        </div>
+      )}
+
+      {showButton && (
+        <button
+          type="button"
+          onClick={() => onRequestChange(session)}
+          className="mt-3 w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 text-xs font-semibold text-stone-800 hover:bg-stone-100"
+        >
+          Demander une modification du plan
+        </button>
       )}
     </div>
   );
@@ -100,9 +152,7 @@ function SummaryCard({
   return (
     <div
       className={`rounded-2xl border p-3 ${
-        highlight
-          ? 'border-emerald-200 bg-emerald-50'
-          : 'border-stone-200 bg-white'
+        highlight ? 'border-emerald-200 bg-emerald-50' : 'border-stone-200 bg-white'
       }`}
     >
       <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-stone-500">
@@ -119,22 +169,48 @@ function SummaryCard({
 function AssistantContent() {
   const router = useRouter();
   const [data, setData] = useState<AssistantDashboardResponse | null>(null);
+  const [requests, setRequests] = useState<SessionPlanChangeRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const [requesting, setRequesting] = useState<AssistantSessionRow | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [dash, req] = await Promise.all([
+        getAssistantToday(),
+        getAssistantPlanChangeRequests(),
+      ]);
+      setData(dash);
+      setRequests(req.requests ?? []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur de chargement');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    getAssistantToday()
-      .then(setData)
-      .catch((err: Error) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, []);
+    void load();
+  }, [load]);
+
+  const latestBySession = useMemo(() => {
+    const map = new Map<string, SessionPlanChangeRequest>();
+    // requests are newest-first from API
+    for (const r of requests) {
+      if (!map.has(r.session.id)) map.set(r.session.id, r);
+    }
+    return map;
+  }, [requests]);
 
   async function handleLogout() {
     await logout();
     router.replace('/login');
   }
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-stone-50">
         <p className="text-sm text-stone-400">Chargement…</p>
@@ -148,7 +224,7 @@ function AssistantContent() {
         <p className="text-sm text-red-600">{error ?? 'Données indisponibles'}</p>
         <button
           type="button"
-          onClick={() => window.location.reload()}
+          onClick={() => void load()}
           className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white"
         >
           Réessayer
@@ -161,26 +237,43 @@ function AssistantContent() {
 
   return (
     <div className="min-h-screen bg-stone-50">
+      {toast && (
+        <div className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-900 shadow-lg">
+          {toast}
+        </div>
+      )}
+
       <header className="sticky top-0 z-10 border-b border-stone-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-lg items-center justify-between px-4 py-3">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-stone-400">Dream Care</p>
             <h1 className="text-base font-bold text-stone-900">Mon shift</h1>
-            <p className="text-xs text-stone-500">{staffMember.name} · {date}</p>
+            <p className="text-xs text-stone-500">
+              {staffMember.name} · {date}
+            </p>
           </div>
-          <button
-            type="button"
-            onClick={() => void handleLogout()}
-            className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-2 text-xs font-medium text-stone-700"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            Déconnexion
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void load()}
+              className="rounded-lg border border-stone-200 p-2 text-stone-600"
+              title="Actualiser"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleLogout()}
+              className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-2 text-xs font-medium text-stone-700"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              Déconnexion
+            </button>
+          </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-lg space-y-4 px-4 py-4 pb-8">
-        {/* Current shift */}
         <section className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
           <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-stone-800">
             <Clock className="h-4 w-4 text-stone-500" />
@@ -212,7 +305,6 @@ function AssistantContent() {
           )}
         </section>
 
-        {/* Summary */}
         <section>
           <h2 className="mb-2 text-sm font-semibold text-stone-800">Résumé du jour</h2>
           <div className="grid grid-cols-2 gap-2">
@@ -254,7 +346,6 @@ function AssistantContent() {
           </div>
         </section>
 
-        {/* Alerts */}
         {alerts.length > 0 && (
           <section className="space-y-2">
             <h2 className="text-sm font-semibold text-stone-800">Alertes</h2>
@@ -270,7 +361,6 @@ function AssistantContent() {
           </section>
         )}
 
-        {/* Sessions */}
         <section>
           <h2 className="mb-2 text-sm font-semibold text-stone-800">
             Sessions ({sessions.length})
@@ -282,12 +372,30 @@ function AssistantContent() {
           ) : (
             <div className="space-y-2">
               {sessions.map((s) => (
-                <SessionRow key={s.id} session={s} />
+                <SessionRow
+                  key={s.id}
+                  session={s}
+                  request={latestBySession.get(s.id) ?? null}
+                  onRequestChange={setRequesting}
+                />
               ))}
             </div>
           )}
         </section>
       </main>
+
+      {requesting && (
+        <AssistantPlanChangeRequestModal
+          session={requesting}
+          onClose={() => setRequesting(null)}
+          onSuccess={() => {
+            setRequesting(null);
+            setToast('Demande envoyée — en attente de validation.');
+            window.setTimeout(() => setToast(null), 4000);
+            void load();
+          }}
+        />
+      )}
     </div>
   );
 }

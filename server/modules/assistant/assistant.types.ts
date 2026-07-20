@@ -40,9 +40,11 @@ export interface AssistantSummary {
 export interface AssistantSessionRow {
   id: string;
   chairName: string;
+  status: string;
   startedAt: string;
   endedAt: string | null;
   durationSeconds: number | null;
+  matchedPlanId: string | null;
   matchedPlanName: string | null;
   expectedAmount: number;
   correctedAmount: number | null;

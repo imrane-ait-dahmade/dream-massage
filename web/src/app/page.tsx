@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { AlertTriangle, WifiOff } from 'lucide-react';
 import { useDashboard } from '@/hooks/useDashboard';
 import { useHomeDashboard } from '@/hooks/useHomeDashboard';
-import { logout, getMe, type AuthUser } from '@/lib/api';
+import { logout, getMe, listSessionPlanChangeRequests, type AuthUser } from '@/lib/api';
 import { AuthGuard } from '@/components/AuthGuard';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { DashboardFilters } from '@/components/dashboard/DashboardFilters';
@@ -48,9 +48,16 @@ interface AlertsProps {
   outOfRuleSessions:  number;
   noOpenShift:        boolean;
   hasSessions:        boolean;
+  pendingPlanChanges?: number;
 }
 
-function AlertsSection({ offlineChairs, outOfRuleSessions, noOpenShift, hasSessions }: AlertsProps) {
+function AlertsSection({
+  offlineChairs,
+  outOfRuleSessions,
+  noOpenShift,
+  hasSessions,
+  pendingPlanChanges = 0,
+}: AlertsProps) {
   const alerts: { key: string; msg: string; cls: string }[] = [];
 
   if (offlineChairs > 0)
@@ -59,6 +66,12 @@ function AlertsSection({ offlineChairs, outOfRuleSessions, noOpenShift, hasSessi
     alerts.push({ key: 'rule', msg: `${outOfRuleSessions} session${outOfRuleSessions > 1 ? 's' : ''} hors règle`, cls: 'text-orange-400' });
   if (noOpenShift && hasSessions)
     alerts.push({ key: 'shift', msg: 'Sessions en cours sans shift actif', cls: 'text-amber-400' });
+  if (pendingPlanChanges > 0)
+    alerts.push({
+      key: 'plan',
+      msg: `${pendingPlanChanges} demande${pendingPlanChanges > 1 ? 's' : ''} de modification de plan`,
+      cls: 'text-violet-300',
+    });
 
   if (alerts.length === 0) return null;
 
@@ -83,9 +96,16 @@ function DashboardContent() {
   const { data, loading, error, filters, setFilters, reset, refetch } = useHomeDashboard();
 
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [pendingPlanChanges, setPendingPlanChanges] = useState(0);
   useEffect(() => {
     getMe().then(setUser).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    listSessionPlanChangeRequests({ status: 'PENDING', limit: 50 })
+      .then((r) => setPendingPlanChanges(r.requests?.length ?? 0))
+      .catch(() => {});
+  }, [data]);
 
   async function handleLogout() {
     await logout();
@@ -108,6 +128,7 @@ function DashboardContent() {
         connStatus={connStatus}
         lastUpdated={lastUpdated}
         onLogout={() => void handleLogout()}
+        pendingPlanChangeCount={pendingPlanChanges}
       />
 
       <main className="mx-auto max-w-6xl space-y-4 px-3 py-4 md:px-4 md:py-5">
@@ -131,6 +152,7 @@ function DashboardContent() {
           outOfRuleSessions={outOfRuleSessions}
           noOpenShift={!hasOpenShift}
           hasSessions={activeSessions > 0}
+          pendingPlanChanges={pendingPlanChanges}
         />
 
         {/* API error banner */}
@@ -182,7 +204,12 @@ function DashboardContent() {
           sessions={data?.sessionsTable?.items}
           total={data?.sessionsTable?.total}
           loading={loading}
-          onCorrect={refetch}
+          onCorrect={() => {
+            refetch();
+            listSessionPlanChangeRequests({ status: 'PENDING', limit: 50 })
+              .then((r) => setPendingPlanChanges(r.requests?.length ?? 0))
+              .catch(() => {});
+          }}
         />
 
         {lastUpdated && (
