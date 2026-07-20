@@ -14,6 +14,7 @@ import {
   computeRemainingAmount,
   formatAmountDiff,
   formatPlanMinutes,
+  currentPlanLabel,
 } from '@/lib/plan-change';
 
 type Mode = 'approve' | 'reject';
@@ -99,12 +100,13 @@ export function PlanChangeReviewModal({ request, mode, onClose, onSuccess }: Pro
               Plan actuel → Nouveau plan
             </p>
             <p className="mt-1">
-              {request.originalPlanName ?? '—'} ({formatPlanMinutes(request.originalDurationSeconds)})
+              {currentPlanLabel(request.originalPlanName)} (
+              {formatPlanMinutes(request.originalDurationSeconds)})
               {' → '}
               {request.requestedPlanName} ({formatPlanMinutes(request.requestedDurationSeconds)})
             </p>
             <p className="mt-1">
-              {oldAmt != null ? formatDH(oldAmt) : '—'} → {newAmt != null ? formatDH(newAmt) : '—'}{' '}
+              {oldAmt != null ? formatDH(oldAmt) : '0 DH'} → {newAmt != null ? formatDH(newAmt) : '—'}{' '}
               ({formatAmountDiff(diff)})
             </p>
             {paid != null && (

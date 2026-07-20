@@ -291,6 +291,8 @@ async function applySessionPlanChangeInTx(
       matchedPlanId: update.matchedPlanId,
       expectedAmount: update.expectedAmount,
       pricingSnapshot: update.pricingSnapshot as Prisma.InputJsonValue,
+      billingStatus: update.billingStatus,
+      anomalyType: update.anomalyType,
       // correctedAmount intentionally untouched (recorded collection / correction preserved)
     },
     include: SESSION_DETAIL_INCLUDE,

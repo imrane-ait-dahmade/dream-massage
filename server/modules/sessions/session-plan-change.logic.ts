@@ -184,13 +184,16 @@ export type PlanChangeSessionUpdate = {
   matchedPlanId: string;
   expectedAmount: number;
   pricingSnapshot: Record<string, unknown>;
-  // Explicitly preserved — never written as changed technical fields.
-  // Callers must NOT include startedAt/endedAt/duration/power/chair/shift.
+  /** Manual assignment always yields a calculated billable session. */
+  billingStatus: 'CALCULATED';
+  /** Clears pricing anomalies (e.g. TOO_SHORT) when a plan is explicitly assigned. */
+  anomalyType: null;
 };
 
 /**
  * Builds the session update payload for a plan change.
  * Only plan-dependent business fields are returned.
+ * Sessions without a prior plan (TOO_SHORT / PENDING) are supported.
  */
 export function buildPlanChangeSessionUpdate(
   input: PlanChangeApplyInput,
@@ -203,6 +206,8 @@ export function buildPlanChangeSessionUpdate(
   return {
     matchedPlanId: newPlan.id,
     expectedAmount: newPlan.priceAmount,
+    billingStatus: 'CALCULATED',
+    anomalyType: null,
     pricingSnapshot: {
       ...previous,
       reason: 'MANUAL_PLAN_CHANGE',
@@ -213,6 +218,7 @@ export function buildPlanChangeSessionUpdate(
       durationSeconds: previous.durationSeconds ?? session.durationSeconds,
       previousMatchedPlanId: session.matchedPlanId,
       previousExpectedAmount: session.expectedAmount,
+      hadNoPlan: session.matchedPlanId == null,
       matchedPlanId: newPlan.id,
       matchedPlanName: newPlan.name,
       matchedPlanDurationSeconds: newPlan.durationSeconds,

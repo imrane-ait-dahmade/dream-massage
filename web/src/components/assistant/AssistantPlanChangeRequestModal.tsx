@@ -13,6 +13,7 @@ import {
   amountDiff,
   formatAmountDiff,
   formatPlanMinutes,
+  currentPlanLabel,
   validatePlanChangeReason,
 } from '@/lib/plan-change';
 
@@ -97,7 +98,11 @@ export function AssistantPlanChangeRequestModal({ session, onClose, onSuccess }:
       <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="fixed inset-x-3 top-1/2 z-50 max-h-[90vh] -translate-y-1/2 overflow-y-auto rounded-2xl border border-stone-200 bg-white shadow-2xl sm:inset-x-auto sm:left-1/2 sm:w-full sm:max-w-md sm:-translate-x-1/2">
         <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3">
-          <h2 className="text-sm font-bold text-stone-900">Demander une modification du plan</h2>
+          <h2 className="text-sm font-bold text-stone-900">
+            {!session.matchedPlanId && !session.matchedPlanName
+              ? 'Demander l’attribution d’un plan'
+              : 'Demander une modification du plan'}
+          </h2>
           <button
             type="button"
             onClick={onClose}
@@ -111,11 +116,19 @@ export function AssistantPlanChangeRequestModal({ session, onClose, onSuccess }:
           <div className="rounded-xl bg-stone-50 px-3 py-2.5 text-sm">
             <p className="font-semibold text-stone-900">{session.chairName}</p>
             <p className="mt-1 text-xs text-stone-500">
-              Plan actuel : {session.matchedPlanName ?? '—'}
+              Plan actuel :{' '}
+              <span className={!session.matchedPlanName ? 'font-semibold text-orange-700' : ''}>
+                {currentPlanLabel(session.matchedPlanName)}
+              </span>
             </p>
             <p className="text-xs text-stone-500">
-              Montant actuel : {formatDH(currentExpected)}
+              Montant actuel : {formatDH(currentExpected ?? 0)}
             </p>
+            {!session.matchedPlanId && !session.matchedPlanName && (
+              <p className="mt-1.5 text-[11px] text-orange-700">
+                Aucun plan n’a été identifié (session arrêtée trop tôt). Vous pouvez en demander un.
+              </p>
+            )}
           </div>
 
           <div>
@@ -169,7 +182,11 @@ export function AssistantPlanChangeRequestModal({ session, onClose, onSuccess }:
                 if (reasonError) setReasonError(validatePlanChangeReason(e.target.value));
               }}
               rows={3}
-              placeholder="Ex. : le client a demandé dix minutes supplémentaires."
+              placeholder={
+                !session.matchedPlanId && !session.matchedPlanName
+                  ? 'Ex. : le client a utilisé le fauteuil brièvement, facturer le plan 20 min.'
+                  : 'Ex. : le client a demandé dix minutes supplémentaires.'
+              }
               className="w-full resize-none rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:border-stone-500 focus:outline-none"
             />
             {reasonError && <p className="mt-1 text-xs font-medium text-red-600">{reasonError}</p>}

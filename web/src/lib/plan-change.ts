@@ -58,7 +58,12 @@ export function canRequestPlanChange(session: {
   status?: string | null;
   matchedPlanId?: string | null;
 }): boolean {
+  // COMPLETED sessions may have no matched plan (stopped before a plan was identified).
   return session.status === 'COMPLETED';
+}
+
+export function currentPlanLabel(planName: string | null | undefined): string {
+  return planName?.trim() ? planName : 'Aucun plan';
 }
 
 export function validatePlanChangeReason(reason: string): string | null {

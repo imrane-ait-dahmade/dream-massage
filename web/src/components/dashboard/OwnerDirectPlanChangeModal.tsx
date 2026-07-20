@@ -10,6 +10,7 @@ import {
   computeRemainingAmount,
   formatAmountDiff,
   formatPlanMinutes,
+  currentPlanLabel,
 } from '@/lib/plan-change';
 
 interface Props {
@@ -77,7 +78,9 @@ export function OwnerDirectPlanChangeModal({ session, onClose, onSuccess }: Prop
       <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="fixed inset-x-4 top-1/2 z-50 max-h-[90vh] -translate-y-1/2 overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl sm:inset-x-auto sm:left-1/2 sm:w-full sm:max-w-md sm:-translate-x-1/2">
         <div className="flex items-center justify-between border-b border-slate-700 px-5 py-4">
-          <h2 className="font-bold text-white">Modifier le plan</h2>
+          <h2 className="font-bold text-white">
+            {!session.matchedPlanId ? 'Attribuer un plan' : 'Modifier le plan'}
+          </h2>
           <button
             type="button"
             onClick={onClose}
@@ -94,9 +97,18 @@ export function OwnerDirectPlanChangeModal({ session, onClose, onSuccess }: Prop
               {formatTime(session.startedAt)} → {formatTime(session.endedAt)}
             </p>
             <p className="mt-1 text-xs text-slate-500">
-              Plan actuel : {session.matchedPlanName ?? '—'} ·{' '}
-              {currentExpected != null ? formatDH(currentExpected) : '—'}
+              Plan actuel :{' '}
+              <span className={!session.matchedPlanId ? 'text-orange-300' : ''}>
+                {currentPlanLabel(session.matchedPlanName)}
+              </span>
+              {' · '}
+              {currentExpected != null ? formatDH(currentExpected) : '0 DH'}
             </p>
+            {!session.matchedPlanId && (
+              <p className="mt-1.5 text-[11px] text-orange-300">
+                Aucun plan identifié (arrêt avant détection). Vous pouvez en attribuer un.
+              </p>
+            )}
           </div>
 
           {!confirming ? (
@@ -126,7 +138,8 @@ export function OwnerDirectPlanChangeModal({ session, onClose, onSuccess }: Prop
               {selected && (
                 <div className="space-y-1 rounded-xl border border-slate-700 bg-slate-800/60 px-4 py-3 text-xs text-slate-300">
                   <p>
-                    {session.matchedPlanName ?? '—'} ({currentExpected != null ? formatDH(currentExpected) : '—'})
+                    {currentPlanLabel(session.matchedPlanName)} (
+                    {currentExpected != null ? formatDH(currentExpected) : '0 DH'})
                     {' → '}
                     <span className="font-semibold text-white">
                       {selected.name} ({formatDH(selected.priceAmount)})

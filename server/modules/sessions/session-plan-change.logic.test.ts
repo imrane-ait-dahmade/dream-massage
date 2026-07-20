@@ -252,6 +252,30 @@ test('ACTIVE session cannot change plan', () => {
   assert.equal(err!.status, 409);
 });
 
+test('COMPLETED session without plan can receive a plan assignment', () => {
+  const noPlan = {
+    ...baseSession,
+    matchedPlanId: null,
+    expectedAmount: 0,
+  };
+  assert.equal(assertSessionEligibleForPlanChange(noPlan), null);
+  assert.equal(assertPlanIsDifferent(null, plan30.id), null);
+
+  const update = buildPlanChangeSessionUpdate({
+    session: noPlan,
+    newPlan: plan30,
+    previousPricingSnapshot: { reason: 'TOO_SHORT' },
+    actorUserId: 'owner-1',
+    reason: 'Client a utilisé brièvement',
+    source: 'REQUEST_APPROVED',
+  });
+  assert.equal(update.matchedPlanId, 'plan-30');
+  assert.equal(update.expectedAmount, 30);
+  assert.equal(update.billingStatus, 'CALCULATED');
+  assert.equal(update.anomalyType, null);
+  assert.equal(update.pricingSnapshot.hadNoPlan, true);
+});
+
 test('reviewNote length is limited', () => {
   const r = validateOptionalReviewNote('x'.repeat(501));
   assert.equal(r.ok, false);

@@ -222,9 +222,11 @@ function PlanChangeRequestsContent() {
                         {r.requestedBy?.name ?? '—'}
                       </td>
                       <td className="px-3 py-2.5 text-xs text-slate-400">
-                        {r.originalPlanName ?? '—'}
+                        {r.originalPlanName ?? 'Aucun plan'}
                         <span className="block text-[10px] text-slate-600">
-                          {formatPlanMinutes(r.originalDurationSeconds)}
+                          {r.originalDurationSeconds != null
+                            ? formatPlanMinutes(r.originalDurationSeconds)
+                            : '—'}
                         </span>
                       </td>
                       <td className="px-3 py-2.5 text-xs text-slate-300">
