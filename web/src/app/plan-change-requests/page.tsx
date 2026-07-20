@@ -47,7 +47,7 @@ function PlanChangeRequestsContent() {
     mode: 'approve' | 'reject';
   } | null>(null);
 
-  const isOwner = user?.role === 'OWNER';
+  const isOwnerOrAdmin = user?.role === 'OWNER' || user?.role === 'ADMIN';
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -153,9 +153,9 @@ function PlanChangeRequestsContent() {
           </div>
         )}
 
-        {!isOwner && user && (
+        {!isOwnerOrAdmin && user && (
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-200">
-            Seul l’Owner peut valider ou refuser. Les admins peuvent consulter la liste.
+            Vous n’avez pas la permission de valider ou refuser les demandes.
           </div>
         )}
 
@@ -256,7 +256,7 @@ function PlanChangeRequestsContent() {
                         </span>
                       </td>
                       <td className="px-2 py-2.5">
-                        {r.status === 'PENDING' && isOwner && (
+                        {r.status === 'PENDING' && isOwnerOrAdmin && (
                           <div className="flex items-center gap-1">
                             <button
                               type="button"

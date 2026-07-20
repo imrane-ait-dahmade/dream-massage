@@ -541,8 +541,8 @@ export const sessionPlanChangeService = {
     input: { reviewNote?: string },
     actor: AuthUser,
   ) {
-    if (actor.role !== 'OWNER') {
-      throw httpError(403, 'Forbidden — OWNER role required');
+    if (actor.role !== 'OWNER' && actor.role !== 'ADMIN') {
+      throw httpError(403, 'Forbidden — OWNER or ADMIN role required');
     }
 
     const noteResult = validateOptionalReviewNote(input.reviewNote);
@@ -622,8 +622,8 @@ export const sessionPlanChangeService = {
     input: { reviewNote?: string },
     actor: AuthUser,
   ) {
-    if (actor.role !== 'OWNER') {
-      throw httpError(403, 'Forbidden — OWNER role required');
+    if (actor.role !== 'OWNER' && actor.role !== 'ADMIN') {
+      throw httpError(403, 'Forbidden — OWNER or ADMIN role required');
     }
 
     const noteResult = validateOptionalReviewNote(input.reviewNote);

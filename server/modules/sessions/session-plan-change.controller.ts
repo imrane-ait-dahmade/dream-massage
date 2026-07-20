@@ -3,7 +3,7 @@ import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { sessionPlanChangeService } from './session-plan-change.service';
 import type { AuthRequest } from '../../middleware/auth.middleware';
-import { requireOwner, requireOwnerAdmin } from '../../middleware/auth.middleware';
+import { requireOwnerAdmin } from '../../middleware/auth.middleware';
 
 const router = Router();
 
@@ -82,7 +82,7 @@ router.get('/:requestId', requireOwnerAdmin, (req: Request, res: Response) => {
 });
 
 // POST /api/session-plan-change-requests/:requestId/approve
-router.post('/:requestId/approve', requireOwner, (req: Request, res: Response) => {
+router.post('/:requestId/approve', requireOwnerAdmin, (req: Request, res: Response) => {
   const idParsed = uuidSchema.safeParse(req.params.requestId);
   if (!idParsed.success) {
     res.status(400).json({ ok: false, error: 'requestId UUID invalide' });
@@ -111,7 +111,7 @@ router.post('/:requestId/approve', requireOwner, (req: Request, res: Response) =
 });
 
 // POST /api/session-plan-change-requests/:requestId/reject
-router.post('/:requestId/reject', requireOwner, (req: Request, res: Response) => {
+router.post('/:requestId/reject', requireOwnerAdmin, (req: Request, res: Response) => {
   const idParsed = uuidSchema.safeParse(req.params.requestId);
   if (!idParsed.success) {
     res.status(400).json({ ok: false, error: 'requestId UUID invalide' });

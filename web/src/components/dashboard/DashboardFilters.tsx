@@ -58,13 +58,6 @@ const PRESETS = [
   { key: 'year',      label: 'Année' },
 ] as const;
 
-const PERIODS = [
-  { value: 'all',     label: 'Toute la journée' },
-  { value: 'matin',   label: 'Matin' },
-  { value: 'soir',    label: 'Soir' },
-  { value: 'custom',  label: 'Perso' },
-] as const;
-
 const STATUSES = [
   { value: 'all',       label: 'Tous statuts' },
   { value: 'ACTIVE',    label: 'En cours' },
@@ -124,12 +117,8 @@ export function DashboardFilters({ filters, filterOptions, onChange, onReset, lo
     setParent({ preset: key, from, to });
   }
 
-  const isCustom = filters.period === 'custom';
-  const hasAdvancedActive = filters.staffMemberId !== 'all'
-    || filters.shiftTypeId !== 'all'
-    || filters.shiftId !== 'all'
-    || filters.status !== 'all'
-    || filters.period !== 'all';
+  // Hidden filters stay at defaults ('all') — logic unchanged.
+  const hasAdvancedActive = filters.shiftId !== 'all' || filters.status !== 'all';
 
   return (
     <div className="space-y-3 rounded-2xl border border-slate-700 bg-slate-800/60 p-3 backdrop-blur-sm md:p-4">
@@ -169,8 +158,8 @@ export function DashboardFilters({ filters, filterOptions, onChange, onReset, lo
         </div>
       </div>
 
-      {/* ── Row 2: Dates + Chair + Fille (always visible) ─────────────────── */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:flex md:flex-wrap">
+      {/* ── Row 2: Dates only ─────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap">
         <Field label="Début" className="md:w-[130px]">
           <input
             type="date"
@@ -186,35 +175,6 @@ export function DashboardFilters({ filters, filterOptions, onChange, onReset, lo
             onChange={(e) => setParent({ to: e.target.value, preset: 'custom' })}
             className={INPUT_CLS}
           />
-        </Field>
-        <Field label="Fauteuil" className="md:w-[100px]">
-          <select
-            value={filters.chair}
-            onChange={(e) => set({ chair: e.target.value })}
-            className={SELECT_CLS}
-          >
-            <option value="all" className="bg-slate-800">Tous</option>
-            {filterOptions?.chairs.map((c) => (
-              <option key={c.id} value={c.name} className="bg-slate-800">
-                {c.displayName ?? c.name}
-              </option>
-            )) ?? ['F1','F2','F3','F4','F5'].map((n) => (
-              <option key={n} value={n} className="bg-slate-800">{n}</option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Fille" className="md:w-[120px]">
-          <select
-            value={filters.staffMemberId}
-            onChange={(e) => setParent({ staffMemberId: e.target.value })}
-            className={SELECT_CLS}
-            disabled={!filterOptions?.staffMembers.length}
-          >
-            <option value="all" className="bg-slate-800">Toutes</option>
-            {filterOptions?.staffMembers.map((s) => (
-              <option key={s.id} value={s.id} className="bg-slate-800">{s.name}</option>
-            ))}
-          </select>
         </Field>
       </div>
 
@@ -234,19 +194,7 @@ export function DashboardFilters({ filters, filterOptions, onChange, onReset, lo
 
       {/* ── Advanced filters (mobile: collapsible, desktop: always visible) ── */}
       <div className={`space-y-2 ${advancedOpen ? 'block' : 'hidden'} md:block`}>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:flex md:flex-wrap md:gap-2">
-          <Field label="Période">
-            <select
-              value={filters.period}
-              onChange={(e) => setParent({ period: e.target.value as HomeDashboardFilters['period'] })}
-              className={SELECT_CLS}
-            >
-              {PERIODS.map(({ value, label }) => (
-                <option key={value} value={value} className="bg-slate-800">{label}</option>
-              ))}
-            </select>
-          </Field>
-
+        <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:gap-2">
           <Field label="Statut">
             <select
               value={filters.status}
@@ -259,21 +207,7 @@ export function DashboardFilters({ filters, filterOptions, onChange, onReset, lo
             </select>
           </Field>
 
-          <Field label="Type shift" className="md:w-[120px]">
-            <select
-              value={filters.shiftTypeId}
-              onChange={(e) => setParent({ shiftTypeId: e.target.value })}
-              className={SELECT_CLS}
-              disabled={!filterOptions?.shiftTypes.length}
-            >
-              <option value="all" className="bg-slate-800">Tous types</option>
-              {filterOptions?.shiftTypes.map((st) => (
-                <option key={st.id} value={st.id} className="bg-slate-800">{st.label}</option>
-              ))}
-            </select>
-          </Field>
-
-          <Field label="Shift" className="col-span-2 sm:col-span-1 md:min-w-[160px]">
+          <Field label="Shift" className="md:min-w-[160px]">
             <select
               value={filters.shiftId}
               onChange={(e) => set({ shiftId: e.target.value })}
@@ -309,28 +243,6 @@ export function DashboardFilters({ filters, filterOptions, onChange, onReset, lo
             ))}
           </div>
         </div>
-
-        {/* Custom time range */}
-        {isCustom && (
-          <div className="flex flex-wrap gap-2 border-t border-slate-700/60 pt-2">
-            <Field label="Heure début" className="w-[calc(50%-4px)] md:w-[120px]">
-              <input
-                type="time"
-                value={filters.periodStart ?? ''}
-                onChange={(e) => set({ periodStart: e.target.value })}
-                className={INPUT_CLS}
-              />
-            </Field>
-            <Field label="Heure fin" className="w-[calc(50%-4px)] md:w-[120px]">
-              <input
-                type="time"
-                value={filters.periodEnd ?? ''}
-                onChange={(e) => set({ periodEnd: e.target.value })}
-                className={INPUT_CLS}
-              />
-            </Field>
-          </div>
-        )}
       </div>
     </div>
   );
