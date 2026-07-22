@@ -250,8 +250,9 @@ model PricingRule {
 
 // Single massage session, from power-on detection to power-off confirmation.
 // Six timestamps capture the full debounce lifecycle for audit purposes.
-// correctedAmount never overwrites expectedAmount — both are kept for audit.
-// effectiveAmount = correctedAmount ?? expectedAmount (computed in service layer).
+// correctedAmount = montant réellement encaissé (paidAmount métier).
+// Never overwrite expectedAmount with a discount/gift/unpaid — keep both for audit.
+// effectiveAmount / finalAmount = correctedAmount ?? expectedAmount (service layer).
 // See RAW_SQL_CONSTRAINTS.md for unique_active_session_per_chair partial index.
 model ChairSession {
   id      String  @id @default(uuid())
@@ -324,7 +325,8 @@ model ChairSession {
   @@map("chair_sessions")
 }
 
-// Audit + approval workflow for changing a session's matched pricing plan.
+// Audit + approval workflow for session modifications (plan and/or paid amount).
+// paidAmount is stored on ChairSession.correctedAmount (column corrected_amount).
 // Snapshots keep history readable even if PricingPlan rows are later renamed/archived.
 // See RAW_SQL_CONSTRAINTS.md for unique_pending_plan_change_per_session partial index.
 model SessionPlanChangeRequest {
@@ -339,18 +341,24 @@ model SessionPlanChangeRequest {
   requestedPlanId String? @map("requested_plan_id")
 
   originalPlanName         String?  @map("original_plan_name") @db.VarChar(100)
-  requestedPlanName        String   @map("requested_plan_name") @db.VarChar(100)
+  // Nullable when the request only changes paid amount (no plan change).
+  requestedPlanName        String?  @map("requested_plan_name") @db.VarChar(100)
   originalDurationSeconds  Int?     @map("original_duration_seconds")
-  requestedDurationSeconds Int      @map("requested_duration_seconds")
+  requestedDurationSeconds Int?     @map("requested_duration_seconds")
   originalExpectedAmount   Decimal? @map("original_expected_amount") @db.Decimal(10, 2)
-  requestedExpectedAmount  Decimal  @map("requested_expected_amount") @db.Decimal(10, 2)
+  requestedExpectedAmount  Decimal? @map("requested_expected_amount") @db.Decimal(10, 2)
+
+  // Paid amount snapshots (ChairSession.correctedAmount). NULL requested = no paid change.
+  // 0 is a valid requested paid amount (e.g. séance offerte).
+  originalPaidAmount  Decimal? @map("original_paid_amount") @db.Decimal(10, 2)
+  requestedPaidAmount Decimal? @map("requested_paid_amount") @db.Decimal(10, 2)
 
   reason     String                         @db.Text
   status     SessionPlanChangeRequestStatus @default(PENDING)
   reviewNote String?                        @map("review_note") @db.Text
   reviewedAt DateTime?                      @map("reviewed_at")
 
-  // Detects stale approvals when the session plan changed after the request was created.
+  // Detects stale approvals when the session changed after the request was created.
   sessionMatchedPlanIdAtRequest String?   @map("session_matched_plan_id_at_request")
   sessionUpdatedAtAtRequest     DateTime? @map("session_updated_at_at_request")
 

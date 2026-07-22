@@ -593,7 +593,7 @@ export interface AssistantSessionsListResponse {
   total: number;
 }
 
-// ── Session plan change requests ───────────────────────────────────────────────
+// ── Session modification requests (plan and/or paid amount) ───────────────────
 
 export type SessionPlanChangeRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
@@ -605,16 +605,27 @@ export interface SessionPlanChangeRequest {
   reviewedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /** True when the request includes a plan change. */
+  hasPlanChange: boolean;
+  /** True when the request includes a paid-amount change (incl. 0 DH). */
+  hasPaidChange: boolean;
   originalPlanId: string | null;
   originalPlanName: string | null;
   originalDurationSeconds: number | null;
   originalDurationMinutes: number | null;
   originalExpectedAmount: number | null;
   requestedPlanId: string | null;
-  requestedPlanName: string;
-  requestedDurationSeconds: number;
-  requestedDurationMinutes: number;
+  requestedPlanName: string | null;
+  requestedDurationSeconds: number | null;
+  requestedDurationMinutes: number | null;
   requestedExpectedAmount: number | null;
+  /** Snapshot of session.correctedAmount (= paidAmount) at request time. */
+  originalPaidAmount: number | null;
+  /**
+   * Requested paid amount. null = no paid change.
+   * 0 is a valid requested paid amount (séance offerte).
+   */
+  requestedPaidAmount: number | null;
   requestedBy: {
     id: string;
     name: string;
@@ -636,6 +647,8 @@ export interface SessionPlanChangeRequest {
     matchedPlanId: string | null;
     expectedAmount: number | null;
     correctedAmount: number | null;
+    /** Alias of correctedAmount — montant réellement encaissé. */
+    paidAmount: number | null;
     finalAmount: number;
     remainingAmount: number;
     chairId: string;
@@ -647,6 +660,13 @@ export interface SessionPlanChangeRequest {
 
 export interface SessionPlanChangeResult {
   ok: boolean;
-  session: SessionDetail & { remainingAmount?: number };
+  session: SessionDetail & { remainingAmount?: number; paidAmount?: number | null };
   request: SessionPlanChangeRequest;
+}
+
+export interface CreateSessionModificationPayload {
+  requestedPlanId?: string;
+  /** 0 DH is valid. Omit the field to leave paid amount unchanged. */
+  requestedPaidAmount?: number;
+  reason: string;
 }

@@ -932,7 +932,11 @@ export async function changeSessionPlan(
 
 export async function createSessionPlanChangeRequest(
   sessionId: string,
-  payload: { requestedPlanId: string; reason: string },
+  payload: {
+    requestedPlanId?: string;
+    requestedPaidAmount?: number;
+    reason: string;
+  },
 ): Promise<{ ok: boolean; request: SessionPlanChangeRequest }> {
   return apiRequest(
     `${BASE}/api/sessions/${encodeURIComponent(sessionId)}/plan-change-requests`,

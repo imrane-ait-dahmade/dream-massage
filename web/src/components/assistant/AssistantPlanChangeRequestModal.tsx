@@ -14,6 +14,8 @@ import {
   formatAmountDiff,
   formatPlanMinutes,
   currentPlanLabel,
+  parsePaidAmountInput,
+  validateModificationSelection,
   validatePlanChangeReason,
 } from '@/lib/plan-change';
 
@@ -35,12 +37,18 @@ interface Props {
 export function AssistantPlanChangeRequestModal({ session, onClose, onSuccess }: Props) {
   const [plans, setPlans] = useState<AssistantPlanOption[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
+  const [changePlan, setChangePlan] = useState(false);
+  const [changePaid, setChangePaid] = useState(false);
   const [requestedPlanId, setRequestedPlanId] = useState('');
+  const [paidAmountRaw, setPaidAmountRaw] = useState('');
   const [reason, setReason] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [reasonError, setReasonError] = useState<string | null>(null);
+
+  const currentPaid = session.correctedAmount;
+  const currentExpected = session.expectedAmount;
 
   useEffect(() => {
     getAssistantPricingPlans()
@@ -55,26 +63,55 @@ export function AssistantPlanChangeRequestModal({ session, onClose, onSuccess }:
   );
 
   const selected = selectable.find((p) => p.id === requestedPlanId) ?? null;
-  const currentExpected = session.expectedAmount;
   const newExpected = selected?.priceAmount ?? null;
-  const diff = amountDiff(currentExpected, newExpected);
+  const expectedDiff = amountDiff(currentExpected, newExpected);
+
+  const paidPreview = (() => {
+    if (!changePaid) return null;
+    const parsed = parsePaidAmountInput(paidAmountRaw);
+    if (!parsed.ok || ('omitted' in parsed && parsed.omitted)) return null;
+    return parsed.value;
+  })();
 
   async function handleSubmit() {
     const reasonMsg = validatePlanChangeReason(reason);
     setReasonError(reasonMsg);
     if (reasonMsg) return;
-    if (!requestedPlanId) {
-      setError('Veuillez sélectionner un nouveau plan.');
+
+    const selectionMsg = validateModificationSelection({
+      changePlan,
+      requestedPlanId,
+      changePaid,
+      paidAmountRaw,
+      currentPaidAmount: currentPaid,
+    });
+    if (selectionMsg) {
+      setError(selectionMsg);
       return;
+    }
+
+    const payload: {
+      requestedPlanId?: string;
+      requestedPaidAmount?: number;
+      reason: string;
+    } = { reason: reason.trim() };
+
+    if (changePlan) {
+      payload.requestedPlanId = requestedPlanId;
+    }
+    if (changePaid) {
+      const parsed = parsePaidAmountInput(paidAmountRaw);
+      if (!parsed.ok || ('omitted' in parsed && parsed.omitted) || parsed.value == null) {
+        setError('Indiquez le nouveau montant payé (0 DH autorisé).');
+        return;
+      }
+      payload.requestedPaidAmount = parsed.value;
     }
 
     setSaving(true);
     setError(null);
     try {
-      await createSessionPlanChangeRequest(session.id, {
-        requestedPlanId,
-        reason: reason.trim(),
-      });
+      await createSessionPlanChangeRequest(session.id, payload);
       setDone(true);
       window.setTimeout(() => {
         onSuccess();
@@ -98,11 +135,7 @@ export function AssistantPlanChangeRequestModal({ session, onClose, onSuccess }:
       <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="fixed inset-x-3 top-1/2 z-50 max-h-[90vh] -translate-y-1/2 overflow-y-auto rounded-2xl border border-stone-200 bg-white shadow-2xl sm:inset-x-auto sm:left-1/2 sm:w-full sm:max-w-md sm:-translate-x-1/2">
         <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3">
-          <h2 className="text-sm font-bold text-stone-900">
-            {!session.matchedPlanId && !session.matchedPlanName
-              ? 'Demander l’attribution d’un plan'
-              : 'Demander une modification du plan'}
-          </h2>
+          <h2 className="text-sm font-bold text-stone-900">Demander une modification</h2>
           <button
             type="button"
             onClick={onClose}
@@ -116,13 +149,17 @@ export function AssistantPlanChangeRequestModal({ session, onClose, onSuccess }:
           <div className="rounded-xl bg-stone-50 px-3 py-2.5 text-sm">
             <p className="font-semibold text-stone-900">{session.chairName}</p>
             <p className="mt-1 text-xs text-stone-500">
-              Plan actuel :{' '}
+              Plan :{' '}
               <span className={!session.matchedPlanName ? 'font-semibold text-orange-700' : ''}>
                 {currentPlanLabel(session.matchedPlanName)}
               </span>
             </p>
             <p className="text-xs text-stone-500">
-              Montant actuel : {formatDH(currentExpected ?? 0)}
+              Prix attendu : {formatDH(currentExpected ?? 0)}
+            </p>
+            <p className="text-xs text-stone-500">
+              Montant payé :{' '}
+              {currentPaid != null ? formatDH(currentPaid) : 'Non renseigné'}
             </p>
             {!session.matchedPlanId && !session.matchedPlanName && (
               <p className="mt-1.5 text-[11px] text-orange-700">
@@ -131,43 +168,117 @@ export function AssistantPlanChangeRequestModal({ session, onClose, onSuccess }:
             )}
           </div>
 
-          <div>
-            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-stone-500">
-              Nouveau plan
-            </label>
-            {loadingPlans ? (
-              <p className="text-xs text-stone-400">Chargement des plans…</p>
-            ) : (
-              <select
-                value={requestedPlanId}
-                onChange={(e) => setRequestedPlanId(e.target.value)}
-                className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-900 focus:border-stone-500 focus:outline-none"
-              >
-                <option value="">Sélectionner un plan…</option>
-                {selectable.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} — {formatPlanMinutes(p.durationSeconds)} — {formatDH(p.priceAmount)}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
+          <label className="flex items-start gap-2 rounded-xl border border-stone-200 px-3 py-2.5">
+            <input
+              type="checkbox"
+              checked={changePlan}
+              onChange={(e) => {
+                setChangePlan(e.target.checked);
+                if (!e.target.checked) setRequestedPlanId('');
+                setError(null);
+              }}
+              className="mt-0.5"
+            />
+            <span className="text-sm text-stone-800">
+              <span className="font-semibold">Modifier le plan</span>
+              <span className="mt-0.5 block text-xs text-stone-500">
+                Met à jour le prix attendu selon le plan choisi. Ne change pas le montant payé.
+              </span>
+            </span>
+          </label>
 
-          {selected && (
-            <div className="space-y-1 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2.5 text-xs text-stone-700">
-              <p>
-                Nouvelle durée : <span className="font-semibold">{formatPlanMinutes(selected.durationSeconds)}</span>
-              </p>
-              <p>
-                Nouveau montant attendu :{' '}
-                <span className="font-semibold">{formatDH(selected.priceAmount)}</span>
-              </p>
-              <p>
-                Différence :{' '}
-                <span className={`font-semibold ${diff > 0 ? 'text-emerald-700' : diff < 0 ? 'text-red-700' : ''}`}>
-                  {formatAmountDiff(diff)}
-                </span>
-              </p>
+          {changePlan && (
+            <div className="space-y-2 pl-1">
+              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-stone-500">
+                Nouveau plan
+              </label>
+              {loadingPlans ? (
+                <p className="text-xs text-stone-400">Chargement des plans…</p>
+              ) : (
+                <select
+                  value={requestedPlanId}
+                  onChange={(e) => setRequestedPlanId(e.target.value)}
+                  className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-900 focus:border-stone-500 focus:outline-none"
+                >
+                  <option value="">Sélectionner un plan…</option>
+                  {selectable.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} — {formatPlanMinutes(p.durationSeconds)} — {formatDH(p.priceAmount)}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {selected && (
+                <div className="space-y-1 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2.5 text-xs text-stone-700">
+                  <p>
+                    Nouveau prix attendu :{' '}
+                    <span className="font-semibold">{formatDH(selected.priceAmount)}</span>
+                  </p>
+                  <p>
+                    Différence prix attendu :{' '}
+                    <span
+                      className={`font-semibold ${
+                        expectedDiff > 0
+                          ? 'text-emerald-700'
+                          : expectedDiff < 0
+                            ? 'text-red-700'
+                            : ''
+                      }`}
+                    >
+                      {formatAmountDiff(expectedDiff)}
+                    </span>
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <label className="flex items-start gap-2 rounded-xl border border-stone-200 px-3 py-2.5">
+            <input
+              type="checkbox"
+              checked={changePaid}
+              onChange={(e) => {
+                setChangePaid(e.target.checked);
+                if (!e.target.checked) setPaidAmountRaw('');
+                setError(null);
+              }}
+              className="mt-0.5"
+            />
+            <span className="text-sm text-stone-800">
+              <span className="font-semibold">Modifier le montant payé</span>
+              <span className="mt-0.5 block text-xs text-stone-500">
+                Montant réellement encaissé. 0 DH est autorisé (ex. séance offerte).
+              </span>
+            </span>
+          </label>
+
+          {changePaid && (
+            <div className="space-y-2 pl-1">
+              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-stone-500">
+                Nouveau montant payé (DH)
+              </label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={paidAmountRaw}
+                onChange={(e) => {
+                  setPaidAmountRaw(e.target.value);
+                  setError(null);
+                }}
+                placeholder="Ex. : 0"
+                className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:border-stone-500 focus:outline-none"
+              />
+              {paidPreview != null && (
+                <p className="text-xs text-stone-600">
+                  Aperçu : {formatDH(paidPreview)}
+                  {currentPaid != null && (
+                    <>
+                      {' '}
+                      ({formatAmountDiff(amountDiff(currentPaid, paidPreview))})
+                    </>
+                  )}
+                </p>
+              )}
             </div>
           )}
 
@@ -183,8 +294,8 @@ export function AssistantPlanChangeRequestModal({ session, onClose, onSuccess }:
               }}
               rows={3}
               placeholder={
-                !session.matchedPlanId && !session.matchedPlanName
-                  ? 'Ex. : le client a utilisé le fauteuil brièvement, facturer le plan 20 min.'
+                changePaid && !changePlan
+                  ? 'Ex. : Séance offerte.'
                   : 'Ex. : le client a demandé dix minutes supplémentaires.'
               }
               className="w-full resize-none rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:border-stone-500 focus:outline-none"
@@ -223,7 +334,7 @@ export function AssistantPlanChangeRequestModal({ session, onClose, onSuccess }:
           <button
             type="button"
             onClick={() => void handleSubmit()}
-            disabled={saving || done || loadingPlans}
+            disabled={saving || done || (changePlan && loadingPlans)}
             className="rounded-xl bg-stone-900 px-4 py-2 text-sm font-semibold text-white hover:bg-stone-800 disabled:opacity-40"
           >
             {saving ? 'Envoi…' : 'Envoyer la demande'}

@@ -118,10 +118,19 @@ router.patch('/:sessionId/plan', requireOwnerAdmin, (req: Request, res: Response
 
 const planChangeRequestSchema = z
   .object({
-    requestedPlanId: z.string().uuid('requestedPlanId UUID invalide'),
+    requestedPlanId: z.string().uuid('requestedPlanId UUID invalide').optional(),
+    // 0 DH is valid (séance offerte) — do not use truthiness checks
+    requestedPaidAmount: z.number().nonnegative().optional(),
     reason: z.string().min(1, 'reason est obligatoire').max(500),
   })
-  .strict();
+  .strict()
+  .refine(
+    (data) => data.requestedPlanId !== undefined || data.requestedPaidAmount !== undefined,
+    {
+      message:
+        'Au moins une modification est requise : nouveau plan et/ou nouveau montant payé.',
+    },
+  );
 
 // POST /api/sessions/:sessionId/plan-change-requests — ASSISTANT creates a PENDING request
 router.post('/:sessionId/plan-change-requests', requireAssistant, (req: Request, res: Response) => {

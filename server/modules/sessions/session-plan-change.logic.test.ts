@@ -5,16 +5,19 @@
 import assert from 'node:assert/strict';
 import {
   assertNoPendingRequest,
+  assertPaidAmountIsDifferent,
   assertPlanEligibleForAssignment,
   assertPlanIsDifferent,
   assertRequestNotStale,
   assertRequestStillPending,
   assertSessionEligibleForPlanChange,
+  buildPaidAmountSessionUpdate,
   buildPlanChangeSessionUpdate,
   claimPendingRequest,
   computeFinalAmount,
   computeRemainingAmount,
   technicalFieldsUnchanged,
+  validateModificationRequestInput,
   validateOptionalReviewNote,
   validateReason,
   type PlanChangePlanSnapshot,
@@ -279,6 +282,70 @@ test('COMPLETED session without plan can receive a plan assignment', () => {
 test('reviewNote length is limited', () => {
   const r = validateOptionalReviewNote('x'.repeat(501));
   assert.equal(r.ok, false);
+});
+
+test('modification requires at least plan or paid amount', () => {
+  const empty = validateModificationRequestInput({});
+  assert.equal(empty.ok, false);
+  if (!empty.ok) assert.equal(empty.error.status, 400);
+});
+
+test('paid-only modification with 0 DH is valid', () => {
+  const mod = validateModificationRequestInput({ requestedPaidAmount: 0 });
+  assert.equal(mod.ok, true);
+  if (mod.ok) {
+    assert.equal(mod.hasPlanChange, false);
+    assert.equal(mod.hasPaidChange, true);
+    assert.equal(mod.requestedPaidAmount, 0);
+  }
+});
+
+test('plan-only modification is valid', () => {
+  const mod = validateModificationRequestInput({ requestedPlanId: 'plan-30' });
+  assert.equal(mod.ok, true);
+  if (mod.ok) {
+    assert.equal(mod.hasPlanChange, true);
+    assert.equal(mod.hasPaidChange, false);
+  }
+});
+
+test('both plan and paid modifications are valid', () => {
+  const mod = validateModificationRequestInput({
+    requestedPlanId: 'plan-30',
+    requestedPaidAmount: 0,
+  });
+  assert.equal(mod.ok, true);
+  if (mod.ok) {
+    assert.equal(mod.hasPlanChange, true);
+    assert.equal(mod.hasPaidChange, true);
+    assert.equal(mod.requestedPaidAmount, 0);
+  }
+});
+
+test('identical paid amount is rejected', () => {
+  const err = assertPaidAmountIsDifferent(0, 0);
+  assert.ok(err);
+  assert.equal(err!.status, 409);
+  assert.equal(assertPaidAmountIsDifferent(null, 0), null);
+  assert.equal(assertPaidAmountIsDifferent(40, 0), null);
+});
+
+test('paid amount update never touches expectedAmount / plan', () => {
+  const update = buildPaidAmountSessionUpdate({
+    requestedPaidAmount: 0,
+    actorUserId: 'owner-1',
+    reason: 'Séance offerte',
+  });
+  assert.equal(update.correctedAmount, 0);
+  assert.equal(update.billingStatus, 'CORRECTED');
+  assert.equal(update.correctionReason, 'Séance offerte');
+  assert.equal('expectedAmount' in update, false);
+  assert.equal('matchedPlanId' in update, false);
+});
+
+test('finalAmount with paid 0 keeps expected intact in computation', () => {
+  assert.equal(computeFinalAmount(40, 0), 0);
+  assert.equal(computeRemainingAmount(40, 0), 40);
 });
 
 console.log('All session-plan-change.logic tests passed.');

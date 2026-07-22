@@ -1,6 +1,6 @@
-import type { PricingPlan, SessionPlanChangeRequestStatus } from './types';
+import type { PricingPlan, SessionPlanChangeRequest, SessionPlanChangeRequestStatus } from './types';
 
-/** Remaining amount: max(0, expected - recordedPaid). No payment model → correctedAmount acts as recorded when set. */
+/** Remaining amount: max(0, expected - paid). paid is correctedAmount when set. */
 export function computeRemainingAmount(
   expectedAmount: number | null | undefined,
   correctedAmount: number | null | undefined,
@@ -71,6 +71,79 @@ export function validatePlanChangeReason(reason: string): string | null {
   if (!trimmed) return 'La raison de la modification est obligatoire.';
   if (trimmed.length > 500) return 'La raison ne peut pas dépasser 500 caractères.';
   return null;
+}
+
+/**
+ * Parse a paid-amount input. Empty string = not provided.
+ * "0" / "0.0" = 0 (valid). Never treat 0 as missing via truthiness.
+ */
+export function parsePaidAmountInput(
+  raw: string,
+): { ok: true; value: number } | { ok: false; error: string } | { ok: true; value: null; omitted: true } {
+  const trimmed = raw.trim();
+  if (!trimmed) return { ok: true, value: null, omitted: true };
+  const normalized = trimmed.replace(',', '.');
+  const n = Number(normalized);
+  if (!Number.isFinite(n)) {
+    return { ok: false, error: 'Le montant payé doit être un nombre valide.' };
+  }
+  if (n < 0) {
+    return { ok: false, error: 'Le montant payé doit être >= 0.' };
+  }
+  return { ok: true, value: n };
+}
+
+export function validateModificationSelection(input: {
+  changePlan: boolean;
+  requestedPlanId: string;
+  changePaid: boolean;
+  paidAmountRaw: string;
+  currentPaidAmount: number | null;
+}): string | null {
+  if (!input.changePlan && !input.changePaid) {
+    return 'Sélectionnez au moins une modification : plan et/ou montant payé.';
+  }
+  if (input.changePlan && !input.requestedPlanId) {
+    return 'Veuillez sélectionner un nouveau plan.';
+  }
+  if (input.changePaid) {
+    const parsed = parsePaidAmountInput(input.paidAmountRaw);
+    if (!parsed.ok) return parsed.error;
+    if ('omitted' in parsed && parsed.omitted) {
+      return 'Indiquez le nouveau montant payé (0 DH autorisé).';
+    }
+    if (parsed.value === input.currentPaidAmount) {
+      return 'Le montant payé demandé est identique au montant payé actuel.';
+    }
+  }
+  return null;
+}
+
+export function requestHasPlanChange(request: SessionPlanChangeRequest): boolean {
+  if (typeof request.hasPlanChange === 'boolean') return request.hasPlanChange;
+  return request.requestedPlanId != null;
+}
+
+export function requestHasPaidChange(request: SessionPlanChangeRequest): boolean {
+  if (typeof request.hasPaidChange === 'boolean') return request.hasPaidChange;
+  return request.requestedPaidAmount != null;
+}
+
+export function formatApprovedRequestSummary(request: SessionPlanChangeRequest): string {
+  const parts: string[] = [];
+  if (requestHasPlanChange(request)) {
+    parts.push(
+      `plan ${request.requestedPlanName ?? '—'} (${formatPlanMinutes(request.requestedDurationSeconds)})`,
+    );
+  }
+  if (requestHasPaidChange(request)) {
+    const paid = request.requestedPaidAmount;
+    parts.push(
+      `montant payé ${paid != null ? `${Math.round(paid).toLocaleString('fr-FR')} DH` : '—'}`,
+    );
+  }
+  if (parts.length === 0) return 'modification validée';
+  return parts.join(' · ');
 }
 
 export function findPlan(plans: PricingPlan[], planId: string | null | undefined): PricingPlan | null {

@@ -6,14 +6,17 @@ import { dashboardService } from '../dashboard/dashboard.service';
 import { homeDashboardService } from '../dashboard/home-dashboard.service';
 import {
   assertNoPendingRequest,
+  assertPaidAmountIsDifferent,
   assertPlanEligibleForAssignment,
   assertPlanIsDifferent,
   assertRequestNotStale,
   assertRequestStillPending,
   assertSessionEligibleForPlanChange,
+  buildPaidAmountSessionUpdate,
   buildPlanChangeSessionUpdate,
   computeFinalAmount,
   computeRemainingAmount,
+  validateModificationRequestInput,
   validateOptionalReviewNote,
   validateReason,
   type PlanChangePlanSnapshot,
@@ -102,6 +105,8 @@ type FetchedSession = Prisma.ChairSessionGetPayload<{ include: typeof SESSION_DE
 function mapSessionResponse(s: FetchedSession) {
   const expectedAmount = toNum(s.expectedAmount);
   const correctedAmount = toNum(s.correctedAmount);
+  /** Alias métier : paidAmount = correctedAmount (montant réellement encaissé). */
+  const paidAmount = correctedAmount;
   return {
     id: s.id,
     chairId: s.chairId,
@@ -115,6 +120,7 @@ function mapSessionResponse(s: FetchedSession) {
     matchedPlanName: s.matchedPlan?.name ?? null,
     expectedAmount,
     correctedAmount,
+    paidAmount,
     finalAmount: computeFinalAmount(expectedAmount, correctedAmount),
     /** No Payment model: when correctedAmount is set it is treated as recorded collection. */
     remainingAmount: computeRemainingAmount(expectedAmount, correctedAmount),
@@ -161,6 +167,11 @@ type FetchedRequest = Prisma.SessionPlanChangeRequestGetPayload<{ include: typeo
 function mapRequestResponse(r: FetchedRequest) {
   const expected = toNum(r.session.expectedAmount);
   const corrected = toNum(r.session.correctedAmount);
+  const originalPaidAmount = toNum(r.originalPaidAmount);
+  const requestedPaidAmount = toNum(r.requestedPaidAmount);
+  const hasPlanChange = r.requestedPlanId != null;
+  // NULL = no paid change; 0 is a valid paid change
+  const hasPaidChange = r.requestedPaidAmount != null;
   return {
     id: r.id,
     status: r.status,
@@ -169,6 +180,8 @@ function mapRequestResponse(r: FetchedRequest) {
     reviewedAt: r.reviewedAt?.toISOString() ?? null,
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
+    hasPlanChange,
+    hasPaidChange,
     originalPlanId: r.originalPlanId,
     originalPlanName: r.originalPlanName,
     originalDurationSeconds: r.originalDurationSeconds,
@@ -178,8 +191,11 @@ function mapRequestResponse(r: FetchedRequest) {
     requestedPlanId: r.requestedPlanId,
     requestedPlanName: r.requestedPlanName,
     requestedDurationSeconds: r.requestedDurationSeconds,
-    requestedDurationMinutes: Math.round(r.requestedDurationSeconds / 60),
+    requestedDurationMinutes:
+      r.requestedDurationSeconds != null ? Math.round(r.requestedDurationSeconds / 60) : null,
     requestedExpectedAmount: toNum(r.requestedExpectedAmount),
+    originalPaidAmount,
+    requestedPaidAmount,
     requestedBy: r.requestedBy
       ? {
           id: r.requestedBy.id,
@@ -205,6 +221,7 @@ function mapRequestResponse(r: FetchedRequest) {
       matchedPlanId: r.session.matchedPlanId,
       expectedAmount: expected,
       correctedAmount: corrected,
+      paidAmount: corrected,
       finalAmount: computeFinalAmount(expected, corrected),
       remainingAmount: computeRemainingAmount(expected, corrected),
       chairId: r.session.chairId,
@@ -331,6 +348,75 @@ async function applySessionPlanChangeInTx(
   return updated;
 }
 
+/**
+ * Applies a paid-amount change onto a ChairSession.
+ * Never touches expectedAmount / matchedPlanId / technical measurements.
+ */
+async function applyPaidAmountChangeInTx(
+  tx: TxClient,
+  params: {
+    sessionId: string;
+    requestedPaidAmount: number;
+    actorUserId: string | null;
+    reason: string;
+    source: 'OWNER_DIRECT' | 'REQUEST_APPROVED';
+    requestId?: string | null;
+  },
+): Promise<FetchedSession> {
+  const session = await tx.chairSession.findUnique({ where: { id: params.sessionId } });
+  const sessionSnap = session ? mapSessionSnapshot(session) : null;
+  const eligibility = assertSessionEligibleForPlanChange(sessionSnap);
+  if (eligibility) throw httpError(eligibility.status, eligibility.message);
+
+  const sameErr = assertPaidAmountIsDifferent(
+    sessionSnap!.correctedAmount,
+    params.requestedPaidAmount,
+  );
+  if (sameErr) throw httpError(sameErr.status, sameErr.message);
+
+  const update = buildPaidAmountSessionUpdate({
+    requestedPaidAmount: params.requestedPaidAmount,
+    actorUserId: params.actorUserId,
+    reason: params.reason,
+  });
+
+  const updated = await tx.chairSession.update({
+    where: { id: params.sessionId },
+    data: {
+      correctedAmount: update.correctedAmount,
+      billingStatus: update.billingStatus,
+      correctedAt: update.correctedAt,
+      correctedByUserId: update.correctedByUserId,
+      correctionReason: update.correctionReason,
+    },
+    include: SESSION_DETAIL_INCLUDE,
+  });
+
+  await tx.chairEvent.create({
+    data: {
+      chairId: session!.chairId,
+      sessionId: params.sessionId,
+      eventType: 'SESSION_CORRECTED',
+      metadata: {
+        source: params.source,
+        requestId: params.requestId ?? null,
+        reason: params.reason,
+        userId: params.actorUserId,
+        expectedAmount: sessionSnap!.expectedAmount,
+        oldPaidAmount: sessionSnap!.correctedAmount,
+        newPaidAmount: params.requestedPaidAmount,
+        matchedPlanIdUnchanged: sessionSnap!.matchedPlanId,
+        remainingAmount: computeRemainingAmount(
+          sessionSnap!.expectedAmount,
+          params.requestedPaidAmount,
+        ),
+      },
+    },
+  });
+
+  return updated;
+}
+
 export const sessionPlanChangeService = {
   /**
    * OWNER/ADMIN direct plan change. Records an immediately APPROVED audit request.
@@ -387,6 +473,8 @@ export const sessionPlanChangeService = {
           requestedDurationSeconds: planSnap!.durationSeconds,
           originalExpectedAmount: sessionSnap!.expectedAmount,
           requestedExpectedAmount: planSnap!.priceAmount,
+          originalPaidAmount: sessionSnap!.correctedAmount,
+          requestedPaidAmount: null,
           reason: reasonResult.value,
           status: 'APPROVED',
           reviewedAt: now,
@@ -422,14 +510,19 @@ export const sessionPlanChangeService = {
 
   /**
    * ASSISTANT creates a PENDING request. Session is not modified.
+   * May request a plan change, a paid-amount change, or both.
    */
   async createRequest(
     sessionId: string,
-    input: { requestedPlanId: string; reason: string },
+    input: {
+      requestedPlanId?: string;
+      requestedPaidAmount?: number;
+      reason: string;
+    },
     actor: AuthUser,
   ) {
     if (actor.role !== 'ASSISTANT') {
-      throw httpError(403, 'Seuls les assistants peuvent créer une demande de modification de plan.');
+      throw httpError(403, 'Seuls les assistants peuvent créer une demande de modification.');
     }
     if (!actor.staffMemberId) {
       throw httpError(403, 'Forbidden');
@@ -437,6 +530,12 @@ export const sessionPlanChangeService = {
 
     const reasonResult = validateReason(input.reason, 'reason');
     if (!reasonResult.ok) throw httpError(reasonResult.error.status, reasonResult.error.message);
+
+    const mod = validateModificationRequestInput({
+      requestedPlanId: input.requestedPlanId,
+      requestedPaidAmount: input.requestedPaidAmount,
+    });
+    if (!mod.ok) throw httpError(mod.error.status, mod.error.message);
 
     const created = await prisma.$transaction(async (tx) => {
       const session = await tx.chairSession.findUnique({
@@ -461,13 +560,24 @@ export const sessionPlanChangeService = {
       const pendingErr = assertNoPendingRequest(pending);
       if (pendingErr) throw httpError(pendingErr.status, pendingErr.message);
 
-      const planRow = await loadActivePlan(tx, input.requestedPlanId);
-      const planSnap = planRow ? mapPlanSnapshot(planRow) : null;
-      const planErr = assertPlanEligibleForAssignment(planSnap);
-      if (planErr) throw httpError(planErr.status, planErr.message);
+      let planSnap: PlanChangePlanSnapshot | null = null;
+      if (mod.hasPlanChange) {
+        const planRow = await loadActivePlan(tx, mod.requestedPlanId!);
+        planSnap = planRow ? mapPlanSnapshot(planRow) : null;
+        const planErr = assertPlanEligibleForAssignment(planSnap);
+        if (planErr) throw httpError(planErr.status, planErr.message);
 
-      const sameErr = assertPlanIsDifferent(sessionSnap!.matchedPlanId, planSnap!.id);
-      if (sameErr) throw httpError(sameErr.status, sameErr.message);
+        const sameErr = assertPlanIsDifferent(sessionSnap!.matchedPlanId, planSnap!.id);
+        if (sameErr) throw httpError(sameErr.status, sameErr.message);
+      }
+
+      if (mod.hasPaidChange) {
+        const paidErr = assertPaidAmountIsDifferent(
+          sessionSnap!.correctedAmount,
+          mod.requestedPaidAmount!,
+        );
+        if (paidErr) throw httpError(paidErr.status, paidErr.message);
+      }
 
       try {
         return await tx.sessionPlanChangeRequest.create({
@@ -475,13 +585,15 @@ export const sessionPlanChangeService = {
             sessionId,
             requestedByUserId: actor.id,
             originalPlanId: sessionSnap!.matchedPlanId,
-            requestedPlanId: planSnap!.id,
+            requestedPlanId: planSnap?.id ?? null,
             originalPlanName: session?.matchedPlan?.name ?? null,
-            requestedPlanName: planSnap!.name,
+            requestedPlanName: planSnap?.name ?? null,
             originalDurationSeconds: session?.matchedPlan?.durationSeconds ?? null,
-            requestedDurationSeconds: planSnap!.durationSeconds,
+            requestedDurationSeconds: planSnap?.durationSeconds ?? null,
             originalExpectedAmount: sessionSnap!.expectedAmount,
-            requestedExpectedAmount: planSnap!.priceAmount,
+            requestedExpectedAmount: planSnap?.priceAmount ?? null,
+            originalPaidAmount: sessionSnap!.correctedAmount,
+            requestedPaidAmount: mod.hasPaidChange ? mod.requestedPaidAmount : null,
             reason: reasonResult.value,
             status: 'PENDING',
             sessionMatchedPlanIdAtRequest: sessionSnap!.matchedPlanId,
@@ -496,7 +608,7 @@ export const sessionPlanChangeService = {
         ) {
           throw httpError(
             409,
-            'Une demande de modification de plan est déjà en attente pour cette session.',
+            'Une demande de modification est déjà en attente pour cette session.',
           );
         }
         throw err;
@@ -537,6 +649,7 @@ export const sessionPlanChangeService = {
 
   /**
    * OWNER approves a PENDING request atomically with conditional claim.
+   * Applies plan change and/or paid-amount change independently.
    */
   async approveRequest(
     requestId: string,
@@ -559,8 +672,12 @@ export const sessionPlanChangeService = {
       const pendingErr = assertRequestStillPending(existing.status);
       if (pendingErr) throw httpError(pendingErr.status, pendingErr.message);
 
-      if (!existing.requestedPlanId) {
-        throw httpError(409, 'Cette demande ne référence plus de plan valide.');
+      const hasPlanChange = existing.requestedPlanId != null;
+      // NULL = no paid change; 0 is a valid paid change
+      const hasPaidChange = existing.requestedPaidAmount != null;
+
+      if (!hasPlanChange && !hasPaidChange) {
+        throw httpError(409, 'Cette demande ne contient aucune modification applicable.');
       }
 
       const session = await tx.chairSession.findUnique({ where: { id: existing.sessionId } });
@@ -592,14 +709,37 @@ export const sessionPlanChangeService = {
         throw httpError(409, 'Cette demande a déjà été traitée.');
       }
 
-      const updatedSession = await applySessionPlanChangeInTx(tx, {
-        sessionId: existing.sessionId,
-        newPlanId: existing.requestedPlanId,
-        actorUserId: actor.id,
-        reason: existing.reason,
-        source: 'REQUEST_APPROVED',
-        requestId,
-      });
+      let updatedSession: FetchedSession | null = null;
+
+      if (hasPlanChange) {
+        updatedSession = await applySessionPlanChangeInTx(tx, {
+          sessionId: existing.sessionId,
+          newPlanId: existing.requestedPlanId!,
+          actorUserId: actor.id,
+          reason: existing.reason,
+          source: 'REQUEST_APPROVED',
+          requestId,
+        });
+      }
+
+      if (hasPaidChange) {
+        const paidAmount = Number(existing.requestedPaidAmount);
+        updatedSession = await applyPaidAmountChangeInTx(tx, {
+          sessionId: existing.sessionId,
+          requestedPaidAmount: paidAmount,
+          actorUserId: actor.id,
+          reason: existing.reason,
+          source: 'REQUEST_APPROVED',
+          requestId,
+        });
+      }
+
+      if (!updatedSession) {
+        updatedSession = await tx.chairSession.findUniqueOrThrow({
+          where: { id: existing.sessionId },
+          include: SESSION_DETAIL_INCLUDE,
+        });
+      }
 
       const fullRequest = await tx.sessionPlanChangeRequest.findUniqueOrThrow({
         where: { id: requestId },

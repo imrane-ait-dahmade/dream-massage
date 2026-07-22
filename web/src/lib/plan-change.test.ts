@@ -1,5 +1,5 @@
 /**
- * Frontend helpers for session plan-change UI.
+ * Frontend helpers for session modification UI (plan and/or paid amount).
  * Run from web/: npx tsx src/lib/plan-change.test.ts
  */
 import assert from 'node:assert/strict';
@@ -8,10 +8,14 @@ import {
   canRequestPlanChange,
   computeRemainingAmount,
   formatAmountDiff,
+  formatApprovedRequestSummary,
   formatPlanMinutes,
+  parsePaidAmountInput,
   planChangeStatusLabel,
+  validateModificationSelection,
   validatePlanChangeReason,
 } from './plan-change';
+import type { SessionPlanChangeRequest } from './types';
 
 function test(name: string, fn: () => void) {
   try {
@@ -58,11 +62,57 @@ test('6-8. Remaining / paid unchanged semantics', () => {
   // paid/corrected 20, new expected 30 → remaining 10
   assert.equal(computeRemainingAmount(30, 20), 10);
   assert.equal(computeRemainingAmount(30, null), 0);
+  // paid 0 is valid
+  assert.equal(computeRemainingAmount(40, 0), 40);
 });
 
 test('9-14. Status labels and 409-facing validation stay stable', () => {
   assert.equal(planChangeStatusLabel('REJECTED'), 'Refusée');
   assert.ok(validatePlanChangeReason('x'.repeat(501)));
+});
+
+test('paid amount 0 is parsed as zero, not omitted', () => {
+  const zero = parsePaidAmountInput('0');
+  assert.equal(zero.ok, true);
+  if (zero.ok && !('omitted' in zero && zero.omitted)) {
+    assert.equal(zero.value, 0);
+  }
+  const empty = parsePaidAmountInput('  ');
+  assert.equal(empty.ok, true);
+  assert.ok('omitted' in empty && empty.omitted);
+});
+
+test('modification selection requires at least one change', () => {
+  assert.ok(
+    validateModificationSelection({
+      changePlan: false,
+      requestedPlanId: '',
+      changePaid: false,
+      paidAmountRaw: '',
+      currentPaidAmount: null,
+    }),
+  );
+  assert.equal(
+    validateModificationSelection({
+      changePlan: false,
+      requestedPlanId: '',
+      changePaid: true,
+      paidAmountRaw: '0',
+      currentPaidAmount: null,
+    }),
+    null,
+  );
+});
+
+test('approved summary covers plan and/or paid', () => {
+  const paidOnly = {
+    hasPlanChange: false,
+    hasPaidChange: true,
+    requestedPlanName: null,
+    requestedDurationSeconds: null,
+    requestedPaidAmount: 0,
+  } as SessionPlanChangeRequest;
+  assert.ok(formatApprovedRequestSummary(paidOnly).includes('0'));
 });
 
 console.log('All plan-change frontend helper tests passed.');

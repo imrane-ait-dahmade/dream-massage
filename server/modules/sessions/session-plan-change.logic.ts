@@ -1,5 +1,6 @@
 /**
- * Pure business rules for session plan-change requests (no database).
+ * Pure business rules for session modification requests (plan and/or paid amount).
+ * paidAmount is stored as ChairSession.correctedAmount.
  * Run: npm run test:session-plan-change
  */
 
@@ -101,7 +102,7 @@ export function assertSessionEligibleForPlanChange(
   if (session.status !== 'COMPLETED') {
     return {
       status: 409,
-      message: 'Seules les sessions terminées (COMPLETED) peuvent changer de plan.',
+      message: 'Seules les sessions terminées (COMPLETED) peuvent être modifiées.',
     };
   }
   return null;
@@ -138,21 +139,20 @@ export function assertNoPendingRequest(
   if (existing && existing.status === 'PENDING') {
     return {
       status: 409,
-      message: 'Une demande de modification de plan est déjà en attente pour cette session.',
+      message: 'Une demande de modification est déjà en attente pour cette session.',
     };
   }
   return null;
 }
 
 /**
- * Remaining amount relative to a recorded payment override.
- * There is no Payment model: correctedAmount is left untouched by plan changes
- * and is treated as the recorded amount already collected when present.
- * remaining = max(0, expectedAmount - recordedPaidAmount)
- * where recordedPaidAmount = correctedAmount if set, else expectedAmount (fully "covered" by expected).
+ * Remaining amount relative to a recorded payment override (paidAmount).
+ * There is no Payment model: correctedAmount stores paidAmount.
+ * Plan changes leave correctedAmount untouched unless a paid change is also requested.
+ * remaining = max(0, expectedAmount - paidAmount) when paid is set; else 0.
  *
  * Spec example: expected 30, paid 20 → remaining 10.
- * When no correctedAmount exists, remaining is 0 (nothing separately recorded as paid).
+ * paidAmount = 0 is valid (séance offerte / impayé enregistré).
  */
 export function computeRemainingAmount(
   expectedAmount: number | null,
@@ -168,6 +168,126 @@ export function computeFinalAmount(
   correctedAmount: number | null,
 ): number {
   return correctedAmount ?? expectedAmount ?? 0;
+}
+
+export type ModificationRequestInput = {
+  requestedPlanId?: string | null;
+  /** Use !== undefined to detect presence; 0 is a valid paid amount. */
+  requestedPaidAmount?: number | null;
+};
+
+/**
+ * At least one modification must be present.
+ * Plan change: requestedPlanId is a non-empty string.
+ * Paid change: requestedPaidAmount is a finite number >= 0 (including 0).
+ * Never use truthiness checks on paid amounts (0 must remain valid).
+ */
+export function validateModificationRequestInput(
+  input: ModificationRequestInput,
+):
+  | {
+      ok: true;
+      hasPlanChange: boolean;
+      hasPaidChange: boolean;
+      requestedPlanId: string | null;
+      requestedPaidAmount: number | null;
+    }
+  | { ok: false; error: HttpBusinessError } {
+  const planId =
+    typeof input.requestedPlanId === 'string' && input.requestedPlanId.trim()
+      ? input.requestedPlanId.trim()
+      : null;
+  const hasPlanChange = planId != null;
+
+  const paidProvided = input.requestedPaidAmount !== undefined;
+  let requestedPaidAmount: number | null = null;
+  let hasPaidChange = false;
+
+  if (paidProvided) {
+    if (input.requestedPaidAmount === null) {
+      return {
+        ok: false,
+        error: {
+          status: 400,
+          message: 'requestedPaidAmount ne peut pas être null ; omettez le champ pour ne pas le modifier.',
+        },
+      };
+    }
+    const n = Number(input.requestedPaidAmount);
+    if (!Number.isFinite(n)) {
+      return {
+        ok: false,
+        error: { status: 400, message: 'requestedPaidAmount doit être un nombre valide.' },
+      };
+    }
+    if (n < 0) {
+      return {
+        ok: false,
+        error: { status: 400, message: 'requestedPaidAmount doit être >= 0.' },
+      };
+    }
+    requestedPaidAmount = n;
+    hasPaidChange = true;
+  }
+
+  if (!hasPlanChange && !hasPaidChange) {
+    return {
+      ok: false,
+      error: {
+        status: 400,
+        message:
+          'Au moins une modification est requise : nouveau plan et/ou nouveau montant payé.',
+      },
+    };
+  }
+
+  return {
+    ok: true,
+    hasPlanChange,
+    hasPaidChange,
+    requestedPlanId: planId,
+    requestedPaidAmount,
+  };
+}
+
+export function assertPaidAmountIsDifferent(
+  currentPaidAmount: number | null,
+  requestedPaidAmount: number,
+): HttpBusinessError | null {
+  if (currentPaidAmount === requestedPaidAmount) {
+    return {
+      status: 409,
+      message: 'Le montant payé demandé est identique au montant payé actuel.',
+    };
+  }
+  return null;
+}
+
+export type PaidAmountSessionUpdate = {
+  correctedAmount: number;
+  billingStatus: 'CORRECTED';
+  correctedAt: Date;
+  correctedByUserId: string | null;
+  correctionReason: string;
+};
+
+/**
+ * Builds the session update for a paid-amount change.
+ * Never touches expectedAmount or matchedPlanId.
+ */
+export function buildPaidAmountSessionUpdate(input: {
+  requestedPaidAmount: number;
+  actorUserId: string | null;
+  reason: string;
+  correctedAt?: Date;
+}): PaidAmountSessionUpdate {
+  return {
+    correctedAmount: input.requestedPaidAmount,
+    billingStatus: 'CORRECTED',
+    correctedAt: input.correctedAt ?? new Date(),
+    correctedByUserId: input.actorUserId,
+    correctionReason: input.reason,
+  };
 }
 
 export type PlanChangeApplyInput = {

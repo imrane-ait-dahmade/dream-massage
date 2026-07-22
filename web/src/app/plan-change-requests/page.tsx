@@ -20,9 +20,10 @@ import { formatDH } from '@/lib/format';
 import {
   amountDiff,
   formatAmountDiff,
-  formatPlanMinutes,
   planChangeStatusClass,
   planChangeStatusLabel,
+  requestHasPaidChange,
+  requestHasPlanChange,
 } from '@/lib/plan-change';
 
 type Filter = 'PENDING' | 'APPROVED' | 'REJECTED' | 'ALL';
@@ -105,7 +106,7 @@ function PlanChangeRequestsContent() {
                 Demandes de modification
               </h1>
               <p className="text-[11px] text-slate-500">
-                Changement de plan de session
+                Plan et/ou montant payé
               </p>
             </div>
           </div>
@@ -161,17 +162,15 @@ function PlanChangeRequestsContent() {
 
         <div className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] text-sm">
+            <table className="w-full min-w-[760px] text-sm">
               <thead>
                 <tr className="border-b border-slate-700 bg-slate-700/30">
                   {[
                     'Date',
                     'Fauteuil',
                     'Assistant',
-                    'Ancien plan',
-                    'Nouveau plan',
-                    'Montants',
-                    'Diff.',
+                    'Plan',
+                    'Montant payé',
                     'Raison',
                     'Statut',
                     '',
@@ -188,23 +187,27 @@ function PlanChangeRequestsContent() {
               <tbody className="divide-y divide-slate-700/40">
                 {loading && requests.length === 0 && (
                   <tr>
-                    <td colSpan={10} className="px-4 py-10 text-center text-sm text-slate-500">
+                    <td colSpan={8} className="px-4 py-10 text-center text-sm text-slate-500">
                       Chargement…
                     </td>
                   </tr>
                 )}
                 {!loading && requests.length === 0 && (
                   <tr>
-                    <td colSpan={10} className="px-4 py-10 text-center text-sm text-slate-500">
+                    <td colSpan={8} className="px-4 py-10 text-center text-sm text-slate-500">
                       Aucune demande pour ce filtre.
                     </td>
                   </tr>
                 )}
                 {requests.map((r) => {
-                  const diff = amountDiff(
-                    r.originalExpectedAmount,
-                    r.requestedExpectedAmount,
-                  );
+                  const hasPlan = requestHasPlanChange(r);
+                  const hasPaid = requestHasPaidChange(r);
+                  const expectedDiff = hasPlan
+                    ? amountDiff(r.originalExpectedAmount, r.requestedExpectedAmount)
+                    : 0;
+                  const paidDiff = hasPaid
+                    ? amountDiff(r.originalPaidAmount, r.requestedPaidAmount)
+                    : 0;
                   return (
                     <tr key={r.id} className="hover:bg-slate-700/20">
                       <td className="px-3 py-2.5 text-xs text-slate-400 tabular-nums">
@@ -221,31 +224,46 @@ function PlanChangeRequestsContent() {
                       <td className="px-3 py-2.5 text-xs text-slate-400">
                         {r.requestedBy?.name ?? '—'}
                       </td>
-                      <td className="px-3 py-2.5 text-xs text-slate-400">
-                        {r.originalPlanName ?? 'Aucun plan'}
-                        <span className="block text-[10px] text-slate-600">
-                          {r.originalDurationSeconds != null
-                            ? formatPlanMinutes(r.originalDurationSeconds)
-                            : '—'}
-                        </span>
-                      </td>
                       <td className="px-3 py-2.5 text-xs text-slate-300">
-                        {r.requestedPlanName}
-                        <span className="block text-[10px] text-slate-600">
-                          {formatPlanMinutes(r.requestedDurationSeconds)}
-                        </span>
+                        {hasPlan ? (
+                          <>
+                            <span className="text-slate-400">
+                              {r.originalPlanName ?? 'Aucun plan'}
+                            </span>
+                            {' → '}
+                            <span className="text-white">{r.requestedPlanName ?? '—'}</span>
+                            <span className="mt-0.5 block text-[10px] text-slate-600">
+                              {r.originalExpectedAmount != null
+                                ? formatDH(r.originalExpectedAmount)
+                                : '—'}
+                              {' → '}
+                              {r.requestedExpectedAmount != null
+                                ? formatDH(r.requestedExpectedAmount)
+                                : '—'}{' '}
+                              ({formatAmountDiff(expectedDiff)})
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-slate-500">Inchangé</span>
+                        )}
                       </td>
                       <td className="px-3 py-2.5 text-xs text-slate-300 tabular-nums">
-                        {r.originalExpectedAmount != null
-                          ? formatDH(r.originalExpectedAmount)
-                          : '—'}
-                        {' → '}
-                        {r.requestedExpectedAmount != null
-                          ? formatDH(r.requestedExpectedAmount)
-                          : '—'}
-                      </td>
-                      <td className="px-3 py-2.5 text-xs tabular-nums text-slate-400">
-                        {formatAmountDiff(diff)}
+                        {hasPaid ? (
+                          <>
+                            {r.originalPaidAmount != null
+                              ? formatDH(r.originalPaidAmount)
+                              : '—'}
+                            {' → '}
+                            {r.requestedPaidAmount != null
+                              ? formatDH(r.requestedPaidAmount)
+                              : '—'}
+                            <span className="mt-0.5 block text-[10px] text-slate-600">
+                              {formatAmountDiff(paidDiff)}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-slate-500">Inchangé</span>
+                        )}
                       </td>
                       <td className="max-w-[180px] truncate px-3 py-2.5 text-xs text-slate-400" title={r.reason}>
                         {r.reason}

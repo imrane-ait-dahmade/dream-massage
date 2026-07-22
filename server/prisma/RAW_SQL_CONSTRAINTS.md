@@ -105,7 +105,9 @@ CREATE UNIQUE INDEX unique_pending_plan_change_per_session
 **Enforcement order**: `session-plan-change.service.ts` rejects a second PENDING
 request before insert. This index is the database-level safety net against races.
 Migration `20260718140000_add_session_plan_change_requests` creates the table and
-this index.
+this index. Migration `20260721220000_session_modification_paid_amount` adds paid
+amount snapshots and allows amount-only requests (plan fields nullable); the
+partial unique index is unchanged.
 
 ---
 

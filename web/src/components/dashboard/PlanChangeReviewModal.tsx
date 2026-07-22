@@ -15,6 +15,8 @@ import {
   formatAmountDiff,
   formatPlanMinutes,
   currentPlanLabel,
+  requestHasPaidChange,
+  requestHasPlanChange,
 } from '@/lib/plan-change';
 
 type Mode = 'approve' | 'reject';
@@ -33,11 +35,23 @@ export function PlanChangeReviewModal({ request, mode, onClose, onSuccess }: Pro
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
+  const hasPlan = requestHasPlanChange(request);
+  const hasPaid = requestHasPaidChange(request);
+
   const oldAmt = request.originalExpectedAmount;
-  const newAmt = request.requestedExpectedAmount;
-  const diff = amountDiff(oldAmt, newAmt);
-  const paid = request.session.correctedAmount;
-  const remaining = computeRemainingAmount(newAmt, paid);
+  const newAmt = hasPlan ? request.requestedExpectedAmount : request.session.expectedAmount;
+  const expectedDiff = hasPlan ? amountDiff(oldAmt, newAmt) : 0;
+
+  const currentPaid = request.session.paidAmount ?? request.session.correctedAmount;
+  const newPaid = hasPaid ? request.requestedPaidAmount : currentPaid;
+  const paidDiff =
+    hasPaid && request.originalPaidAmount != null
+      ? amountDiff(request.originalPaidAmount, request.requestedPaidAmount)
+      : hasPaid
+        ? amountDiff(currentPaid, request.requestedPaidAmount)
+        : 0;
+
+  const remaining = computeRemainingAmount(newAmt, newPaid);
 
   async function submit() {
     setSaving(true);
@@ -64,6 +78,14 @@ export function PlanChangeReviewModal({ request, mode, onClose, onSuccess }: Pro
       setSaving(false);
     }
   }
+
+  const confirmLabel = (() => {
+    const parts: string[] = [];
+    if (hasPlan) parts.push('le nouveau plan');
+    if (hasPaid) parts.push('le montant payé');
+    if (parts.length === 0) return 'cette modification';
+    return parts.join(' et ');
+  })();
 
   return (
     <>
@@ -95,25 +117,64 @@ export function PlanChangeReviewModal({ request, mode, onClose, onSuccess }: Pro
             </p>
           </div>
 
-          <div className="rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3 font-mono text-xs text-slate-200">
-            <p>
-              Plan actuel → Nouveau plan
-            </p>
-            <p className="mt-1">
-              {currentPlanLabel(request.originalPlanName)} (
-              {formatPlanMinutes(request.originalDurationSeconds)})
-              {' → '}
-              {request.requestedPlanName} ({formatPlanMinutes(request.requestedDurationSeconds)})
-            </p>
-            <p className="mt-1">
-              {oldAmt != null ? formatDH(oldAmt) : '0 DH'} → {newAmt != null ? formatDH(newAmt) : '—'}{' '}
-              ({formatAmountDiff(diff)})
-            </p>
-            {paid != null && (
-              <>
-                <p className="mt-2">Montant payé : {formatDH(paid)}</p>
-                <p>Nouveau reste à payer : {formatDH(remaining)}</p>
-              </>
+          <div className="space-y-2 rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3 font-mono text-xs text-slate-200">
+            {hasPlan && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-slate-500">Plan</p>
+                <p className="mt-1">
+                  {currentPlanLabel(request.originalPlanName)} (
+                  {formatPlanMinutes(request.originalDurationSeconds)})
+                  {' → '}
+                  {request.requestedPlanName ?? '—'} (
+                  {formatPlanMinutes(request.requestedDurationSeconds)})
+                </p>
+                <p className="mt-1">
+                  Prix attendu : {oldAmt != null ? formatDH(oldAmt) : '—'} →{' '}
+                  {newAmt != null ? formatDH(newAmt) : '—'} ({formatAmountDiff(expectedDiff)})
+                </p>
+              </div>
+            )}
+
+            {!hasPlan && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-slate-500">Plan</p>
+                <p className="mt-1 text-slate-400">
+                  Inchangé — {currentPlanLabel(request.originalPlanName)} · prix attendu{' '}
+                  {oldAmt != null ? formatDH(oldAmt) : formatDH(request.session.expectedAmount ?? 0)}
+                </p>
+              </div>
+            )}
+
+            {hasPaid && (
+              <div className={hasPlan ? 'border-t border-slate-700 pt-2' : ''}>
+                <p className="text-[10px] uppercase tracking-wide text-slate-500">Montant payé</p>
+                <p className="mt-1">
+                  {request.originalPaidAmount != null
+                    ? formatDH(request.originalPaidAmount)
+                    : 'Non renseigné'}
+                  {' → '}
+                  {request.requestedPaidAmount != null
+                    ? formatDH(request.requestedPaidAmount)
+                    : '—'}{' '}
+                  ({formatAmountDiff(paidDiff)})
+                </p>
+              </div>
+            )}
+
+            {!hasPaid && (
+              <div className={hasPlan ? 'border-t border-slate-700 pt-2' : ''}>
+                <p className="text-[10px] uppercase tracking-wide text-slate-500">Montant payé</p>
+                <p className="mt-1 text-slate-400">
+                  Inchangé —{' '}
+                  {currentPaid != null ? formatDH(currentPaid) : 'Non renseigné'}
+                </p>
+              </div>
+            )}
+
+            {(hasPaid || currentPaid != null) && (
+              <p className="border-t border-slate-700 pt-2 text-slate-400">
+                Reste à payer après validation : {formatDH(remaining)}
+              </p>
             )}
           </div>
 
@@ -142,7 +203,7 @@ export function PlanChangeReviewModal({ request, mode, onClose, onSuccess }: Pro
 
           {mode === 'approve' && confirming && (
             <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-100">
-              Confirmez-vous l’application du nouveau plan sur cette session ? Cette action est
+              Confirmez-vous l’application de {confirmLabel} sur cette session ? Cette action est
               définitive pour cette demande.
             </div>
           )}

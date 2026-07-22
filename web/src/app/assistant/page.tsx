@@ -29,6 +29,7 @@ import { formatDH, formatElapsed, formatTimeHHMM } from '@/lib/format';
 import {
   canRequestPlanChange,
   currentPlanLabel,
+  formatApprovedRequestSummary,
   planChangeStatusClass,
   planChangeStatusLabel,
 } from '@/lib/plan-change';
@@ -126,8 +127,7 @@ function SessionRow({
 
       {request?.status === 'APPROVED' && (
         <div className="mt-2 rounded-lg bg-emerald-50 px-2.5 py-2 text-xs text-emerald-900 ring-1 ring-emerald-200">
-          Demande validée — nouveau plan : {request.requestedPlanName} (
-          {formatDH(request.requestedExpectedAmount ?? 0)})
+          Demande validée — {formatApprovedRequestSummary(request)}
         </div>
       )}
 
@@ -137,7 +137,7 @@ function SessionRow({
           onClick={() => onRequestChange(session)}
           className="mt-3 w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 text-xs font-semibold text-stone-800 hover:bg-stone-100"
         >
-          {hasNoPlan ? 'Demander l’attribution d’un plan' : 'Demander une modification du plan'}
+          {hasNoPlan ? 'Demander l’attribution d’un plan' : 'Demander une modification'}
         </button>
       )}
     </div>
