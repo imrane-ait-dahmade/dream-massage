@@ -1,4 +1,4 @@
-import { elapsedSeconds, nowISO, getTimezone } from '../../utils/time';
+import { elapsedSeconds, nowISO, getTimezone, getBusinessDate } from '../../utils/time';
 import { prisma } from '../../prisma';
 import { SESSION_OPERATIONAL_WHERE } from '../archive/archive-filters';
 import { cacheGet, cacheSet, cacheInvalidate } from '../../utils/memory-cache';
@@ -10,6 +10,8 @@ import {
 } from '../../utils/db-circuit-breaker';
 import { getAllChairMem, isRuntimeHydrated } from '../chairs/chair-runtime-cache';
 import { env } from '../../config/env';
+import { buildDateRangeFilter, resolvePresetDates } from './date-range';
+import { d2, sessionRevenue, type MetricsSession } from './session-metrics.logic';
 
 export type ChairStatus =
   | 'IDLE'
@@ -228,6 +230,8 @@ function toLocalDate(date: Date, tz: string): Date {
   return new Date(date.toLocaleString('en-US', { timeZone: tz }));
 }
 
+const REVENUE_STATS_BATCH = 1000;
+
 export class RevenueStatsService {
   async get(period: string): Promise<RevenueStats> {
     const cacheKey = `dashboard:revenue:${period}`;
@@ -242,72 +246,99 @@ export class RevenueStatsService {
   private async _compute(period: string): Promise<RevenueStats> {
     usageMetrics.incr('dbReads');
     const tz = getTimezone();
-    const now = new Date();
-    const localNow = toLocalDate(now, tz);
-    const tzOffsetMs = localNow.getTime() - now.getTime();
+    const today = getBusinessDate(tz);
 
-    let startUTC: Date;
+    // Map chart period → same preset date range as home dashboard
+    const preset =
+      period === 'day' ? 'today' :
+      period === 'week' ? 'week' :
+      period === 'month' ? 'month' : 'year';
+    const { from, to } = resolvePresetDates(preset, today);
+    const { gte: startUTC, lt: endUTC } = buildDateRangeFilter(from, to, tz);
+
     let labels: string[];
     let bucketCount: number;
     let getBucket: (local: Date) => number;
 
     if (period === 'day') {
-      const ls = new Date(localNow.getFullYear(), localNow.getMonth(), localNow.getDate(), 0, 0, 0);
-      startUTC = new Date(ls.getTime() - tzOffsetMs);
       bucketCount = 24;
       labels = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}h`);
       getBucket = (d) => d.getHours();
     } else if (period === 'week') {
-      const daysFromMon = (localNow.getDay() + 6) % 7;
-      const ls = new Date(localNow.getFullYear(), localNow.getMonth(), localNow.getDate() - daysFromMon, 0, 0, 0);
-      startUTC = new Date(ls.getTime() - tzOffsetMs);
       bucketCount = 7;
       labels = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
       getBucket = (d) => (d.getDay() + 6) % 7;
     } else if (period === 'month') {
-      const ls = new Date(localNow.getFullYear(), localNow.getMonth(), 1, 0, 0, 0);
-      startUTC = new Date(ls.getTime() - tzOffsetMs);
-      const daysInMonth = new Date(localNow.getFullYear(), localNow.getMonth() + 1, 0).getDate();
+      const [y, mo] = from.split('-').map(Number);
+      const daysInMonth = new Date(Date.UTC(y, mo, 0)).getUTCDate();
       bucketCount = daysInMonth;
       labels = Array.from({ length: daysInMonth }, (_, i) => String(i + 1));
       getBucket = (d) => d.getDate() - 1;
     } else {
-      const ls = new Date(localNow.getFullYear(), 0, 1, 0, 0, 0);
-      startUTC = new Date(ls.getTime() - tzOffsetMs);
       bucketCount = 12;
       labels = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
       getBucket = (d) => d.getMonth();
     }
 
-    const rows = await prisma.chairSession.findMany({
-      where: {
-        ...SESSION_OPERATIONAL_WHERE,
-        startedAt: { gte: startUTC },
-        status: { notIn: ['CANCELLED'] },
-      },
-      select: { startedAt: true, expectedAmount: true, correctedAmount: true },
-      take: 5000,
-    });
-
     const revenue = new Array<number>(bucketCount).fill(0);
     const sessionCounts = new Array<number>(bucketCount).fill(0);
 
-    for (const s of rows) {
-      const local = toLocalDate(s.startedAt, tz);
-      const bucket = getBucket(local);
-      if (bucket >= 0 && bucket < bucketCount) {
-        revenue[bucket] += Number(s.correctedAmount ?? s.expectedAmount ?? 0);
-        sessionCounts[bucket]++;
+    // Stream all sessions in range — no silent total limit (previously take: 5000).
+    let cursorId: string | undefined;
+    for (;;) {
+      const rows = await prisma.chairSession.findMany({
+        where: {
+          ...SESSION_OPERATIONAL_WHERE,
+          startedAt: { gte: startUTC, lt: endUTC },
+          status: { notIn: ['CANCELLED'] },
+        },
+        select: {
+          id: true,
+          startedAt: true,
+          status: true,
+          expectedAmount: true,
+          correctedAmount: true,
+        },
+        orderBy: [{ startedAt: 'asc' }, { id: 'asc' }],
+        take: REVENUE_STATS_BATCH,
+        ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}),
+      });
+      if (rows.length === 0) break;
+
+      for (const s of rows) {
+        const local = toLocalDate(s.startedAt, tz);
+        const bucket = getBucket(local);
+        if (bucket >= 0 && bucket < bucketCount) {
+          const metrics: MetricsSession = {
+            id: s.id,
+            chairId: '',
+            shiftId: null,
+            status: s.status,
+            startedAt: s.startedAt,
+            durationSeconds: null,
+            expectedAmount: s.expectedAmount != null ? Number(s.expectedAmount) : null,
+            correctedAmount: s.correctedAmount != null ? Number(s.correctedAmount) : null,
+            anomalyType: null,
+            billingStatus: 'CALCULATED',
+            matchedPlanId: null,
+            matchedPlanName: null,
+          };
+          revenue[bucket] += sessionRevenue(metrics);
+          sessionCounts[bucket]++;
+        }
       }
+
+      cursorId = rows[rows.length - 1]!.id;
+      if (rows.length < REVENUE_STATS_BATCH) break;
     }
 
-    const roundedRevenue = revenue.map((v) => Math.round(v * 100) / 100);
+    const roundedRevenue = revenue.map(d2);
     return {
       period,
       labels,
       revenue: roundedRevenue,
       sessions: sessionCounts,
-      totalRevenue: Math.round(roundedRevenue.reduce((a, b) => a + b, 0) * 100) / 100,
+      totalRevenue: d2(roundedRevenue.reduce((a, b) => a + b, 0)),
       totalSessions: sessionCounts.reduce((a, b) => a + b, 0),
     };
   }

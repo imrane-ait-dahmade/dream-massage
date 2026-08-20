@@ -4,12 +4,16 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { getHomeDashboard, ApiError } from '@/lib/api';
 import type { HomeDashboardFilters, HomeDashboardResponse } from '@/lib/types';
 
-function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+/** Calendar YYYY-MM-DD in the browser local timezone (Morocco = Africa/Casablanca). */
+function localDateISO(d: Date = new Date()): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 export function defaultFilters(): HomeDashboardFilters {
-  const today = todayISO();
+  const today = localDateISO();
   return {
     preset:        'today',
     from:          today,
@@ -34,6 +38,7 @@ export function useHomeDashboard() {
   const [error, setError] = useState<string | null>(null);
 
   const inFlightRef = useRef<AbortController | null>(null);
+  const requestSeqRef = useRef(0);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const backoffRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const backoffIdxRef = useRef(0);
@@ -44,26 +49,46 @@ export function useHomeDashboard() {
   const setFilters = useCallback((update: HomeDashboardFilters | ((prev: HomeDashboardFilters) => HomeDashboardFilters)) => {
     setLoading(true);
     setError(null);
-    _setFiltersInternal(update);
+    _setFiltersInternal((prev) => {
+      const next = typeof update === 'function' ? update(prev) : update;
+      // Defense: never keep a stale shiftId outside Aujourd'hui / Hier
+      const allowShift = next.preset === 'today' || next.preset === 'yesterday';
+      if (!allowShift && next.shiftId !== 'all') {
+        return { ...next, shiftId: 'all' };
+      }
+      return next;
+    });
   }, []);
 
   const load = useCallback(async (reason: string) => {
-    if (!visibleRef.current && reason !== 'visible' && reason !== 'filters') return;
-    if (inFlightRef.current) return;
+    if (!visibleRef.current && reason !== 'visible' && reason !== 'filters' && reason !== 'refetch') {
+      return;
+    }
+
+    // Abort any in-flight request so a newer filter change always wins (no stale overwrite).
+    if (inFlightRef.current) {
+      inFlightRef.current.abort();
+      inFlightRef.current = null;
+    }
 
     const ac = new AbortController();
     inFlightRef.current = ac;
+    const seq = ++requestSeqRef.current;
     const applied = filtersRef.current;
 
     try {
-      const res = await getHomeDashboard(applied);
-      if (ac.signal.aborted) return;
+      const res = await getHomeDashboard(applied, ac.signal);
+      if (ac.signal.aborted || seq !== requestSeqRef.current) return;
       setData(res);
       setLoading(false);
       setError(null);
       backoffIdxRef.current = 0;
     } catch (err: unknown) {
-      if (ac.signal.aborted) return;
+      if (ac.signal.aborted || seq !== requestSeqRef.current) return;
+      // AbortError from superseded request — ignore
+      if (err instanceof DOMException && err.name === 'AbortError') return;
+      if (err instanceof Error && err.name === 'AbortError') return;
+
       const msg =
         err instanceof ApiError && err.kind === 'unavailable'
           ? 'Service temporairement indisponible. Nouvelle tentative automatique.'

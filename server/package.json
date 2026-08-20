@@ -24,9 +24,12 @@
     "test:session-delete": "tsx modules/sessions/session-delete.logic.test.ts",
     "test:session-plan-change": "tsx modules/sessions/session-plan-change.logic.test.ts",
     "test:shift-delete": "tsx modules/shifts/shift-delete.logic.test.ts",
+    "test:dashboard-dates": "tsx modules/dashboard/date-range.test.ts",
+    "test:dashboard-metrics": "tsx modules/dashboard/session-metrics.logic.test.ts",
+    "test:dashboard-filters": "tsx modules/dashboard/dashboard-filters.test.ts",
     "test:neon-egress": "tsx modules/chairs/neon-egress.hotfix.test.ts",
     "test:neon-soak": "tsx modules/chairs/neon-egress.soak.test.ts",
-    "test": "tsx modules/shifts/shift-close.logic.test.ts && tsx modules/shifts/auto-shift-check.test.ts && tsx modules/settings/schedule-period.test.ts && tsx modules/archive/archive-filters.test.ts && tsx modules/sessions/session-delete.logic.test.ts && tsx modules/sessions/session-plan-change.logic.test.ts && tsx modules/shifts/shift-delete.logic.test.ts && tsx modules/chairs/neon-egress.hotfix.test.ts && tsx modules/chairs/neon-egress.soak.test.ts"
+    "test": "tsx modules/shifts/shift-close.logic.test.ts && tsx modules/shifts/auto-shift-check.test.ts && tsx modules/settings/schedule-period.test.ts && tsx modules/archive/archive-filters.test.ts && tsx modules/sessions/session-delete.logic.test.ts && tsx modules/sessions/session-plan-change.logic.test.ts && tsx modules/shifts/shift-delete.logic.test.ts && tsx modules/dashboard/date-range.test.ts && tsx modules/dashboard/session-metrics.logic.test.ts && tsx modules/dashboard/dashboard-filters.test.ts && tsx modules/chairs/neon-egress.hotfix.test.ts && tsx modules/chairs/neon-egress.soak.test.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

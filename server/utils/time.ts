@@ -35,16 +35,72 @@ export function getBusinessDate(tz: string = env.APP_TIMEZONE): string {
   return `${y}-${mo}-${d}`;
 }
 
+/**
+ * Offset (ms) between wall-clock numbers in `timeZone` and the UTC instant.
+ * Does not depend on the host process timezone (unlike Date#toLocaleString tricks).
+ */
+function getTimeZoneOffsetMs(instant: Date, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(instant);
+
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((p) => p.type === type)?.value ?? '0');
+
+  const asUtcMs = Date.UTC(
+    get('year'),
+    get('month') - 1,
+    get('day'),
+    get('hour'),
+    get('minute'),
+    get('second'),
+  );
+  return asUtcMs - instant.getTime();
+}
+
+/**
+ * Convert a wall-clock date/time in `timeZone` to a UTC Date.
+ * Independent of the host OS timezone.
+ */
+export function zonedLocalToUtc(
+  businessDate: string,
+  hours: number,
+  minutes: number,
+  seconds: number = 0,
+  timeZone: string = env.APP_TIMEZONE,
+): Date {
+  const [y, mo, d] = businessDate.split('-').map(Number);
+  const asUtcNumbers = Date.UTC(y, mo - 1, d, hours, minutes, seconds);
+  let utc = new Date(asUtcNumbers);
+  const offset1 = getTimeZoneOffsetMs(utc, timeZone);
+  utc = new Date(asUtcNumbers - offset1);
+  const offset2 = getTimeZoneOffsetMs(utc, timeZone);
+  if (offset2 !== offset1) {
+    utc = new Date(asUtcNumbers - offset2);
+  }
+  return utc;
+}
+
+function addCalendarDaysUtc(yyyyMmDd: string, n: number): string {
+  const [y, mo, d] = yyyyMmDd.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, mo - 1, d + n));
+  return dt.toISOString().slice(0, 10);
+}
+
 /** UTC bounds for a business calendar day (start inclusive, end exclusive). */
 export function getDayBoundsUtc(
   businessDate: string,
   tz: string = env.APP_TIMEZONE,
 ): { start: Date; end: Date } {
-  const probeUTC = new Date(`${businessDate}T00:00:00Z`);
-  const local = new Date(probeUTC.toLocaleString('en-US', { timeZone: tz }));
-  const offsetMs = local.getTime() - probeUTC.getTime();
-  const start = new Date(probeUTC.getTime() - offsetMs);
-  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+  const start = zonedLocalToUtc(businessDate, 0, 0, 0, tz);
+  const end = zonedLocalToUtc(addCalendarDaysUtc(businessDate, 1), 0, 0, 0, tz);
   return { start, end };
 }
 
@@ -53,11 +109,7 @@ export function buildScheduledDatetime(businessDate: string, hhmm: string, tz: s
   const [hStr, mStr] = hhmm.split(':');
   const h = parseInt(hStr ?? '0', 10);
   const m = parseInt(mStr ?? '0', 10);
-  const probeUTC = new Date(`${businessDate}T00:00:00Z`);
-  const local = new Date(probeUTC.toLocaleString('en-US', { timeZone: tz }));
-  const offsetMs = local.getTime() - probeUTC.getTime();
-  const midnightUTC = new Date(probeUTC.getTime() - offsetMs);
-  return new Date(midnightUTC.getTime() + (h * 60 + m) * 60_000);
+  return zonedLocalToUtc(businessDate, h, m, 0, tz);
 }
 
 /** Seconds since local midnight in the given timezone. */

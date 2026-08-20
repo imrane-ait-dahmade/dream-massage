@@ -48,6 +48,11 @@ function presetDates(preset: string): { from: string; to: string } {
   }
 }
 
+/** Shift filter only for Aujourd'hui / Hier (matches backend canFilterByShift). */
+export function canFilterByShift(preset: string): boolean {
+  return preset === 'today' || preset === 'yesterday';
+}
+
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 const PRESETS = [
@@ -108,17 +113,29 @@ interface Props {
 export function DashboardFilters({ filters, filterOptions, onChange, onReset, loading }: Props) {
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
+  const showShift = canFilterByShift(filters.preset);
+
   const set = (partial: Partial<HomeDashboardFilters>) => onChange({ ...filters, ...partial });
-  const setParent = (partial: Partial<HomeDashboardFilters>) =>
-    onChange({ ...filters, ...partial, shiftId: 'all' });
+
+  /** Date / preset changes: always clear shiftId (not valid outside today/yesterday). */
+  const setDates = (partial: Partial<HomeDashboardFilters>) => {
+    const nextPreset = partial.preset ?? filters.preset;
+    onChange({
+      ...filters,
+      ...partial,
+      shiftId: canFilterByShift(nextPreset) ? (partial.shiftId ?? 'all') : 'all',
+    });
+  };
 
   function applyPreset(key: string) {
     const { from, to } = presetDates(key);
-    setParent({ preset: key, from, to });
+    setDates({ preset: key, from, to });
   }
 
-  // Hidden filters stay at defaults ('all') — logic unchanged.
-  const hasAdvancedActive = filters.shiftId !== 'all' || filters.status !== 'all';
+  const hasAdvancedActive =
+    filters.status !== 'all' ||
+    filters.staffMemberId !== 'all' ||
+    (showShift && filters.shiftId !== 'all');
 
   return (
     <div className="space-y-3 rounded-2xl border border-slate-700 bg-slate-800/60 p-3 backdrop-blur-sm md:p-4">
@@ -164,7 +181,7 @@ export function DashboardFilters({ filters, filterOptions, onChange, onReset, lo
           <input
             type="date"
             value={filters.from}
-            onChange={(e) => setParent({ from: e.target.value, preset: 'custom' })}
+            onChange={(e) => setDates({ from: e.target.value, preset: 'custom' })}
             className={INPUT_CLS}
           />
         </Field>
@@ -172,7 +189,7 @@ export function DashboardFilters({ filters, filterOptions, onChange, onReset, lo
           <input
             type="date"
             value={filters.to}
-            onChange={(e) => setParent({ to: e.target.value, preset: 'custom' })}
+            onChange={(e) => setDates({ to: e.target.value, preset: 'custom' })}
             className={INPUT_CLS}
           />
         </Field>
@@ -194,7 +211,7 @@ export function DashboardFilters({ filters, filterOptions, onChange, onReset, lo
 
       {/* ── Advanced filters (mobile: collapsible, desktop: always visible) ── */}
       <div className={`space-y-2 ${advancedOpen ? 'block' : 'hidden'} md:block`}>
-        <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:gap-2">
+        <div className={`grid gap-2 md:flex md:flex-wrap md:gap-2 ${showShift ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-2'}`}>
           <Field label="Statut">
             <select
               value={filters.status}
@@ -207,21 +224,44 @@ export function DashboardFilters({ filters, filterOptions, onChange, onReset, lo
             </select>
           </Field>
 
-          <Field label="Shift" className="md:min-w-[160px]">
+          <Field label="Fille" className="md:min-w-[140px]">
             <select
-              value={filters.shiftId}
-              onChange={(e) => set({ shiftId: e.target.value })}
+              value={filters.staffMemberId}
+              onChange={(e) =>
+                set({
+                  staffMemberId: e.target.value,
+                  // Changing fille invalidates a specific shift selection
+                  shiftId: 'all',
+                })
+              }
               className={SELECT_CLS}
-              disabled={!filterOptions?.shifts.length}
             >
-              <option value="all" className="bg-slate-800">Tous les shifts</option>
-              {filterOptions?.shifts.map((sh) => (
-                <option key={sh.id} value={sh.id} className="bg-slate-800">
-                  {sh.label}
+              <option value="all" className="bg-slate-800">Toutes les filles</option>
+              {filterOptions?.staffMembers.map((s) => (
+                <option key={s.id} value={s.id} className="bg-slate-800">
+                  {s.name}
                 </option>
               ))}
             </select>
           </Field>
+
+          {showShift && (
+            <Field label="Shift" className="md:min-w-[160px]">
+              <select
+                value={filters.shiftId}
+                onChange={(e) => set({ shiftId: e.target.value })}
+                className={SELECT_CLS}
+                disabled={!filterOptions?.shifts.length}
+              >
+                <option value="all" className="bg-slate-800">Tous les shifts</option>
+                {filterOptions?.shifts.map((sh) => (
+                  <option key={sh.id} value={sh.id} className="bg-slate-800">
+                    {sh.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
         </div>
 
         {/* Chart period */}

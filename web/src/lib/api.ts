@@ -242,13 +242,20 @@ async function apiRequest<T>(url: string, init?: RequestInit): Promise<T> {
   }
 
   const callerHeaders = (init?.headers ?? {}) as Record<string, string>;
+  const { signal: callerSignal, headers: _ignoredHeaders, ...restInit } = init ?? {};
+  const timeoutSignal = AbortSignal.timeout(API_TIMEOUT_MS);
+  const signal =
+    callerSignal && typeof AbortSignal.any === 'function'
+      ? AbortSignal.any([callerSignal, timeoutSignal])
+      : callerSignal ?? timeoutSignal;
+
   let res: Response;
   try {
     res = await fetch(url, {
       cache: 'no-store',
       credentials: 'include',
-      signal: AbortSignal.timeout(API_TIMEOUT_MS),
-      ...init,
+      ...restInit,
+      signal,
       headers: { ...authHeaders(), ...callerHeaders },
     });
   } catch (err) {
@@ -750,7 +757,10 @@ export async function getRevenueStats(period: 'day' | 'week' | 'month' | 'year')
 
 // ── Dashboard — home (filterable analytics) ────────────────────────────────────
 
-export async function getHomeDashboard(filters: Partial<HomeDashboardFilters>): Promise<HomeDashboardResponse> {
+export async function getHomeDashboard(
+  filters: Partial<HomeDashboardFilters>,
+  signal?: AbortSignal,
+): Promise<HomeDashboardResponse> {
   const qs = new URLSearchParams();
   if (filters.preset)        qs.set('preset',        filters.preset);
   if (filters.from)          qs.set('from',           filters.from);
@@ -761,10 +771,12 @@ export async function getHomeDashboard(filters: Partial<HomeDashboardFilters>): 
   if (filters.chair)         qs.set('chair',          filters.chair);
   if (filters.staffMemberId) qs.set('staffMemberId',  filters.staffMemberId);
   if (filters.shiftTypeId)   qs.set('shiftTypeId',    filters.shiftTypeId);
-  if (filters.shiftId)       qs.set('shiftId',        filters.shiftId);
+  // Shift filter only for Aujourd'hui / Hier — never send stale shiftId for week/month/year/custom
+  const allowShift = filters.preset === 'today' || filters.preset === 'yesterday';
+  if (allowShift && filters.shiftId) qs.set('shiftId', filters.shiftId);
   if (filters.status)        qs.set('status',         filters.status);
   if (filters.chartPeriod)   qs.set('chartPeriod',    filters.chartPeriod);
-  return apiRequest<HomeDashboardResponse>(`${BASE}/api/dashboard/home?${qs.toString()}`);
+  return apiRequest<HomeDashboardResponse>(`${BASE}/api/dashboard/home?${qs.toString()}`, { signal });
 }
 
 // ── Sessions ───────────────────────────────────────────────────────────────────
