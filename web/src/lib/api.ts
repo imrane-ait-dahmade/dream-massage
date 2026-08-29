@@ -32,6 +32,9 @@ import type {
   SessionPlanChangeRequest,
   SessionPlanChangeRequestStatus,
   SessionPlanChangeResult,
+  CashAccountsListResponse,
+  CashAccountDetailResponse,
+  CashMovementsResponse,
 } from './types';
 
 const DEV_API_FALLBACK = 'http://localhost:4001';
@@ -653,6 +656,7 @@ export async function createShiftSchedule(payload: {
   dayOfWeek: number;
   isOff?: boolean;
   notes?: string | null;
+  cashAccountId?: string | null;
 }): Promise<StaffScheduleItem> {
   return apiRequest(`${BASE}/api/settings/shifts/schedule`, {
     method: 'POST',
@@ -668,6 +672,7 @@ export async function updateShiftSchedule(
     isOff: boolean;
     isActive: boolean;
     notes: string | null;
+    cashAccountId: string | null;
   }>,
 ): Promise<StaffScheduleItem> {
   return apiRequest(
@@ -727,11 +732,19 @@ export async function getOpenShift(): Promise<{ shift: OpenShift | null }> {
   return apiRequest(`${BASE}/api/shifts/open`);
 }
 
-export async function openShiftManual(staffMemberId: string, shiftTypeId?: string): Promise<{ shift: OpenShift }> {
+export async function openShiftManual(
+  staffMemberId: string,
+  cashAccountId: string,
+  shiftTypeId?: string,
+): Promise<{ shift: OpenShift }> {
   return apiRequest(`${BASE}/api/shifts/open`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ staffMemberId, ...(shiftTypeId ? { shiftTypeId } : {}) }),
+    body: JSON.stringify({
+      staffMemberId,
+      cashAccountId,
+      ...(shiftTypeId ? { shiftTypeId } : {}),
+    }),
   });
 }
 
@@ -1030,4 +1043,95 @@ export async function getAssistantPlanChangeRequests(params?: {
   if (params?.status) qs.set('status', params.status);
   const suffix = qs.toString() ? `?${qs}` : '';
   return apiRequest(`${BASE}/api/assistant/plan-change-requests${suffix}`);
+}
+
+// ── Cash accounts (physical tills) ─────────────────────────────────────────────
+
+export async function getCashAccounts(): Promise<CashAccountsListResponse> {
+  return apiRequest(`${BASE}/api/cash/accounts`);
+}
+
+export async function getCashAccountDetail(
+  cashAccountId: string,
+): Promise<CashAccountDetailResponse> {
+  return apiRequest(`${BASE}/api/cash/accounts/${encodeURIComponent(cashAccountId)}`);
+}
+
+export async function getCashMovements(params?: {
+  cashAccountId?: string;
+  staffMemberId?: string;
+  page?: number;
+  pageSize?: number;
+  type?: string;
+  date?: string;
+}): Promise<CashMovementsResponse> {
+  const qs = new URLSearchParams();
+  if (params?.page) qs.set('page', String(params.page));
+  if (params?.pageSize) qs.set('pageSize', String(params.pageSize));
+  if (params?.type) qs.set('type', params.type);
+  if (params?.date) qs.set('date', params.date);
+  if (params?.staffMemberId) qs.set('staffMemberId', params.staffMemberId);
+  const suffix = qs.toString() ? `?${qs}` : '';
+  if (params?.cashAccountId) {
+    return apiRequest(
+      `${BASE}/api/cash/accounts/${encodeURIComponent(params.cashAccountId)}/movements${suffix}`,
+    );
+  }
+  return apiRequest(`${BASE}/api/cash/movements${suffix}`);
+}
+
+export async function withdrawCash(
+  cashAccountId: string,
+  payload: { amount: number; reason?: string },
+): Promise<{ ok: boolean; balanceBefore: number; balanceAfter: number; movementId: string }> {
+  return apiRequest(
+    `${BASE}/api/cash/accounts/${encodeURIComponent(cashAccountId)}/withdraw`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function adjustCash(
+  cashAccountId: string,
+  payload: { desiredBalance: number; reason: string },
+): Promise<{
+  ok: boolean;
+  balanceBefore: number;
+  balanceAfter: number;
+  amount: number;
+  movementId: string;
+}> {
+  return apiRequest(
+    `${BASE}/api/cash/accounts/${encodeURIComponent(cashAccountId)}/adjust`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+/** OWNER-only production cutover — one INITIAL_BALANCE per physical till. */
+export async function setInitialCashBalance(
+  cashAccountId: string,
+  payload: { countedAmount: number; reason?: string },
+): Promise<{
+  ok: boolean;
+  type: 'INITIAL_BALANCE';
+  balanceBefore: number;
+  balanceAfter: number;
+  amount: number;
+  movementId: string;
+}> {
+  return apiRequest(
+    `${BASE}/api/cash/accounts/${encodeURIComponent(cashAccountId)}/initial-balance`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  );
 }

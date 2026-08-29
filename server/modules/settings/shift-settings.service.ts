@@ -113,6 +113,7 @@ type ScheduleRow = Prisma.StaffScheduleGetPayload<{
     shiftType: {
       select: { id: true; name: true; label: true; startTime: true; endTime: true };
     };
+    cashAccount: { select: { id: true; code: true; name: true } };
   };
 }>;
 
@@ -128,6 +129,9 @@ type ScheduleItem = {
   isOff: boolean;
   isActive: boolean;
   notes: string | null;
+  cashAccountId: string | null;
+  cashAccountCode: string | null;
+  cashAccountName: string | null;
   createdAt: string;
   archivedAt: string | null;
   archiveReason: string | null;
@@ -150,6 +154,9 @@ function mapRow(s: ScheduleRow, hardDelete?: { allowed: boolean; blockers: strin
     isOff:           s.isOff,
     isActive:        s.isActive,
     notes:           s.notes ?? null,
+    cashAccountId:   s.cashAccountId ?? null,
+    cashAccountCode: s.cashAccount?.code ?? null,
+    cashAccountName: s.cashAccount?.name ?? null,
     createdAt:       s.createdAt.toISOString(),
     ...mapArchiveFields(s),
     canHardDelete:   hardDelete?.allowed ?? false,
@@ -160,6 +167,7 @@ function mapRow(s: ScheduleRow, hardDelete?: { allowed: boolean; blockers: strin
 const SCHEDULE_INCLUDE = {
   staffMember: { select: { id: true, name: true } },
   shiftType:   { select: { id: true, name: true, label: true, startTime: true, endTime: true } },
+  cashAccount: { select: { id: true, code: true, name: true } },
 } as const;
 
 // ── Service ────────────────────────────────────────────────────────────────────
@@ -438,6 +446,7 @@ class ShiftSettingsService {
         isOff:         input.isOff,
         isActive:      true,
         notes:         input.notes ?? null,
+        cashAccountId: input.cashAccountId ?? null,
       },
       include: SCHEDULE_INCLUDE,
     });
@@ -573,6 +582,7 @@ class ShiftSettingsService {
     if ('isOff'       in input) data.isOff       = input.isOff;
     if ('isActive'    in input) data.isActive    = input.isActive;
     if ('notes'       in input) data.notes       = input.notes;
+    if ('cashAccountId' in input) data.cashAccountId = input.cashAccountId;
     // Clear deprecated per-schedule hour overrides — ShiftType is the source of truth.
     if (!mergedIsOff) {
       data.startTime = null;

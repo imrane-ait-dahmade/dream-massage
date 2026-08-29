@@ -1,9 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, Save, X, CheckCircle, XCircle, Users, Moon } from 'lucide-react';
-import type { ShiftTypeSetting, StaffMember, WeeklyScheduleDay, StaffScheduleItem } from '@/lib/types';
-import { createShiftSchedule, updateShiftSchedule, deleteShiftSchedule, archiveShiftSchedule, restoreShiftSchedule } from '@/lib/api';
+import type { CashAccountRow, ShiftTypeSetting, StaffMember, WeeklyScheduleDay, StaffScheduleItem } from '@/lib/types';
+import {
+  createShiftSchedule,
+  updateShiftSchedule,
+  deleteShiftSchedule,
+  archiveShiftSchedule,
+  restoreShiftSchedule,
+  getCashAccounts,
+} from '@/lib/api';
 import { ArchiveActionMenu } from './ArchiveActionMenu';
 import { ArchivedBadge } from './VisibilityTabs';
 import { filterAllowedShiftTypes } from '@/lib/shift-period';
@@ -31,12 +38,13 @@ interface AddFormState {
   staffMemberId: string;
   dayOfWeek: string;
   shiftTypeId: string;
+  cashAccountId: string;
   isOff: boolean;
   notes: string;
 }
 
 const BLANK_ADD: AddFormState = {
-  staffMemberId: '', dayOfWeek: '1', shiftTypeId: '',
+  staffMemberId: '', dayOfWeek: '1', shiftTypeId: '', cashAccountId: '',
   isOff: false, notes: '',
 };
 
@@ -84,12 +92,20 @@ function AddForm({
     dayOfWeek: String(initialDayOfWeek),
   });
   const [saving, setSaving] = useState(false);
+  const [tills, setTills] = useState<CashAccountRow[]>([]);
 
   const activeShiftTypes = filterAllowedShiftTypes(shiftTypes);
+
+  useEffect(() => {
+    void getCashAccounts()
+      .then((res) => setTills(res.accounts.filter((a) => a.isActive)))
+      .catch(() => setTills([]));
+  }, []);
 
   async function handleSave() {
     if (!s.staffMemberId) { onError('Veuillez sélectionner une assistante'); return; }
     if (!s.isOff && !s.shiftTypeId) { onError('Veuillez sélectionner un type de shift'); return; }
+    if (!s.isOff && !s.cashAccountId) { onError('Veuillez sélectionner une caisse physique'); return; }
     setSaving(true);
     try {
       await createShiftSchedule({
@@ -98,6 +114,7 @@ function AddForm({
         dayOfWeek: Number(s.dayOfWeek),
         isOff: s.isOff,
         notes: s.notes || null,
+        cashAccountId: s.isOff ? null : (s.cashAccountId || null),
       });
       onSaved();
     } catch (err) {
@@ -158,7 +175,7 @@ function AddForm({
         <input
           type="checkbox"
           checked={s.isOff}
-          onChange={(e) => setS((prev) => ({ ...prev, isOff: e.target.checked, shiftTypeId: '' }))}
+          onChange={(e) => setS((prev) => ({ ...prev, isOff: e.target.checked, shiftTypeId: '', cashAccountId: '' }))}
           className="h-4 w-4 rounded"
         />
         Repos
@@ -184,6 +201,21 @@ function AddForm({
           {s.shiftTypeId && (
             <ShiftTypeHoursPreview shiftTypes={shiftTypes} shiftTypeId={s.shiftTypeId} />
           )}
+          <label className="block space-y-1">
+            <span className="text-xs font-medium text-stone-500">Caisse physique*</span>
+            <select
+              value={s.cashAccountId}
+              onChange={(e) => setS((prev) => ({ ...prev, cashAccountId: e.target.value }))}
+              className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+            >
+              <option value="">— Sélectionner —</option>
+              {tills.map((a) => (
+                <option key={a.cashAccountId} value={a.cashAccountId}>
+                  {a.name} ({a.code})
+                </option>
+              ))}
+            </select>
+          </label>
         </>
       )}
 
@@ -228,6 +260,7 @@ function AddForm({
 
 interface EditItemState {
   shiftTypeId: string;
+  cashAccountId: string;
   isOff: boolean;
   notes: string;
 }
@@ -243,21 +276,31 @@ interface EditItemFormProps {
 function EditItemForm({ item, shiftTypes, onCancel, onSaved, onError }: EditItemFormProps) {
   const [s, setS] = useState<EditItemState>({
     shiftTypeId: item.shiftTypeId ?? '',
+    cashAccountId: item.cashAccountId ?? '',
     isOff: item.isOff,
     notes: item.notes ?? '',
   });
   const [saving, setSaving] = useState(false);
+  const [tills, setTills] = useState<CashAccountRow[]>([]);
 
   const activeShiftTypes = filterAllowedShiftTypes(shiftTypes);
 
+  useEffect(() => {
+    void getCashAccounts()
+      .then((res) => setTills(res.accounts.filter((a) => a.isActive)))
+      .catch(() => setTills([]));
+  }, []);
+
   async function handleSave() {
     if (!s.isOff && !s.shiftTypeId) { onError('Veuillez sélectionner un type de shift'); return; }
+    if (!s.isOff && !s.cashAccountId) { onError('Veuillez sélectionner une caisse physique'); return; }
     setSaving(true);
     try {
       await updateShiftSchedule(item.id, {
         shiftTypeId: s.isOff ? null : (s.shiftTypeId || null),
         isOff: s.isOff,
         notes: s.notes || null,
+        cashAccountId: s.isOff ? null : (s.cashAccountId || null),
       });
       onSaved();
     } catch (err) {
@@ -273,7 +316,7 @@ function EditItemForm({ item, shiftTypes, onCancel, onSaved, onError }: EditItem
         <input
           type="checkbox"
           checked={s.isOff}
-          onChange={(e) => setS((prev) => ({ ...prev, isOff: e.target.checked, shiftTypeId: '' }))}
+          onChange={(e) => setS((prev) => ({ ...prev, isOff: e.target.checked, shiftTypeId: '', cashAccountId: '' }))}
           className="h-4 w-4 rounded"
         />
         Repos
@@ -299,6 +342,21 @@ function EditItemForm({ item, shiftTypes, onCancel, onSaved, onError }: EditItem
           {s.shiftTypeId && (
             <ShiftTypeHoursPreview shiftTypes={shiftTypes} shiftTypeId={s.shiftTypeId} />
           )}
+          <label className="block space-y-1">
+            <span className="text-xs font-medium text-stone-500">Caisse physique*</span>
+            <select
+              value={s.cashAccountId}
+              onChange={(e) => setS((prev) => ({ ...prev, cashAccountId: e.target.value }))}
+              className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+            >
+              <option value="">— Sélectionner —</option>
+              {tills.map((a) => (
+                <option key={a.cashAccountId} value={a.cashAccountId}>
+                  {a.name} ({a.code})
+                </option>
+              ))}
+            </select>
+          </label>
         </>
       )}
 
@@ -373,6 +431,9 @@ function ScheduleItemRow({
                   <span>{item.shiftTypeLabel ?? '—'}</span>
                   {item.startTime && item.endTime && (
                     <span className="text-stone-400"> · {item.startTime} → {item.endTime}</span>
+                  )}
+                  {item.cashAccountName && (
+                    <span className="text-stone-400"> · {item.cashAccountName}</span>
                   )}
                 </>
               )}

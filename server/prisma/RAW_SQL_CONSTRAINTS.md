@@ -44,15 +44,25 @@ CREATE UNIQUE INDEX unique_active_pricing_rule
   WHERE is_active = true;
 ```
 
-### 4. One open shift
+### 4. One open shift per physical till
 
-Prevents two concurrent open shifts, which would cause sessions to be double-counted in cash reconciliation.
+With multiple open shifts allowed (`ALLOW_MULTIPLE_OPEN_SHIFTS`), at most one OPEN
+shift may use a given physical cash account (`Caisse 1` / `Caisse 2`).
 
 ```sql
-CREATE UNIQUE INDEX unique_open_shift
-  ON shifts (status)
-  WHERE status = 'OPEN';
+-- Legacy shop-wide guard (drop when multi-open is enabled):
+-- DROP INDEX IF EXISTS unique_open_shift;
+
+CREATE UNIQUE INDEX unique_open_shift_per_cash_account
+  ON shifts (cash_account_id)
+  WHERE status = 'OPEN' AND cash_account_id IS NOT NULL;
 ```
+
+Migration `20260826180000_physical_cash_registers` creates this index.
+Enforced also in `shift.service.ts` openShift (closes same-till OPEN before create).
+
+**Note**: The older `unique_open_shift` (one OPEN row shop-wide) conflicts with
+multi-till operation and must be dropped when `ALLOW_MULTIPLE_OPEN_SHIFTS=true`.
 
 ### 5. One active schedule entry per staff member per day per period
 
@@ -77,7 +87,20 @@ deactivates only the previous row for the same `(staffMemberId, dayOfWeek, shift
 before inserting. Migration `20260706120000_staff_schedule_per_period` splits legacy
 Journée rows into Matin + Soir.
 
-### 6. No duplicate auto-shift for same schedule and business date
+### 6. One SESSION_PAYMENT movement per session reference
+
+Prevents double-crediting the same ChairSession into a staff cash account.
+Paid-amount changes after the first credit use CORRECTION deltas; clear/archive use REVERSAL.
+
+```sql
+CREATE UNIQUE INDEX unique_session_payment_per_reference
+  ON cash_movements (reference_type, reference_id)
+  WHERE type = 'SESSION_PAYMENT'
+    AND reference_type IS NOT NULL
+    AND reference_id IS NOT NULL;
+```
+
+### 7. No duplicate auto-shift for same schedule and business date
 
 Prevents the auto-shift job from opening two shifts for the same weekly schedule
 entry on the same calendar day (e.g., if the job runs while the server restarts).
@@ -92,7 +115,7 @@ CREATE UNIQUE INDEX unique_auto_shift_per_schedule_day
 **Enforcement order**: `auto-shift.service.ts` checks for an existing row before
 inserting. This index is the database-level safety net against concurrent opens.
 
-### 7. One PENDING session plan-change request per session
+### 8. One PENDING session plan-change request per session
 
 Prevents two concurrent open approval requests on the same session.
 
@@ -109,6 +132,18 @@ this index. Migration `20260721220000_session_modification_paid_amount` adds pai
 amount snapshots and allows amount-only requests (plan fields nullable); the
 partial unique index is unchanged.
 
+### 9. One INITIAL_BALANCE per cash account
+
+Production cutover: at most one opening-balance movement per ledger account.
+
+```sql
+CREATE UNIQUE INDEX unique_initial_balance_per_account
+  ON cash_movements (cash_account_id)
+  WHERE type = 'INITIAL_BALANCE';
+```
+
+Migration `20260826160000_unique_initial_balance`. Enforced also in `CashService.setInitialBalance`.
+
 ---
 
 ## When to apply
@@ -123,6 +158,15 @@ a unique violation error if duplicates are present).
 ```sql
 SELECT indexname, indexdef
 FROM pg_indexes
-WHERE tablename IN ('chair_sessions', 'chair_detection_configs', 'pricing_rules', 'shifts', 'staff_schedules')
+WHERE tablename IN (
+  'chair_sessions',
+  'chair_detection_configs',
+  'pricing_rules',
+  'shifts',
+  'staff_schedules',
+  'cash_movements',
+  'cash_accounts',
+  'session_plan_change_requests'
+)
   AND indexname LIKE 'unique_%';
 ```

@@ -382,6 +382,7 @@ class AutoShiftService {
         openedByUserId:      ownerId,
         openedAutomatically: true,
         notes:               'Auto-ouvert depuis le planning hebdomadaire',
+        cashAccountId:       schedule.cashAccountId ?? null,
       },
     });
 

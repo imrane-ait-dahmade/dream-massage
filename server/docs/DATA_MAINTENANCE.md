@@ -73,6 +73,27 @@ npx prisma generate
 
 Migration: `20260706140000_entity_archive_fields` — additive columns only.
 
+**Production rules (cash ledger included):** see [`PRODUCTION_MIGRATIONS.md`](./PRODUCTION_MIGRATIONS.md).
+## Sync paiements → caisse
+
+Trigger : `ChairSession.correctedAmount` (montant réellement encaissé).
+
+| Action | Impact caisse |
+|---|---|
+| Premier `null → N` | `SESSION_PAYMENT +N` |
+| Replay même N | aucun |
+| N → M | `CORRECTION +(M−N)` |
+| `clearCorrection` → null | `REVERSAL −net` |
+| Archive (soft-hide) | **aucun** (`correctedAmount` conservé) |
+| Hard delete | unpaid only → aucun |
+| Plan-only change | aucun |
+| Paid change (plan-change flow) | sync delta |
+
+Legacy : session déjà payée sans ligne ledger → pas de backfill (voir `planSessionPaidSync`).
+
+Cutover soldes : [`CASH_CUTOVER.md`](./CASH_CUTOVER.md).
+Never run `prisma migrate reset` against production. Never re-execute applied `migration.sql` files by hand.
+
 ## What stays visible after archive
 
 - Old **sessions** (via `shiftId` / staff on shift)

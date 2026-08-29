@@ -2,6 +2,7 @@ import { prisma } from '../../prisma';
 import { sessionSettingsService } from '../settings/session-settings.service';
 import type { AuthUser } from '../auth/auth.service';
 import { assessSessionDeletion } from './session-delete.logic';
+import { cashService, resolveSessionCashContext } from '../cash/cash.service';
 
 // Resolve actor userId — falls back to first OWNER from DB
 async function resolveActorUserId(user?: AuthUser | null): Promise<string | null> {
@@ -127,21 +128,40 @@ export const sessionService = {
 
     if (input.notes !== undefined) data.notes = input.notes;
 
-    const updated = await prisma.chairSession.update({
-      where:   { id: sessionId },
-      data,
-      include: SESSION_INCLUDE,
-    });
+    const previousPaidAmount =
+      session.correctedAmount != null ? Number(session.correctedAmount) : null;
+    const targetPaid = input.clearCorrection
+      ? null
+      : (input.correctedAmount as number);
 
-    // Audit event (non-blocking)
-    prisma.chairEvent
-      .create({
+    const updated = await prisma.$transaction(async (tx) => {
+      const row = await tx.chairSession.update({
+        where:   { id: sessionId },
+        data,
+        include: SESSION_INCLUDE,
+      });
+
+      const { staffMemberId, cashAccountId } = await resolveSessionCashContext(sessionId, tx);
+      await cashService.syncSessionPaidAmount(
+        {
+          sessionId,
+          staffMemberId,
+          cashAccountId,
+          previousPaidAmount,
+          targetPaid,
+          reason: input.correctionReason ?? null,
+          createdById: actorUserId,
+        },
+        tx,
+      );
+
+      await tx.chairEvent.create({
         data: {
           chairId:   session.chairId,
           sessionId,
           eventType: 'SESSION_CORRECTED',
           metadata: {
-            oldCorrectedAmount: session.correctedAmount != null ? Number(session.correctedAmount) : null,
+            oldCorrectedAmount: previousPaidAmount,
             newCorrectedAmount: input.clearCorrection ? null : (input.correctedAmount ?? null),
             expectedAmount:     session.expectedAmount != null ? Number(session.expectedAmount) : null,
             reason:             input.correctionReason ?? null,
@@ -149,8 +169,10 @@ export const sessionService = {
             cleared:            !!input.clearCorrection,
           },
         },
-      })
-      .catch(() => {});
+      });
+
+      return row;
+    });
 
     return mapSession(updated);
   },
@@ -211,11 +233,15 @@ export const sessionService = {
             },
           });
         }
+
+        // Archive = soft-hide only. correctedAmount is preserved → cash ledger untouched.
+        // Financial cancel is clearCorrection (targetPaid null), not archive.
       });
 
       await writeSessionDeleteAudit(sessionId, 'ARCHIVE', actorUserId, {
         mode: assessment.reasons,
         archiveReason,
+        cashImpact: 'none',
       });
 
       return { mode: 'archived', sessionId };

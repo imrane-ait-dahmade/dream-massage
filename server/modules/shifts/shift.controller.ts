@@ -19,8 +19,9 @@ const bonusAdjustmentSchema = z.object({
 
 const shiftOpenSchema = z
   .object({
-    staffMemberId: z.string().uuid(),
-    shiftTypeId:   z.string().uuid().optional(),
+    staffMemberId: z.string().min(1),
+    shiftTypeId:   z.string().min(1).optional(),
+    cashAccountId: z.string().min(1),
   })
   .strict();
 

@@ -11,6 +11,8 @@ export const scheduleCreateSchema = z
     dayOfWeek:     z.number().int().min(1).max(7),
     isOff:         z.boolean().default(false),
     notes:         z.string().max(500).nullable().optional(),
+    /** Default physical till for auto-opened shifts from this schedule row. */
+    cashAccountId: z.string().min(1).nullable().optional(),
   })
   .strict()
   .superRefine((d, ctx) => {
@@ -27,10 +29,11 @@ export type ScheduleCreateInput = z.infer<typeof scheduleCreateSchema>;
 
 export const scheduleUpdateSchema = z
   .object({
-    shiftTypeId: z.string().uuid().nullable().optional(),
-    isOff:       z.boolean().optional(),
-    isActive:    z.boolean().optional(),
-    notes:       z.string().max(500).nullable().optional(),
+    shiftTypeId:   z.string().uuid().nullable().optional(),
+    isOff:         z.boolean().optional(),
+    isActive:      z.boolean().optional(),
+    notes:         z.string().max(500).nullable().optional(),
+    cashAccountId: z.string().min(1).nullable().optional(),
   })
   .strict();
 

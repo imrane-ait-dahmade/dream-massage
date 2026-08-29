@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { DoorClosed, DoorOpen, Loader2, RefreshCw } from 'lucide-react';
-import type { OpenShift, StaffMember } from '@/lib/types';
+import type { CashAccountRow, OpenShift, StaffMember } from '@/lib/types';
 import {
   closeShift,
+  getCashAccounts,
   getOpenShift,
-  getStaffMembers,
   openShiftManual,
   runShiftAutomationCheck,
 } from '@/lib/api';
@@ -19,14 +19,21 @@ interface Props {
 export function ShiftManualControls({ staff, onChanged }: Props) {
   const [openShift, setOpenShift] = useState<OpenShift | null>(null);
   const [selectedStaffId, setSelectedStaffId] = useState('');
+  const [selectedCashAccountId, setSelectedCashAccountId] = useState('');
+  const [cashAccounts, setCashAccounts] = useState<CashAccountRow[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
   const activeStaff = staff.filter((s) => s.isActive);
+  const activeTills = cashAccounts.filter((a) => a.isActive);
 
   const refresh = useCallback(async () => {
-    const res = await getOpenShift();
-    setOpenShift(res.shift);
+    const [shiftRes, cashRes] = await Promise.all([
+      getOpenShift(),
+      getCashAccounts().catch(() => null),
+    ]);
+    setOpenShift(shiftRes.shift);
+    if (cashRes) setCashAccounts(cashRes.accounts);
   }, []);
 
   useEffect(() => {
@@ -36,6 +43,13 @@ export function ShiftManualControls({ staff, onChanged }: Props) {
   useEffect(() => {
     if (activeStaff.length === 1) setSelectedStaffId(activeStaff[0]!.id);
   }, [staff]);
+
+  useEffect(() => {
+    const tills = cashAccounts.filter((a) => a.isActive);
+    if (tills.length === 1 && !selectedCashAccountId) {
+      setSelectedCashAccountId(tills[0]!.cashAccountId);
+    }
+  }, [cashAccounts, selectedCashAccountId]);
 
   async function run(label: string, fn: () => Promise<unknown>, okMsg: string) {
     setBusy(label);
@@ -52,11 +66,17 @@ export function ShiftManualControls({ staff, onChanged }: Props) {
     }
   }
 
+  const canOpen =
+    !busy &&
+    !!selectedCashAccountId &&
+    (activeStaff.length === 1 || !!selectedStaffId);
+
   return (
     <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
       <p className="text-sm font-semibold text-stone-800">Actions manuelles</p>
       <p className="mt-1 text-xs text-stone-500">
         Ouverture / fermeture d&apos;urgence. Le planning automatique reste la source principale.
+        L&apos;ouverture exige une caisse physique (Caisse 1 ou 2).
       </p>
 
       {openShift && (
@@ -90,13 +110,29 @@ export function ShiftManualControls({ staff, onChanged }: Props) {
                 ))}
               </select>
             )}
+            <select
+              value={selectedCashAccountId}
+              onChange={(e) => setSelectedCashAccountId(e.target.value)}
+              className="rounded-lg border border-stone-200 px-2 py-1.5 text-xs"
+            >
+              <option value="">Choisir caisse…</option>
+              {activeTills.map((a) => (
+                <option key={a.cashAccountId} value={a.cashAccountId}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
             <button
               type="button"
-              disabled={!!busy || (activeStaff.length > 1 && !selectedStaffId)}
+              disabled={!canOpen}
               onClick={() => {
-                const id = selectedStaffId || activeStaff[0]?.id;
-                if (!id) return;
-                void run('open', () => openShiftManual(id), 'Shift ouvert');
+                const staffId = selectedStaffId || activeStaff[0]?.id;
+                if (!staffId || !selectedCashAccountId) return;
+                void run(
+                  'open',
+                  () => openShiftManual(staffId, selectedCashAccountId),
+                  'Shift ouvert',
+                );
               }}
               className="inline-flex items-center gap-1.5 rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-stone-700 disabled:opacity-50"
             >

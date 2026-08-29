@@ -34,6 +34,7 @@ import shiftRouter from './modules/shifts/shift.controller';
 import sessionRouter from './modules/sessions/session.controller';
 import sessionPlanChangeRouter from './modules/sessions/session-plan-change.controller';
 import assistantRouter from './modules/assistant/assistant.controller';
+import cashRouter from './modules/cash/cash.controller';
 
 const app = express();
 
@@ -327,6 +328,10 @@ app.use('/api/shifts', requireAuth, requireOwnerAdmin, shiftRouter);
 
 app.use('/api/sessions', requireAuth, sessionRouter);
 app.use('/api/session-plan-change-requests', requireAuth, sessionPlanChangeRouter);
+
+// ── Cash accounts (owner/admin) ────────────────────────────────────────────────
+
+app.use('/api/cash', requireAuth, requireOwnerAdmin, cashRouter);
 
 // ── 404 ────────────────────────────────────────────────────────────────────────
 

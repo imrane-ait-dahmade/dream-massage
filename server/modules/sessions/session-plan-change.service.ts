@@ -4,6 +4,7 @@ import { logger } from '../../utils/logger';
 import type { AuthUser } from '../auth/auth.service';
 import { dashboardService } from '../dashboard/dashboard.service';
 import { homeDashboardService } from '../dashboard/home-dashboard.service';
+import { cashService, resolveSessionCashContext } from '../cash/cash.service';
 import {
   assertNoPendingRequest,
   assertPaidAmountIsDifferent,
@@ -413,6 +414,21 @@ async function applyPaidAmountChangeInTx(
       },
     },
   });
+
+  const { staffMemberId, cashAccountId } = await resolveSessionCashContext(params.sessionId, tx);
+
+  await cashService.syncSessionPaidAmount(
+    {
+      sessionId: params.sessionId,
+      staffMemberId,
+      cashAccountId,
+      previousPaidAmount: sessionSnap!.correctedAmount,
+      targetPaid: params.requestedPaidAmount,
+      reason: params.reason,
+      createdById: params.actorUserId,
+    },
+    tx,
+  );
 
   return updated;
 }

@@ -106,6 +106,12 @@ function PageHeader() {
           <Settings className="h-4 w-4 text-stone-400" />
           <h1 className="text-base font-bold text-stone-900">Paramétrages</h1>
         </div>
+        <Link
+          href="/caisses"
+          className="rounded-lg px-2 py-1 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-100 hover:text-stone-900"
+        >
+          Caisses
+        </Link>
         <button
           onClick={() => void handleLogout()}
           className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700"

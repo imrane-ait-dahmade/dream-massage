@@ -110,7 +110,7 @@ export class ShiftService {
    * when ALLOW_MULTIPLE_OPEN_SHIFTS=false).
    */
   async openShift(
-    input: { staffMemberId: string; shiftTypeId?: string },
+    input: { staffMemberId: string; shiftTypeId?: string; cashAccountId: string },
     openedByUserId: string,
   ) {
     // Validate staff member
@@ -123,6 +123,20 @@ export class ShiftService {
     }
     if (!staff.isActive) {
       throw Object.assign(new Error('Ce membre du staff est inactif'), { status: 400 });
+    }
+
+    if (!input.cashAccountId?.trim()) {
+      throw Object.assign(new Error('cashAccountId est obligatoire'), { status: 400 });
+    }
+    const cashAccount = await prisma.cashAccount.findUnique({
+      where:  { id: input.cashAccountId },
+      select: { id: true, isActive: true, code: true, name: true },
+    });
+    if (!cashAccount) {
+      throw Object.assign(new Error('Caisse introuvable'), { status: 404 });
+    }
+    if (!cashAccount.isActive) {
+      throw Object.assign(new Error('Cette caisse est inactive'), { status: 400 });
     }
 
     // Validate shift type if provided
@@ -156,6 +170,17 @@ export class ShiftService {
           closedByUserId: openedByUserId,
         });
       }
+      // Also close any OPEN shift already on this physical till
+      const sameTillOpen = await prisma.shift.findFirst({
+        where:  { status: 'OPEN', endedAt: null, cashAccountId: input.cashAccountId },
+        select: { id: true },
+      });
+      if (sameTillOpen) {
+        await this.autoCloseShift(sameTillOpen.id, {
+          reason:          'BEFORE_MANUAL_OPEN_SAME_TILL',
+          closedByUserId: openedByUserId,
+        });
+      }
     }
 
     return prisma.shift.create({
@@ -165,6 +190,7 @@ export class ShiftService {
         startedAt:      new Date(),
         status:         'OPEN',
         shiftTypeId:    input.shiftTypeId ?? null,
+        cashAccountId:  input.cashAccountId,
       },
       include: SHIFT_INCLUDE,
     });

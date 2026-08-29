@@ -41,3 +41,23 @@ export function formatTime(isoString: string | null | undefined): string {
     minute: '2-digit',
   });
 }
+
+/** Format an ISO string to date + time (fr-FR). */
+export function formatDateTime(isoString: string | null | undefined): string {
+  if (!isoString) return '—';
+  return new Date(isoString).toLocaleString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+/** Cash amounts with up to 2 decimals: "1 250,50 DH" */
+export function formatCashDH(amount: number): string {
+  return `${Number(amount).toLocaleString('fr-FR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })} DH`;
+}

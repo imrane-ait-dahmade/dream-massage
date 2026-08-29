@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Settings, LogOut, Wifi, WifiOff, RefreshCw, ClipboardList } from 'lucide-react';
+import { Settings, LogOut, Wifi, WifiOff, RefreshCw, ClipboardList, Wallet } from 'lucide-react';
 import type { AuthUser } from '@/lib/api';
 import type { ConnectionStatus } from '@/hooks/useDashboard';
 
@@ -41,6 +41,14 @@ export function DashboardHeader({
 
           {/* Right actions */}
           <div className="flex items-center gap-0.5 md:gap-1">
+            <Link
+              href="/caisses"
+              className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white/10 hover:text-white md:p-2"
+              title="Caisses"
+            >
+              <Wallet className="h-4 w-4" />
+            </Link>
+
             <Link
               href="/plan-change-requests"
               className="relative rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white/10 hover:text-white md:p-2"

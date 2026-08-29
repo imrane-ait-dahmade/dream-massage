@@ -306,6 +306,9 @@ export interface StaffScheduleItem {
   isOff: boolean;
   isActive: boolean;
   notes: string | null;
+  cashAccountId?: string | null;
+  cashAccountCode?: string | null;
+  cashAccountName?: string | null;
   createdAt?: string;
   archivedAt?: string | null;
   archiveReason?: string | null;
@@ -669,4 +672,85 @@ export interface CreateSessionModificationPayload {
   /** 0 DH is valid. Omit the field to leave paid amount unchanged. */
   requestedPaidAmount?: number;
   reason: string;
+}
+
+// ── Cash accounts (physical tills — Caisse 1 / Caisse 2) ───────────────────────
+
+export type CashMovementType =
+  | 'INITIAL_BALANCE'
+  | 'SESSION_PAYMENT'
+  | 'MANUAL_INCOME'
+  | 'WITHDRAWAL'
+  | 'ADMIN_ADJUSTMENT'
+  | 'CORRECTION'
+  | 'REVERSAL';
+
+/** Physical till row from GET /api/cash/accounts */
+export interface CashAccountRow {
+  cashAccountId: string;
+  code: string;
+  name: string;
+  isActive: boolean;
+  /** Real cash in the till — never filtered by staff */
+  physicalBalance: number;
+  openingBalance: number;
+  incomes: number;
+  withdrawals: number;
+  adjustments: number;
+  /** Closing / day current balance (same as physical for list) */
+  currentBalance: number;
+}
+
+export interface CashAccountsListResponse {
+  ok: boolean;
+  businessDate: string;
+  /** Caisse 1 + Caisse 2 physical balances */
+  storeTotal: number;
+  accounts: CashAccountRow[];
+}
+
+export interface CashAccountDetailResponse {
+  ok: boolean;
+  cashAccountId: string;
+  code: string;
+  name: string;
+  isActive: boolean;
+  businessDate: string;
+  physicalBalance: number;
+  currentBalance: number;
+  today: {
+    openingBalance: number;
+    incomes: number;
+    withdrawals: number;
+    adjustments: number;
+    currentBalance: number;
+  };
+}
+
+export interface CashMovementItem {
+  id: string;
+  cashAccountId?: string;
+  type: CashMovementType;
+  label: string;
+  amount: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  referenceType: string | null;
+  referenceId: string | null;
+  reason: string | null;
+  createdById: string | null;
+  createdByName: string | null;
+  /** Attribution fille (optional — till-level moves may be null) */
+  staffMemberId?: string | null;
+  staffMemberName?: string | null;
+  createdAt: string;
+}
+
+export interface CashMovementsResponse {
+  ok: boolean;
+  items: CashMovementItem[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
 }
