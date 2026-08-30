@@ -9,6 +9,7 @@ import {
   assertSessionCashCreditContext,
   assertWithdrawAmount,
   NO_CASH_FOR_STAFF_MSG,
+  normalizeReason,
   planInitialBalance,
   planSessionPaidSync,
   planStaffAssignment,
@@ -485,6 +486,51 @@ async function run() {
         }),
       (e: Error) => e.message === NO_CASH_FOR_STAFF_MSG,
     );
+  });
+
+  console.log('optional reason on manual operations');
+
+  await test('withdraw sans raison => accepté', async () => {
+    const ledger = new MemoryCashLedger();
+    await ledger.credit({ cashAccountId: 'CASH_1', amount: 500 });
+    const m = await ledger.withdraw('CASH_1', 100);
+    assert.equal(m.reason, null);
+    assert.equal(ledger.getBalance('CASH_1'), 400);
+  });
+
+  await test('adjust sans raison => accepté', async () => {
+    const ledger = new MemoryCashLedger();
+    await ledger.credit({ cashAccountId: 'CASH_2', amount: 800 });
+    const m = await ledger.adjust('CASH_2', 750);
+    assert.equal(m.reason, null);
+    assert.equal(m.amount, -50);
+    assert.equal(ledger.getBalance('CASH_2'), 750);
+  });
+
+  await test('manual income sans raison => accepté', async () => {
+    const ledger = new MemoryCashLedger();
+    const m = await ledger.credit({ cashAccountId: 'CASH_1', amount: 120 });
+    assert.equal(m!.reason, null);
+    assert.equal(ledger.getBalance('CASH_1'), 120);
+  });
+
+  await test('raison fournie => sauvegardée', async () => {
+    const ledger = new MemoryCashLedger();
+    await ledger.credit({ cashAccountId: 'CASH_1', amount: 1000 });
+    const w = await ledger.withdraw('CASH_1', 50, 'banque');
+    const a = await ledger.adjust('CASH_1', 900, 'écart caisse');
+    const c = await ledger.credit({ cashAccountId: 'CASH_1', amount: 10, reason: 'apport' });
+    assert.equal(w.reason, 'banque');
+    assert.equal(a.reason, 'écart caisse');
+    assert.equal(c!.reason, 'apport');
+  });
+
+  await test('chaîne vide => null', () => {
+    assert.equal(normalizeReason(''), null);
+    assert.equal(normalizeReason('   '), null);
+    assert.equal(normalizeReason(null), null);
+    assert.equal(normalizeReason(undefined), null);
+    assert.equal(normalizeReason('  note  '), 'note');
   });
 
   console.log('admin credit HTTP lockdown');

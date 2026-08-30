@@ -82,7 +82,6 @@ function CashPageContent() {
   const [withdrawStep, setWithdrawStep] = useState<'form' | 'confirm'>('form');
   const [desiredBalance, setDesiredBalance] = useState('');
   const [adjustReason, setAdjustReason] = useState('');
-  const [adjustStep, setAdjustStep] = useState<'form' | 'confirm'>('form');
   const [cutoverAmount, setCutoverAmount] = useState('');
   const [cutoverReason, setCutoverReason] = useState('Cutover caisse production');
   const [cutoverStep, setCutoverStep] = useState<'form' | 'confirm'>('form');
@@ -249,7 +248,6 @@ function CashPageContent() {
     setAdjustTarget(row);
     setDesiredBalance(String(row.physicalBalance));
     setAdjustReason('');
-    setAdjustStep('form');
     setActionError(null);
   }
 
@@ -355,16 +353,12 @@ function CashPageContent() {
 
   async function submitAdjust() {
     if (!adjustTarget || !adjustPreview || adjustPreview.unchanged || actionBusy) return;
-    if (!adjustReason.trim()) {
-      setActionError('La raison est obligatoire.');
-      return;
-    }
     setActionBusy(true);
     setActionError(null);
     try {
       await adjustCash(adjustTarget.cashAccountId, {
         desiredBalance: adjustPreview.desired,
-        reason: adjustReason.trim(),
+        reason: adjustReason.trim() || undefined,
       });
       setAdjustTarget(null);
       setToast('Correction enregistrée dans l’historique');
@@ -988,13 +982,14 @@ function CashPageContent() {
                 autoFocus
               />
               <label className="mt-3 block text-xs font-medium text-stone-600">
-                Remarque (facultatif)
+                Raison
               </label>
               <input
                 type="text"
                 value={withdrawReason}
                 onChange={(e) => setWithdrawReason(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                placeholder="Ex. écart inventaire physique (optionnel)"
               />
               {withdrawPreview && (
                 <div className="mt-3 space-y-1 rounded-lg bg-stone-50 px-3 py-2 text-xs text-stone-700">
@@ -1069,95 +1064,58 @@ function CashPageContent() {
           title={`Corriger — ${adjustTarget.name}`}
           onClose={() => !actionBusy && setAdjustTarget(null)}
         >
-          {adjustStep === 'form' ? (
-            <>
-              <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                Une correction crée un mouvement <strong>ADMIN_ADJUSTMENT</strong> dans
-                l&apos;historique. Le solde n&apos;est jamais écrasé silencieusement.
-              </div>
-              <p className="mb-3 text-xs text-stone-500">
-                Solde physique : <strong>{formatCashDH(adjustTarget.physicalBalance)}</strong>
-              </p>
-              <label className="block text-xs font-medium text-stone-600">
-                Nouveau solde réel (DH)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                value={desiredBalance}
-                onChange={(e) => setDesiredBalance(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                autoFocus
-              />
-              {adjustPreview && (
-                <p className="mt-2 text-sm text-stone-700">
-                  Différence :{' '}
-                  <strong className={adjustPreview.diff >= 0 ? 'text-emerald-700' : 'text-red-700'}>
-                    {signedCash(adjustPreview.diff)}
-                  </strong>
-                </p>
-              )}
-              <label className="mt-3 block text-xs font-medium text-stone-600">Raison *</label>
-              <input
-                type="text"
-                value={adjustReason}
-                onChange={(e) => setAdjustReason(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                placeholder="Ex. écart inventaire physique"
-              />
-              {actionError && <p className="mt-2 text-xs text-red-600">{actionError}</p>}
-              <div className="mt-4 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setAdjustTarget(null)}
-                  className="rounded-lg px-3 py-2 text-xs text-stone-600"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="button"
-                  disabled={!adjustPreview || adjustPreview.unchanged || !adjustReason.trim()}
-                  onClick={() => {
-                    setActionError(null);
-                    setAdjustStep('confirm');
-                  }}
-                  className="rounded-lg bg-stone-900 px-3 py-2 text-xs font-medium text-white disabled:opacity-40"
-                >
-                  Continuer
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <p className="text-sm text-stone-700">
-                Passer de <strong>{formatCashDH(adjustPreview?.before ?? 0)}</strong> à{' '}
-                <strong>{formatCashDH(adjustPreview?.desired ?? 0)}</strong>
-                {' '}({signedCash(adjustPreview?.diff ?? 0)}) ?
-              </p>
-              <p className="mt-2 text-xs text-stone-500">
-                Cette opération sera ajoutée à l&apos;historique de la caisse.
-              </p>
-              {actionError && <p className="mt-2 text-xs text-red-600">{actionError}</p>}
-              <div className="mt-4 flex justify-end gap-2">
-                <button
-                  type="button"
-                  disabled={actionBusy}
-                  onClick={() => setAdjustStep('form')}
-                  className="rounded-lg px-3 py-2 text-xs text-stone-600"
-                >
-                  Retour
-                </button>
-                <button
-                  type="button"
-                  disabled={actionBusy}
-                  onClick={() => void submitAdjust()}
-                  className="rounded-lg bg-stone-900 px-3 py-2 text-xs font-medium text-white disabled:opacity-50"
-                >
-                  {actionBusy ? 'Enregistrement…' : 'Confirmer la correction'}
-                </button>
-              </div>
-            </>
+          <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+            Une correction crée un mouvement <strong>ADMIN_ADJUSTMENT</strong> dans
+            l&apos;historique. Le solde n&apos;est jamais écrasé silencieusement.
+          </div>
+          <p className="mb-3 text-xs text-stone-500">
+            Solde actuel : <strong>{formatCashDH(adjustTarget.physicalBalance)}</strong>
+          </p>
+          <label className="block text-xs font-medium text-stone-600">
+            Nouveau solde réel (DH)
+          </label>
+          <input
+            type="number"
+            step="0.01"
+            value={desiredBalance}
+            onChange={(e) => setDesiredBalance(e.target.value)}
+            className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+            autoFocus
+          />
+          {adjustPreview && (
+            <p className="mt-2 text-sm text-stone-700">
+              Différence :{' '}
+              <strong className={adjustPreview.diff >= 0 ? 'text-emerald-700' : 'text-red-700'}>
+                {signedCash(adjustPreview.diff)}
+              </strong>
+            </p>
           )}
+          <label className="mt-3 block text-xs font-medium text-stone-600">Raison</label>
+          <input
+            type="text"
+            value={adjustReason}
+            onChange={(e) => setAdjustReason(e.target.value)}
+            className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+            placeholder="Ex. écart inventaire physique (optionnel)"
+          />
+          {actionError && <p className="mt-2 text-xs text-red-600">{actionError}</p>}
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setAdjustTarget(null)}
+              className="rounded-lg px-3 py-2 text-xs text-stone-600"
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              disabled={!adjustPreview || adjustPreview.unchanged || actionBusy}
+              onClick={() => void submitAdjust()}
+              className="rounded-lg bg-stone-900 px-3 py-2 text-xs font-medium text-white disabled:opacity-40"
+            >
+              {actionBusy ? 'Enregistrement…' : 'Confirmer la correction'}
+            </button>
+          </div>
         </Modal>
       )}
 

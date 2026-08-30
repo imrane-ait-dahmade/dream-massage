@@ -18,6 +18,13 @@ export const SESSION_REF_TYPE = 'ChairSession' as const;
 /** Shown when a paid session sync requires a till but none is assigned to the staff member. */
 export const NO_CASH_FOR_STAFF_MSG = "Aucune caisse n'est affectée à cette fille.";
 
+/** Empty or whitespace-only reasons are stored as null. */
+export function normalizeReason(reason?: string | null): string | null {
+  if (reason == null) return null;
+  const trimmed = reason.trim();
+  return trimmed === '' ? null : trimmed;
+}
+
 /** Throws when a ledger movement is required but staff/till context is missing. */
 export function assertSessionCashCreditContext(input: {
   plan: { type: CashMovementType; amount: number } | null;
@@ -481,12 +488,12 @@ export class MemoryCashLedger {
         });
         if (!plan) return null;
         if (input.failAfterLock) throw new Error('ROLLBACK_TEST');
-        return this.post(acc, staffMemberId, plan.type, plan.amount, refType, refId, input.reason ?? null);
+        return this.post(acc, staffMemberId, plan.type, plan.amount, refType, refId, normalizeReason(input.reason));
       }
 
       const amount = assertPositiveAmount(input.amount);
       if (input.failAfterLock) throw new Error('ROLLBACK_TEST');
-      return this.post(acc, staffMemberId, type, amount, refType, refId, input.reason ?? null);
+      return this.post(acc, staffMemberId, type, amount, refType, refId, normalizeReason(input.reason));
     });
   }
 
@@ -500,23 +507,28 @@ export class MemoryCashLedger {
       const acc = this.requireAccount(cashAccountId);
       const positive = assertPositiveAmount(amount, 'montant du retrait');
       assertWithdrawAmount(acc.currentBalance, positive);
-      return this.post(acc, staffMemberId ?? null, 'WITHDRAWAL', -positive, null, null, reason ?? null);
+      return this.post(acc, staffMemberId ?? null, 'WITHDRAWAL', -positive, null, null, normalizeReason(reason));
     });
   }
 
   async adjust(
     cashAccountId: string,
     desiredBalance: number,
-    reason: string,
+    reason?: string | null,
     staffMemberId?: string | null,
   ) {
-    if (!reason.trim()) {
-      throw Object.assign(new Error('La raison de correction est obligatoire.'), { status: 400 });
-    }
     return this.withLock(cashAccountId, () => {
       const acc = this.requireAccount(cashAccountId);
       const plan = planAdjustment(acc.currentBalance, desiredBalance);
-      return this.post(acc, staffMemberId ?? null, plan.type, plan.amount, null, null, reason.trim());
+      return this.post(
+        acc,
+        staffMemberId ?? null,
+        plan.type,
+        plan.amount,
+        null,
+        null,
+        normalizeReason(reason),
+      );
     });
   }
 

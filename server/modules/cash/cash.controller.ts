@@ -5,6 +5,7 @@ import type { AuthRequest } from '../../middleware/auth.middleware';
 import { requireOwner, requireOwnerAdmin } from '../../middleware/auth.middleware';
 import { cashService } from './cash.service';
 import { adminCreditBodySchema } from './cash.credit-http';
+import { normalizeReason } from './cash.logic';
 
 const router = Router();
 
@@ -43,7 +44,7 @@ const withdrawSchema = z
 const adjustSchema = z
   .object({
     desiredBalance: z.number().finite(),
-    reason: z.string().min(1).max(500),
+    reason: z.string().max(500).optional().nullable(),
     staffMemberId: z.string().min(1).optional(),
   })
   .strict();
@@ -200,7 +201,7 @@ router.post('/accounts/:cashAccountId/credit', (req: AuthRequest, res) => {
       cashAccountId: req.params.cashAccountId,
       staffMemberId: parsed.data.staffMemberId ?? null,
       amount: parsed.data.amount,
-      reason: parsed.data.reason ?? null,
+      reason: normalizeReason(parsed.data.reason),
       createdById: req.user.id,
     })
     .then((result) =>
@@ -265,7 +266,7 @@ router.post('/accounts/:cashAccountId/withdraw', (req: AuthRequest, res) => {
     .withdraw({
       cashAccountId: req.params.cashAccountId,
       amount: parsed.data.amount,
-      reason: parsed.data.reason ?? null,
+      reason: normalizeReason(parsed.data.reason),
       staffMemberId: parsed.data.staffMemberId ?? null,
       createdById: req.user?.id ?? null,
     })
@@ -291,7 +292,7 @@ router.post('/accounts/:cashAccountId/adjust', (req: AuthRequest, res) => {
     .adjust({
       cashAccountId: req.params.cashAccountId,
       desiredBalance: parsed.data.desiredBalance,
-      reason: parsed.data.reason,
+      reason: normalizeReason(parsed.data.reason),
       staffMemberId: parsed.data.staffMemberId ?? null,
       createdById: req.user?.id ?? null,
     })

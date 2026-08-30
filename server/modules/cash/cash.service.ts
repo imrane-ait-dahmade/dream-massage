@@ -20,6 +20,7 @@ import {
   planReversal,
   planSessionPaidSync,
   planStaffAssignment,
+  normalizeReason,
   round2,
   SESSION_REF_TYPE,
   type CashMovementType,
@@ -353,7 +354,7 @@ export const cashService = {
         amount,
         referenceType: null,
         referenceId: null,
-        reason: input.reason ?? null,
+        reason: normalizeReason(input.reason),
         createdById: input.createdById,
       });
     });
@@ -385,7 +386,7 @@ export const cashService = {
         amount,
         referenceType: null,
         referenceId: null,
-        reason: input.reason ?? null,
+        reason: normalizeReason(input.reason),
         createdById: input.createdById ?? null,
       });
       return { ...result, idempotent: false as const };
@@ -498,7 +499,7 @@ export const cashService = {
         staffMemberId,
         type: 'WITHDRAWAL',
         amount: money(amount).negated(),
-        reason: input.reason ?? null,
+        reason: normalizeReason(input.reason),
         createdById: input.createdById ?? null,
       });
     });
@@ -511,13 +512,11 @@ export const cashService = {
   async adjust(input: {
     cashAccountId: string;
     desiredBalance: number;
-    reason: string;
+    reason?: string | null;
     createdById?: string | null;
     staffMemberId?: string | null;
   }) {
-    if (!input.reason?.trim()) {
-      throw httpError(400, 'La raison de correction est obligatoire.');
-    }
+    const reason = normalizeReason(input.reason);
 
     return prisma.$transaction(async (tx) => {
       const account = await requireCashAccount(tx, input.cashAccountId);
@@ -537,7 +536,7 @@ export const cashService = {
           amount: money(plan.amount),
           balanceBefore: money(plan.balanceBefore),
           balanceAfter: money(plan.balanceAfter),
-          reason: input.reason.trim(),
+          reason,
           createdById: input.createdById ?? null,
         },
       });
