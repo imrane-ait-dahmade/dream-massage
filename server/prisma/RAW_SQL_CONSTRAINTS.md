@@ -144,6 +144,20 @@ CREATE UNIQUE INDEX unique_initial_balance_per_account
 
 Migration `20260826160000_unique_initial_balance`. Enforced also in `CashService.setInitialBalance`.
 
+### 10. One active staff member per physical till (current assignment)
+
+Prevents the same girl from being assigned to both `CASH_1` and `CASH_2` at once.
+Historical `cash_movements.staff_member_id` is never updated on reassignment.
+
+```sql
+CREATE UNIQUE INDEX unique_active_staff_per_physical_till
+  ON cash_accounts (staff_member_id)
+  WHERE staff_member_id IS NOT NULL AND is_active = true;
+```
+
+Migration `20260830150000_cash_account_staff_assignment`. Enforced also in
+`CashService.setCashAccountAssignment` before update.
+
 ---
 
 ## When to apply

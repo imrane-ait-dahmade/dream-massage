@@ -7,6 +7,7 @@ import { ArrowLeft, RefreshCw, Wallet } from 'lucide-react';
 import { AuthGuard } from '@/components/AuthGuard';
 import {
   adjustCash,
+  assignCashAccountStaff,
   getCashAccountDetail,
   getCashAccounts,
   getCashMovements,
@@ -85,6 +86,8 @@ function CashPageContent() {
   const [cutoverAmount, setCutoverAmount] = useState('');
   const [cutoverReason, setCutoverReason] = useState('Cutover caisse production');
   const [cutoverStep, setCutoverStep] = useState<'form' | 'confirm'>('form');
+  const [assignTarget, setAssignTarget] = useState<CashAccountRow | null>(null);
+  const [assignStaffId, setAssignStaffId] = useState('');
   const [actionBusy, setActionBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -256,6 +259,43 @@ function CashPageContent() {
     setCutoverReason('Cutover caisse production');
     setCutoverStep('form');
     setActionError(null);
+  }
+
+  function openAssign(row: CashAccountRow) {
+    setAssignTarget(row);
+    setAssignStaffId(row.staffMemberId ?? '');
+    setActionError(null);
+  }
+
+  /** Staff not assigned to another till (except current row's assignee). */
+  const assignableStaff = useMemo(() => {
+    const taken = new Set(
+      accounts
+        .filter((a) => a.staffMemberId && a.cashAccountId !== assignTarget?.cashAccountId)
+        .map((a) => a.staffMemberId as string),
+    );
+    return staffList.filter((s) => s.isActive && !taken.has(s.id));
+  }, [accounts, assignTarget, staffList]);
+
+  async function submitAssign() {
+    if (!assignTarget || actionBusy) return;
+    setActionBusy(true);
+    setActionError(null);
+    try {
+      await assignCashAccountStaff(assignTarget.cashAccountId, {
+        staffMemberId: assignStaffId.trim() ? assignStaffId.trim() : null,
+      });
+      setAssignTarget(null);
+      setToast('Affectation enregistrée');
+      await loadList();
+      if (selectedId === assignTarget.cashAccountId) {
+        await loadMovements(page);
+      }
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Échec affectation');
+    } finally {
+      setActionBusy(false);
+    }
   }
 
   const withdrawPreview = useMemo(() => {
@@ -437,6 +477,49 @@ function CashPageContent() {
           <p className="mt-0.5 text-xs text-amber-800/60">Caisse 1 + Caisse 2 (soldes physiques)</p>
         </div>
 
+        {!loading && accounts.length > 0 && (
+          <div className="mb-4 overflow-x-auto rounded-xl border border-stone-200 bg-white">
+            <table className="min-w-full text-left text-sm">
+              <thead className="border-b border-stone-100 bg-stone-50 text-[11px] uppercase tracking-wide text-stone-500">
+                <tr>
+                  <th className="px-4 py-2 font-semibold">Caisse</th>
+                  <th className="px-4 py-2 font-semibold">Fille affectée</th>
+                  <th className="px-4 py-2 font-semibold text-right">Entrées</th>
+                  <th className="px-4 py-2 font-semibold text-right">Retraits</th>
+                  <th className="px-4 py-2 font-semibold text-right">Ajust.</th>
+                  <th className="px-4 py-2 font-semibold text-right">Solde</th>
+                </tr>
+              </thead>
+              <tbody>
+                {accounts.map((a) => (
+                  <tr key={a.cashAccountId} className="border-b border-stone-50 last:border-0">
+                    <td className="px-4 py-2 font-medium text-stone-900">{a.name}</td>
+                    <td className="px-4 py-2">
+                      {a.staffMemberName ? (
+                        <span className="text-stone-800">{a.staffMemberName}</span>
+                      ) : (
+                        <span className="text-amber-700">⚠ Aucune fille affectée</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2 text-right tabular-nums">
+                      {a.incomes ? signedCash(a.incomes) : '—'}
+                    </td>
+                    <td className="px-4 py-2 text-right tabular-nums text-red-700">
+                      {a.withdrawals ? `−${formatCashDH(a.withdrawals)}` : '—'}
+                    </td>
+                    <td className="px-4 py-2 text-right tabular-nums">
+                      {a.adjustments ? signedCash(a.adjustments) : '—'}
+                    </td>
+                    <td className="px-4 py-2 text-right font-semibold tabular-nums">
+                      {formatCashDH(a.physicalBalance)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
         {/* Physical till cards */}
         <div className="grid gap-4 sm:grid-cols-2">
           {loading && accounts.length === 0 && (
@@ -469,6 +552,13 @@ function CashPageContent() {
                   <div>
                     <h2 className="text-lg font-semibold text-stone-900">{a.name}</h2>
                     <p className="text-[11px] uppercase tracking-wide text-stone-400">{a.code}</p>
+                    <p className="mt-1 text-sm text-stone-600">
+                      {a.staffMemberName ? (
+                        <>Fille : <span className="font-medium text-stone-900">{a.staffMemberName}</span></>
+                      ) : (
+                        <span className="font-medium text-amber-700">⚠ Aucune fille affectée</span>
+                      )}
+                    </p>
                   </div>
                   <span
                     className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${
@@ -511,6 +601,13 @@ function CashPageContent() {
                   </button>
                   {isAdmin && (
                     <>
+                      <button
+                        type="button"
+                        onClick={() => openAssign(a)}
+                        className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-stone-800 hover:bg-stone-50"
+                      >
+                        Affecter une fille
+                      </button>
                       <button
                         type="button"
                         onClick={() => openWithdraw(a)}
@@ -820,6 +917,55 @@ function CashPageContent() {
           )}
         </section>
       </main>
+
+      {assignTarget && (
+        <Modal
+          title={`Affecter — ${assignTarget.name}`}
+          onClose={() => !actionBusy && setAssignTarget(null)}
+        >
+          <p className="mb-3 text-xs text-stone-500">
+            Choisissez la fille responsable de cette caisse physique. Les mouvements passés
+            conservent leur attribution historique.
+          </p>
+          <label className="block text-xs font-medium text-stone-600">Fille</label>
+          <select
+            value={assignStaffId}
+            onChange={(e) => setAssignStaffId(e.target.value)}
+            className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
+          >
+            <option value="">— Aucune (désaffecter) —</option>
+            {assignTarget.staffMemberId &&
+              !assignableStaff.some((s) => s.id === assignTarget.staffMemberId) && (
+                <option value={assignTarget.staffMemberId}>
+                  {assignTarget.staffMemberName} (actuelle)
+                </option>
+              )}
+            {assignableStaff.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+          {actionError && <p className="mt-2 text-xs text-red-600">{actionError}</p>}
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setAssignTarget(null)}
+              className="rounded-lg px-3 py-2 text-xs text-stone-600"
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              disabled={actionBusy}
+              onClick={() => void submitAssign()}
+              className="rounded-lg bg-stone-900 px-3 py-2 text-xs font-medium text-white disabled:opacity-50"
+            >
+              {actionBusy ? 'Enregistrement…' : 'Enregistrer'}
+            </button>
+          </div>
+        </Modal>
+      )}
 
       {withdrawTarget && (
         <Modal

@@ -11,6 +11,7 @@ import { getBusinessDate, getDayBoundsUtc, getTimezone } from '../../utils/time'
 import {
   applySignedAmount,
   assertPositiveAmount,
+  assertSessionCashCreditContext,
   assertWithdrawAmount,
   computeDayStats,
   movementLabel,
@@ -18,6 +19,7 @@ import {
   planInitialBalance,
   planReversal,
   planSessionPaidSync,
+  planStaffAssignment,
   round2,
   SESSION_REF_TYPE,
   type CashMovementType,
@@ -53,11 +55,32 @@ async function lockAccount(tx: Prisma.TransactionClient, accountId: string): Pro
 async function requireCashAccount(
   tx: Prisma.TransactionClient,
   cashAccountId: string,
-): Promise<{ id: string; code: string; name: string; currentBalance: Prisma.Decimal; isActive: boolean }> {
+): Promise<{
+  id: string;
+  code: string;
+  name: string;
+  currentBalance: Prisma.Decimal;
+  isActive: boolean;
+  staffMemberId: string | null;
+}> {
   if (!cashAccountId?.trim()) throw httpError(400, 'cashAccountId est obligatoire.');
   const account = await tx.cashAccount.findUnique({ where: { id: cashAccountId } });
   if (!account) throw httpError(404, 'Caisse introuvable');
   return account;
+}
+
+async function findActiveTillForStaff(
+  tx: Prisma.TransactionClient,
+  staffMemberId: string,
+): Promise<{ id: string; code: string; name: string } | null> {
+  return tx.cashAccount.findFirst({
+    where: {
+      staffMemberId,
+      isActive: true,
+      code: { in: [...PHYSICAL_CASH_CODES] },
+    },
+    select: { id: true, code: true, name: true },
+  });
 }
 
 async function optionalStaff(tx: Prisma.TransactionClient, staffMemberId: string | null | undefined) {
@@ -376,7 +399,7 @@ export const cashService = {
    * Sync ChairSession.correctedAmount (paid) into the physical till ledger.
    * Call only from paid-amount write paths (same DB transaction).
    *
-   * - Missing cashAccountId or staffMemberId on first credit → no-op
+   * - Missing till assignment on first credit → error 422 (rolls back caller TX)
    * - If session already has ledger rows → reuse that cashAccountId (never migrate till)
    * - Idempotent when target already equals ledger net
    * - Legacy paid rows without ledger history are never backfilled
@@ -407,12 +430,17 @@ export const cashService = {
         select: { type: true, amount: true, cashAccountId: true },
       });
 
-      // Sticky till: later shift reassignment must not move historical session credits.
-      const cashAccountId =
-        existing.length > 0 ? existing[0]!.cashAccountId : opts.cashAccountId ?? null;
+      // Sticky till: reassignment of staff on account must not move historical session credits.
+      const stickyTill = existing.length > 0 ? existing[0]!.cashAccountId : null;
       const staffMemberId = opts.staffMemberId ?? null;
-
-      if (!cashAccountId || !staffMemberId) return null;
+      let cashAccountId = stickyTill;
+      if (!cashAccountId && staffMemberId) {
+        const till = await findActiveTillForStaff(tx, staffMemberId);
+        cashAccountId = till?.id ?? null;
+      }
+      if (!cashAccountId) {
+        cashAccountId = opts.cashAccountId ?? null;
+      }
 
       const netCredited = round2(existing.reduce((s, m) => s + toNum(m.amount), 0));
       const plan = planSessionPaidSync({
@@ -421,6 +449,12 @@ export const cashService = {
         hasSessionPayment: existing.some((m) => m.type === 'SESSION_PAYMENT'),
         previousPaidAmount: opts.previousPaidAmount,
         targetPaid: opts.targetPaid,
+      });
+
+      assertSessionCashCreditContext({
+        plan,
+        staffMemberId,
+        cashAccountId,
       });
       if (!plan) return null;
 
@@ -450,7 +484,11 @@ export const cashService = {
     const amount = assertPositiveAmount(input.amount, 'montant du retrait');
 
     return prisma.$transaction(async (tx) => {
-      const staffMemberId = await optionalStaff(tx, input.staffMemberId);
+      const account = await requireCashAccount(tx, input.cashAccountId);
+      const staffMemberId =
+        input.staffMemberId != null && input.staffMemberId !== ''
+          ? await optionalStaff(tx, input.staffMemberId)
+          : account.staffMemberId;
       return postMovementInTx(tx, {
         cashAccountId: input.cashAccountId,
         staffMemberId,
@@ -479,7 +517,10 @@ export const cashService = {
 
     return prisma.$transaction(async (tx) => {
       const account = await requireCashAccount(tx, input.cashAccountId);
-      const staffMemberId = await optionalStaff(tx, input.staffMemberId);
+      const staffMemberId =
+        input.staffMemberId != null && input.staffMemberId !== ''
+          ? await optionalStaff(tx, input.staffMemberId)
+          : account.staffMemberId;
       await lockAccount(tx, account.id);
       const fresh = await tx.cashAccount.findUniqueOrThrow({ where: { id: account.id } });
       const plan = planAdjustment(toNum(fresh.currentBalance), input.desiredBalance);
@@ -619,6 +660,8 @@ export const cashService = {
         name: true,
         isActive: true,
         currentBalance: true,
+        staffMemberId: true,
+        staffMember: { select: { id: true, name: true } },
         movements: {
           where: { createdAt: { gte: start, lt: end } },
           select: { type: true, amount: true },
@@ -640,6 +683,8 @@ export const cashService = {
         code: a.code,
         name: a.name,
         isActive: a.isActive,
+        staffMemberId: a.staffMemberId,
+        staffMemberName: a.staffMember?.name ?? null,
         openingBalance: stats.openingBalance,
         incomes: stats.dailyIncome,
         dailyIncome: stats.dailyIncome,
@@ -663,7 +708,15 @@ export const cashService = {
 
     const account = await prisma.cashAccount.findUnique({
       where: { id: cashAccountId },
-      select: { id: true, code: true, name: true, isActive: true, currentBalance: true },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        isActive: true,
+        currentBalance: true,
+        staffMemberId: true,
+        staffMember: { select: { id: true, name: true } },
+      },
     });
     if (!account) throw httpError(404, 'Caisse introuvable');
 
@@ -674,6 +727,8 @@ export const cashService = {
       code: account.code,
       name: account.name,
       isActive: account.isActive,
+      staffMemberId: account.staffMemberId,
+      staffMemberName: account.staffMember?.name ?? null,
       businessDate: day.businessDate,
       physicalBalance: day.physicalBalance,
       today: {
@@ -743,12 +798,103 @@ export const cashService = {
       totalPages: Math.ceil(total / pageSize) || 0,
     };
   },
+
+  /**
+   * Assign or clear the current staff member on a physical till.
+   * Does not modify cash_movements (historical staff attribution is immutable).
+   */
+  async setCashAccountAssignment(input: {
+    cashAccountId: string;
+    staffMemberId: string | null;
+    updatedById: string;
+  }) {
+    if (!input.updatedById?.trim()) {
+      throw httpError(401, 'Utilisateur authentifié requis.');
+    }
+
+    return prisma.$transaction(async (tx) => {
+      const account = await requireCashAccount(tx, input.cashAccountId);
+      await lockAccount(tx, account.id);
+
+      const targetStaffId = input.staffMemberId?.trim() || null;
+      let staffName: string | null = null;
+
+      if (targetStaffId) {
+        const staff = await tx.staffMember.findUnique({
+          where: { id: targetStaffId },
+          select: { id: true, name: true, isActive: true },
+        });
+        const other = await tx.cashAccount.findFirst({
+          where: {
+            staffMemberId: targetStaffId,
+            isActive: true,
+            id: { not: account.id },
+            code: { in: [...PHYSICAL_CASH_CODES] },
+          },
+          select: { name: true, code: true },
+        });
+        planStaffAssignment({
+          staffMemberId: targetStaffId,
+          staffExists: !!staff,
+          staffActive: staff?.isActive ?? false,
+          staffAlreadyOnOtherTill: other ? `${other.name} (${other.code})` : null,
+        });
+        staffName = staff!.name;
+      }
+
+      let updated;
+      try {
+        updated = await tx.cashAccount.update({
+          where: { id: account.id },
+          data: { staffMemberId: targetStaffId },
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            staffMemberId: true,
+            staffMember: { select: { id: true, name: true } },
+          },
+        });
+      } catch (err) {
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+          throw httpError(
+            409,
+            'Cette fille est déjà affectée à une autre caisse active.',
+          );
+        }
+        throw err;
+      }
+
+      await tx.settingsAuditLog.create({
+        data: {
+          userId: input.updatedById,
+          entityType: 'CashAccount',
+          entityId: account.id,
+          action: 'STAFF_ASSIGNMENT',
+          newValue: {
+            cashAccountId: account.id,
+            code: account.code,
+            staffMemberId: targetStaffId,
+            staffMemberName: staffName,
+          },
+        },
+      });
+
+      return {
+        cashAccountId: updated.id,
+        code: updated.code,
+        name: updated.name,
+        staffMemberId: updated.staffMemberId,
+        staffMemberName: updated.staffMember?.name ?? null,
+      };
+    });
+  },
 };
 
 // Re-export helpers used by tests / session wiring
 export { applySignedAmount, round2, SESSION_REF_TYPE };
 
-/** Resolve staff + physical till for a session via its shift (nulls if unassigned). */
+/** Resolve session staff + physical till via current CashAccount.staffMemberId assignment. */
 export async function resolveSessionCashContext(
   sessionId: string,
   db: Prisma.TransactionClient | typeof prisma = prisma,
@@ -756,12 +902,25 @@ export async function resolveSessionCashContext(
   const session = await db.chairSession.findUnique({
     where: { id: sessionId },
     select: {
-      shiftId: true,
-      shift: { select: { staffMemberId: true, cashAccountId: true } },
+      shift: { select: { staffMemberId: true } },
     },
   });
+  const staffMemberId = session?.shift?.staffMemberId ?? null;
+  if (!staffMemberId) {
+    return { staffMemberId: null, cashAccountId: null };
+  }
+
+  const till = await db.cashAccount.findFirst({
+    where: {
+      staffMemberId,
+      isActive: true,
+      code: { in: [...PHYSICAL_CASH_CODES] },
+    },
+    select: { id: true },
+  });
+
   return {
-    staffMemberId: session?.shift?.staffMemberId ?? null,
-    cashAccountId: session?.shift?.cashAccountId ?? null,
+    staffMemberId,
+    cashAccountId: till?.id ?? null,
   };
 }

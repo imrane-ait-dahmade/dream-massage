@@ -6,9 +6,12 @@ import assert from 'node:assert/strict';
 import {
   MemoryCashLedger,
   applySignedAmount,
+  assertSessionCashCreditContext,
   assertWithdrawAmount,
+  NO_CASH_FOR_STAFF_MSG,
   planInitialBalance,
   planSessionPaidSync,
+  planStaffAssignment,
   round2,
   SESSION_REF_TYPE,
   toCents,
@@ -311,17 +314,176 @@ async function run() {
     assert.equal(ledger.getBalance('CASH_1'), 200);
   });
 
-  await test('session sans till/staff → no-op', async () => {
+  await test('session sans till/staff → erreur si paiement requis', async () => {
     const ledger = new MemoryCashLedger();
-    assert.equal(
-      await ledger.syncSessionPaid({
-        cashAccountId: null,
-        staffMemberId: 'sara',
-        sessionId: 'x',
-        previousPaidAmount: null,
-        targetPaid: 100,
-      }),
-      null,
+    await assert.rejects(
+      () =>
+        ledger.syncSessionPaid({
+          cashAccountId: null,
+          staffMemberId: null,
+          sessionId: 'x',
+          previousPaidAmount: null,
+          targetPaid: 100,
+        }),
+      /Session sans fille/,
+    );
+  });
+
+  await test('session sans caisse affectée → erreur métier', async () => {
+    const ledger = new MemoryCashLedger();
+    await assert.rejects(
+      () =>
+        ledger.syncSessionPaid({
+          cashAccountId: null,
+          staffMemberId: 'sara',
+          sessionId: 'x2',
+          previousPaidAmount: null,
+          targetPaid: 100,
+        }),
+      (err: Error) => err.message.includes('Aucune caisse'),
+    );
+  });
+
+  console.log('cash ↔ staff assignment');
+
+  await test('1. CASH_1 → Sara', () => {
+    const ledger = new MemoryCashLedger();
+    ledger.assignStaffToCashAccount('CASH_1', 'sara');
+    assert.equal(ledger.getAssignedStaff('CASH_1'), 'sara');
+    assert.equal(ledger.resolveCashAccountForStaff('sara'), 'CASH_1');
+  });
+
+  await test('2. CASH_2 → Imane', () => {
+    const ledger = new MemoryCashLedger();
+    ledger.assignStaffToCashAccount('CASH_1', 'sara');
+    ledger.assignStaffToCashAccount('CASH_2', 'imane');
+    assert.equal(ledger.resolveCashAccountForStaff('imane'), 'CASH_2');
+  });
+
+  await test('3. caisse sans fille autorisée', () => {
+    const ledger = new MemoryCashLedger();
+    ledger.assignStaffToCashAccount('CASH_1', null);
+    assert.equal(ledger.getAssignedStaff('CASH_1'), null);
+  });
+
+  await test('4. fille inexistante refusée (planStaffAssignment)', () => {
+    assert.throws(
+      () =>
+        planStaffAssignment({
+          staffMemberId: 'ghost',
+          staffExists: false,
+          staffActive: true,
+          staffAlreadyOnOtherTill: null,
+        }),
+      /introuvable/i,
+    );
+  });
+
+  await test('6–7. unicité Sara sur une seule caisse', () => {
+    const ledger = new MemoryCashLedger();
+    ledger.assignStaffToCashAccount('CASH_1', 'sara');
+    assert.throws(
+      () => ledger.assignStaffToCashAccount('CASH_2', 'sara'),
+      /déjà affectée/i,
+    );
+  });
+
+  await test('8–10. Sara CASH_1 paiement 200', async () => {
+    const ledger = new MemoryCashLedger();
+    ledger.assignStaffToCashAccount('CASH_1', 'sara');
+    const m = await ledger.syncSessionPaid({
+      cashAccountId: null,
+      staffMemberId: 'sara',
+      sessionId: 'pay-1',
+      previousPaidAmount: null,
+      targetPaid: 200,
+    });
+    assert.ok(m);
+    assert.equal(m!.cashAccountId, 'CASH_1');
+    assert.equal(m!.staffMemberId, 'sara');
+    assert.equal(ledger.getBalance('CASH_1'), 200);
+    assert.equal(ledger.getBalance('CASH_2'), 0);
+    const again = await ledger.syncSessionPaid({
+      cashAccountId: null,
+      staffMemberId: 'sara',
+      sessionId: 'pay-1',
+      previousPaidAmount: 200,
+      targetPaid: 200,
+    });
+    assert.equal(again, null);
+  });
+
+  await test('12–13. sans affectation → erreur + rollback', async () => {
+    const ledger = new MemoryCashLedger();
+    await assert.rejects(
+      () =>
+        ledger.syncSessionPaid({
+          cashAccountId: null,
+          staffMemberId: 'sara',
+          sessionId: 'fail-1',
+          previousPaidAmount: null,
+          targetPaid: 50,
+          failAfterPlan: true,
+        }),
+      /Aucune caisse/,
+    );
+    assert.equal(ledger.getBalance('CASH_1'), 0);
+  });
+
+  await test('14–19. réaffectation CASH_1 Sara → Salma', async () => {
+    const ledger = new MemoryCashLedger();
+    ledger.assignStaffToCashAccount('CASH_1', 'sara');
+    await ledger.syncSessionPaid({
+      cashAccountId: null,
+      staffMemberId: 'sara',
+      sessionId: 'reassign',
+      previousPaidAmount: null,
+      targetPaid: 200,
+    });
+    const balanceBefore = ledger.getBalance('CASH_1');
+    ledger.assignStaffToCashAccount('CASH_1', 'salma');
+    assert.equal(ledger.getBalance('CASH_1'), balanceBefore);
+    await ledger.syncSessionPaid({
+      cashAccountId: null,
+      staffMemberId: 'salma',
+      sessionId: 'reassign-2',
+      previousPaidAmount: null,
+      targetPaid: 300,
+    });
+    assert.equal(ledger.getBalance('CASH_1'), 500);
+    const saraMoves = ledger.listMovements({ staffMemberId: 'sara' });
+    const salmaMoves = ledger.listMovements({ staffMemberId: 'salma' });
+    assert.equal(saraMoves.total, 1);
+    assert.equal(salmaMoves.total, 1);
+    assert.equal(ledger.listMovements({ cashAccountId: 'CASH_1' }).total, 2);
+  });
+
+  await test('20–24. filtres + réaffectation ne touche pas solde/mouvements', async () => {
+    const ledger = new MemoryCashLedger();
+    ledger.assignStaffToCashAccount('CASH_1', 'sara');
+    await ledger.syncSessionPaid({
+      cashAccountId: null,
+      staffMemberId: 'sara',
+      sessionId: 'f1',
+      previousPaidAmount: null,
+      targetPaid: 100,
+    });
+    const oldMove = ledger.listMovements({ staffMemberId: 'sara' }).items[0]!;
+    ledger.assignStaffToCashAccount('CASH_1', 'imane');
+    assert.equal(ledger.getBalance('CASH_1'), 100);
+    assert.equal(oldMove.staffMemberId, 'sara');
+    assert.equal(ledger.listMovements({ staffMemberId: 'imane' }).total, 0);
+  });
+
+  await test('assertSessionCashCreditContext message', () => {
+    assert.throws(
+      () =>
+        assertSessionCashCreditContext({
+          plan: { type: 'SESSION_PAYMENT', amount: 1 },
+          staffMemberId: 'sara',
+          cashAccountId: null,
+        }),
+      (e: Error) => e.message === NO_CASH_FOR_STAFF_MSG,
     );
   });
 

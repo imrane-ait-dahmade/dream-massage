@@ -59,7 +59,8 @@ model StaffMember {
   user          User?
   shifts        Shift[]
   schedules     StaffSchedule[]
-  cashMovements CashMovement[]
+  cashMovements     CashMovement[]
+  assignedCashAccounts CashAccount[]
 
   @@index([isActive])
   @@index([archivedAt])
@@ -599,7 +600,8 @@ model StaffSchedule {
 
 // ── Cash ledger (physical tills) ──────────────────────────────────────────────
 // current_balance lives on the physical CashAccount (Caisse 1 / Caisse 2).
-// staff_member_id on movements is attribution/audit only — not ownership of the balance.
+// CashAccount.staffMemberId = current girl assigned to this till (nullable).
+// CashMovement.staffMemberId = historical attribution at movement time (never rewritten).
 
 model CashAccount {
   id             String   @id @default(uuid())
@@ -607,13 +609,16 @@ model CashAccount {
   name           String   @db.VarChar(100)
   currentBalance Decimal  @default(0) @map("current_balance") @db.Decimal(12, 2)
   isActive       Boolean  @default(true) @map("is_active")
+  staffMemberId  String?  @map("staff_member_id")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  movements CashMovement[]
-  shifts    Shift[]
-  schedules StaffSchedule[]
+  staffMember StaffMember? @relation(fields: [staffMemberId], references: [id], onDelete: SetNull)
+  movements   CashMovement[]
+  shifts      Shift[]
+  schedules   StaffSchedule[]
 
+  @@index([staffMemberId])
   @@map("cash_accounts")
 }
 

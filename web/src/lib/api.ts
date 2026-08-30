@@ -1135,3 +1135,24 @@ export async function setInitialCashBalance(
     },
   );
 }
+
+export async function assignCashAccountStaff(
+  cashAccountId: string,
+  payload: { staffMemberId: string | null },
+): Promise<{
+  ok: boolean;
+  cashAccountId: string;
+  code: string;
+  name: string;
+  staffMemberId: string | null;
+  staffMemberName: string | null;
+}> {
+  return apiRequest(
+    `${BASE}/api/cash/accounts/${encodeURIComponent(cashAccountId)}/assignment`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  );
+}

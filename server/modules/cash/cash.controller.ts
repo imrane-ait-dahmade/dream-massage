@@ -21,6 +21,10 @@ function handleError(res: Response, err: unknown): void {
     res.status(409).json({ ok: false, error: msg });
     return;
   }
+  if (status === 422) {
+    res.status(422).json({ ok: false, error: msg });
+    return;
+  }
   if (status === 400) {
     res.status(400).json({ ok: false, error: msg });
     return;
@@ -54,6 +58,12 @@ const initialBalanceSchema = z
   .object({
     countedAmount: z.number().finite().nonnegative(),
     reason: z.string().max(500).optional(),
+  })
+  .strict();
+
+const assignmentSchema = z
+  .object({
+    staffMemberId: z.union([z.string().min(1), z.null()]),
   })
   .strict();
 
@@ -150,6 +160,27 @@ router.get('/accounts/:cashAccountId', (req, res) => {
   cashService
     .getAccountDetail(req.params.cashAccountId)
     .then((data) => res.json({ ok: true, ...data }))
+    .catch((err) => handleError(res, err));
+});
+
+// PATCH /api/cash/accounts/:cashAccountId/assignment — current staff on till
+router.patch('/accounts/:cashAccountId/assignment', (req: AuthRequest, res) => {
+  const parsed = assignmentSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ ok: false, error: 'Payload invalide', details: parsed.error.flatten() });
+    return;
+  }
+  if (!req.user?.id) {
+    res.status(401).json({ ok: false, error: 'Unauthorized' });
+    return;
+  }
+  cashService
+    .setCashAccountAssignment({
+      cashAccountId: req.params.cashAccountId,
+      staffMemberId: parsed.data.staffMemberId,
+      updatedById: req.user.id,
+    })
+    .then((result) => res.json({ ok: true, ...result }))
     .catch((err) => handleError(res, err));
 });
 

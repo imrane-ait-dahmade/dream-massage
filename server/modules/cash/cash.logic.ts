@@ -15,6 +15,55 @@ export type CashMovementType =
 
 export const SESSION_REF_TYPE = 'ChairSession' as const;
 
+/** Shown when a paid session sync requires a till but none is assigned to the staff member. */
+export const NO_CASH_FOR_STAFF_MSG = "Aucune caisse n'est affectée à cette fille.";
+
+/** Throws when a ledger movement is required but staff/till context is missing. */
+export function assertSessionCashCreditContext(input: {
+  plan: { type: CashMovementType; amount: number } | null;
+  staffMemberId: string | null;
+  cashAccountId: string | null;
+}): void {
+  if (!input.plan) return;
+  if (!input.staffMemberId?.trim()) {
+    throw Object.assign(
+      new Error('Session sans fille associée (shift requis pour encaissement).'),
+      { status: 422 },
+    );
+  }
+  if (!input.cashAccountId?.trim()) {
+    throw Object.assign(new Error(NO_CASH_FOR_STAFF_MSG), { status: 422 });
+  }
+}
+
+/**
+ * Validate assigning staff to a physical till (in-memory / service rules).
+ * Returns null staffMemberId to clear assignment.
+ */
+export function planStaffAssignment(input: {
+  staffMemberId: string | null;
+  staffExists: boolean;
+  staffActive: boolean;
+  staffAlreadyOnOtherTill: string | null;
+}): { staffMemberId: string | null } {
+  if (input.staffMemberId == null || input.staffMemberId === '') {
+    return { staffMemberId: null };
+  }
+  if (!input.staffExists) {
+    throw Object.assign(new Error('Staff introuvable'), { status: 404 });
+  }
+  if (!input.staffActive) {
+    throw Object.assign(new Error('Cette fille est inactive.'), { status: 400 });
+  }
+  if (input.staffAlreadyOnOtherTill) {
+    throw Object.assign(
+      new Error(`Cette fille est déjà affectée à une autre caisse (${input.staffAlreadyOnOtherTill}).`),
+      { status: 409 },
+    );
+  }
+  return { staffMemberId: input.staffMemberId };
+}
+
 /** Convert DH amount to integer centimes (rounded half-up). */
 export function toCents(amount: number | string): number {
   const n = typeof amount === 'string' ? Number(amount) : amount;
@@ -315,6 +364,8 @@ export type MemoryAccount = {
   cashAccountId: string;
   code: string;
   currentBalance: number;
+  /** Current staff assignment on this till (not movement history). */
+  assignedStaffMemberId: string | null;
   movements: MemoryMovement[];
 };
 
@@ -333,6 +384,7 @@ export class MemoryCashLedger {
         cashAccountId: s.id,
         code: s.code,
         currentBalance: 0,
+        assignedStaffMemberId: null,
         movements: [],
       });
     }
@@ -369,6 +421,36 @@ export class MemoryCashLedger {
     let t = 0;
     for (const a of this.accounts.values()) t = round2(t + a.currentBalance);
     return t;
+  }
+
+  /** Current assignment: which till is linked to this staff member. */
+  resolveCashAccountForStaff(staffMemberId: string | null | undefined): string | null {
+    if (!staffMemberId?.trim()) return null;
+    for (const acc of this.accounts.values()) {
+      if (acc.assignedStaffMemberId === staffMemberId) return acc.cashAccountId;
+    }
+    return null;
+  }
+
+  getAssignedStaff(cashAccountId: string): string | null {
+    return this.accounts.get(cashAccountId)?.assignedStaffMemberId ?? null;
+  }
+
+  assignStaffToCashAccount(cashAccountId: string, staffMemberId: string | null) {
+    const acc = this.requireAccount(cashAccountId);
+    if (staffMemberId) {
+      const other = [...this.accounts.values()].find(
+        (a) => a.cashAccountId !== cashAccountId && a.assignedStaffMemberId === staffMemberId,
+      );
+      planStaffAssignment({
+        staffMemberId,
+        staffExists: true,
+        staffActive: true,
+        staffAlreadyOnOtherTill: other?.code ?? null,
+      });
+    }
+    acc.assignedStaffMemberId = staffMemberId;
+    return acc;
   }
 
   async credit(input: {
@@ -508,25 +590,32 @@ export class MemoryCashLedger {
     const related = this.allMovements().filter(
       (m) => m.referenceType === SESSION_REF_TYPE && m.referenceId === input.sessionId,
     );
-    const stickyTill = related.length > 0 ? related[0]!.cashAccountId : input.cashAccountId;
+    const stickyTill = related.length > 0 ? related[0]!.cashAccountId : null;
     const staffMemberId = input.staffMemberId;
-    if (!stickyTill || !staffMemberId) return null;
+    const resolvedTill =
+      stickyTill ??
+      input.cashAccountId ??
+      (staffMemberId ? this.resolveCashAccountForStaff(staffMemberId) : null);
 
-    return this.withLock(stickyTill, () => {
-      const acc = this.requireAccount(stickyTill);
-      const relatedLocked = this.allMovements().filter(
-        (m) => m.referenceType === SESSION_REF_TYPE && m.referenceId === input.sessionId,
-      );
-      const netCredited = sumNetForReference(relatedLocked.map((m) => m.amount));
-      const plan = planSessionPaidSync({
-        netCredited,
-        hasLedgerHistory: relatedLocked.length > 0,
-        hasSessionPayment: relatedLocked.some((m) => m.type === 'SESSION_PAYMENT'),
-        previousPaidAmount: input.previousPaidAmount,
-        targetPaid: input.targetPaid,
-      });
-      if (!plan) return null;
-      if (input.failAfterPlan) throw new Error('ROLLBACK_TEST');
+    const netCredited = sumNetForReference(related.map((m) => m.amount));
+    const plan = planSessionPaidSync({
+      netCredited,
+      hasLedgerHistory: related.length > 0,
+      hasSessionPayment: related.some((m) => m.type === 'SESSION_PAYMENT'),
+      previousPaidAmount: input.previousPaidAmount,
+      targetPaid: input.targetPaid,
+    });
+
+    assertSessionCashCreditContext({
+      plan,
+      staffMemberId,
+      cashAccountId: resolvedTill,
+    });
+    if (!plan || !resolvedTill) return null;
+    if (input.failAfterPlan) throw new Error('ROLLBACK_TEST');
+
+    return this.withLock(resolvedTill, () => {
+      const acc = this.requireAccount(resolvedTill);
       return this.post(
         acc,
         staffMemberId,

@@ -693,6 +693,9 @@ export interface CashAccountRow {
   isActive: boolean;
   /** Real cash in the till — never filtered by staff */
   physicalBalance: number;
+  /** Current staff assignment on this till (nullable) */
+  staffMemberId: string | null;
+  staffMemberName: string | null;
   openingBalance: number;
   incomes: number;
   withdrawals: number;
@@ -715,6 +718,8 @@ export interface CashAccountDetailResponse {
   code: string;
   name: string;
   isActive: boolean;
+  staffMemberId: string | null;
+  staffMemberName: string | null;
   businessDate: string;
   physicalBalance: number;
   currentBalance: number;
