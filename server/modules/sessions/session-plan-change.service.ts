@@ -4,7 +4,7 @@ import { logger } from '../../utils/logger';
 import type { AuthUser } from '../auth/auth.service';
 import { dashboardService } from '../dashboard/dashboard.service';
 import { homeDashboardService } from '../dashboard/home-dashboard.service';
-import { cashService, resolveSessionCashContext } from '../cash/cash.service';
+import { syncSessionCashLedgerInTx } from '../cash/session-cash-sync';
 import {
   assertNoPendingRequest,
   assertPaidAmountIsDifferent,
@@ -346,6 +346,17 @@ async function applySessionPlanChangeInTx(
     },
   });
 
+  await syncSessionCashLedgerInTx(tx, {
+    sessionId: params.sessionId,
+    previousCorrectedAmount: sessionSnap!.correctedAmount,
+    previousExpectedAmount: sessionSnap!.expectedAmount,
+    newCorrectedAmount: sessionSnap!.correctedAmount,
+    newExpectedAmount: planSnap!.priceAmount,
+    sessionFinancialAt: sessionSnap!.endedAt,
+    reason: params.reason,
+    createdById: params.actorUserId,
+  });
+
   return updated;
 }
 
@@ -415,20 +426,16 @@ async function applyPaidAmountChangeInTx(
     },
   });
 
-  const { staffMemberId, cashAccountId } = await resolveSessionCashContext(params.sessionId, tx);
-
-  await cashService.syncSessionPaidAmount(
-    {
-      sessionId: params.sessionId,
-      staffMemberId,
-      cashAccountId,
-      previousPaidAmount: sessionSnap!.correctedAmount,
-      targetPaid: params.requestedPaidAmount,
-      reason: params.reason,
-      createdById: params.actorUserId,
-    },
-    tx,
-  );
+  await syncSessionCashLedgerInTx(tx, {
+    sessionId: params.sessionId,
+    previousCorrectedAmount: sessionSnap!.correctedAmount,
+    previousExpectedAmount: sessionSnap!.expectedAmount,
+    newCorrectedAmount: params.requestedPaidAmount,
+    newExpectedAmount: sessionSnap!.expectedAmount,
+    sessionFinancialAt: sessionSnap!.endedAt,
+    reason: params.reason,
+    createdById: params.actorUserId,
+  });
 
   return updated;
 }

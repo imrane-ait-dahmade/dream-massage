@@ -610,6 +610,7 @@ model CashAccount {
   currentBalance Decimal  @default(0) @map("current_balance") @db.Decimal(12, 2)
   isActive       Boolean  @default(true) @map("is_active")
   staffMemberId  String?  @map("staff_member_id")
+  cashTrackingStartedAt DateTime? @map("cash_tracking_started_at")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 

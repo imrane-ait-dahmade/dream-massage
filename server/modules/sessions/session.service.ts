@@ -2,7 +2,7 @@ import { prisma } from '../../prisma';
 import { sessionSettingsService } from '../settings/session-settings.service';
 import type { AuthUser } from '../auth/auth.service';
 import { assessSessionDeletion } from './session-delete.logic';
-import { cashService, resolveSessionCashContext } from '../cash/cash.service';
+import { syncSessionCashLedgerInTx } from '../cash/session-cash-sync';
 
 // Resolve actor userId — falls back to first OWNER from DB
 async function resolveActorUserId(user?: AuthUser | null): Promise<string | null> {
@@ -128,11 +128,15 @@ export const sessionService = {
 
     if (input.notes !== undefined) data.notes = input.notes;
 
-    const previousPaidAmount =
+    const previousCorrected =
       session.correctedAmount != null ? Number(session.correctedAmount) : null;
-    const targetPaid = input.clearCorrection
+    const previousExpected =
+      session.expectedAmount != null ? Number(session.expectedAmount) : null;
+
+    const newCorrected = input.clearCorrection
       ? null
       : (input.correctedAmount as number);
+    const newExpected = previousExpected;
 
     const updated = await prisma.$transaction(async (tx) => {
       const row = await tx.chairSession.update({
@@ -141,19 +145,16 @@ export const sessionService = {
         include: SESSION_INCLUDE,
       });
 
-      const { staffMemberId, cashAccountId } = await resolveSessionCashContext(sessionId, tx);
-      await cashService.syncSessionPaidAmount(
-        {
-          sessionId,
-          staffMemberId,
-          cashAccountId,
-          previousPaidAmount,
-          targetPaid,
-          reason: input.correctionReason ?? null,
-          createdById: actorUserId,
-        },
-        tx,
-      );
+      await syncSessionCashLedgerInTx(tx, {
+        sessionId,
+        previousCorrectedAmount: previousCorrected,
+        previousExpectedAmount: previousExpected,
+        newCorrectedAmount: newCorrected,
+        newExpectedAmount: newExpected,
+        sessionFinancialAt: row.endedAt ?? row.confirmedEndAt,
+        reason: input.correctionReason ?? null,
+        createdById: actorUserId,
+      });
 
       await tx.chairEvent.create({
         data: {
@@ -161,7 +162,7 @@ export const sessionService = {
           sessionId,
           eventType: 'SESSION_CORRECTED',
           metadata: {
-            oldCorrectedAmount: previousPaidAmount,
+            oldCorrectedAmount: previousCorrected,
             newCorrectedAmount: input.clearCorrection ? null : (input.correctedAmount ?? null),
             expectedAmount:     session.expectedAmount != null ? Number(session.expectedAmount) : null,
             reason:             input.correctionReason ?? null,

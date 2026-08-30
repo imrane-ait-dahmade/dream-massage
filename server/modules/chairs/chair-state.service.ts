@@ -4,6 +4,7 @@ import { prisma } from '../../prisma';
 import { env } from '../../config/env';
 import { logger } from '../../utils/logger';
 import { pricingService } from '../pricing/pricing.service';
+import { syncSessionCashLedgerInTx } from '../cash/session-cash-sync';
 import { usageMetrics } from '../../utils/usage-metrics';
 import type { PowerReading } from './chair.types';
 import {
@@ -547,6 +548,15 @@ export class ChairStateService {
           createdAt: now,
         },
         select: { id: true },
+      });
+
+      await syncSessionCashLedgerInTx(tx, {
+        sessionId: session.id,
+        previousCorrectedAmount: null,
+        previousExpectedAmount: null,
+        newCorrectedAmount: null,
+        newExpectedAmount: pricing.expectedAmount,
+        sessionFinancialAt: maybeFinishedSince,
       });
     });
 

@@ -216,24 +216,75 @@ export function planIdempotentCredit(input: {
 }
 
 /**
- * Bring ledger net for a ChairSession to the recorded paid amount (correctedAmount).
+ * Business paid target for cash ledger sync.
+ * correctedAmount wins when set; otherwise expectedAmount; else 0.
+ */
+export function resolveSessionPaidTarget(
+  correctedAmount: number | null | undefined,
+  expectedAmount: number | null | undefined,
+): number {
+  if (correctedAmount != null) return round2(correctedAmount);
+  if (expectedAmount != null) return round2(expectedAmount);
+  return 0;
+}
+
+/** Validate staff/till when a first credit would occur after cutover. */
+export function assertNewSessionCashCreditAllowed(input: {
+  targetPaid: number;
+  hasLedgerHistory: boolean;
+  sessionFinancialAt: Date | null;
+  /** Earliest cutover across physical tills (null = tracking not configured). */
+  globalTrackingStartedAt: Date | null;
+  staffMemberId: string | null;
+  cashAccountId: string | null;
+}): void {
+  if (input.targetPaid <= 0 || input.hasLedgerHistory) return;
+  if (!input.globalTrackingStartedAt || !input.sessionFinancialAt) return;
+  if (input.sessionFinancialAt.getTime() < input.globalTrackingStartedAt.getTime()) return;
+
+  if (!input.staffMemberId?.trim()) {
+    throw Object.assign(
+      new Error('Session sans fille associée (shift requis pour encaissement).'),
+      { status: 422 },
+    );
+  }
+  if (!input.cashAccountId?.trim()) {
+    throw Object.assign(new Error(NO_CASH_FOR_STAFF_MSG), { status: 422 });
+  }
+}
+/**
+ * First SESSION_PAYMENT is allowed only after cash cutover on the till,
+ * unless the session already has ledger history (delta sync continues).
+ */
+export function shouldAllowSessionCashCredit(input: {
+  sessionFinancialAt: Date | null;
+  cashTrackingStartedAt: Date | null;
+  hasLedgerHistory: boolean;
+}): boolean {
+  if (input.hasLedgerHistory) return true;
+  if (!input.cashTrackingStartedAt) return false;
+  if (!input.sessionFinancialAt) return false;
+  return input.sessionFinancialAt.getTime() >= input.cashTrackingStartedAt.getTime();
+}
+
+/**
+ * Bring ledger net for a ChairSession to paidTarget = correctedAmount ?? expectedAmount.
  *
- * Encaissé métier = correctedAmount non null (0 inclus comme « enregistré à 0 »).
- * targetPaid null = paiement effacé / session archivée → net ledger → 0.
- *
- * Legacy guard: if the session already had a paid amount before any ledger row,
- * do NOT invent a backfill on edit/clear (migration required).
+ * targetPaid 0 = no cash contribution (TOO_SHORT / unset).
+ * Legacy / cutover: no first credit before cashTrackingStartedAt on the till.
  */
 export function planSessionPaidSync(input: {
   netCredited: number;
   hasLedgerHistory: boolean;
   hasSessionPayment: boolean;
-  /** correctedAmount before this write */
-  previousPaidAmount: number | null;
-  /** correctedAmount after this write (null = cleared) */
-  targetPaid: number | null;
+  /** paid target before this write */
+  previousTargetPaid: number;
+  /** paid target after this write */
+  targetPaid: number;
+  /** false → skip first credit (pre-cutover sessions) */
+  allowFirstCredit: boolean;
 }): { type: CashMovementType; amount: number } | null {
-  const target = input.targetPaid == null ? 0 : round2(input.targetPaid);
+  const target = round2(input.targetPaid);
   if (target < 0) {
     throw Object.assign(new Error('Le montant encaissé ne peut pas être négatif.'), { status: 400 });
   }
@@ -242,22 +293,20 @@ export function planSessionPaidSync(input: {
   const delta = round2(target - net);
   if (delta === 0) return null;
 
-  // Pre-feature payment still on the session, never entered the ledger.
-  if (!input.hasLedgerHistory && input.previousPaidAmount != null) {
+  if (!input.allowFirstCredit && !input.hasLedgerHistory) {
     return null;
   }
 
-  // First recording after feature: null → positive paid.
+  // First recording after cutover: net 0 → positive paid target.
   if (!input.hasSessionPayment && net === 0 && target > 0) {
     return { type: 'SESSION_PAYMENT', amount: target };
   }
 
-  // Cancel / clear / archive → reverse net to zero.
+  // Target cleared to zero while ledger has balance.
   if (target === 0 && net !== 0) {
     return { type: 'REVERSAL', amount: delta };
   }
 
-  // Amount changed (or re-credit after full reverse).
   return { type: 'CORRECTION', amount: delta };
 }
 
@@ -373,6 +422,8 @@ export type MemoryAccount = {
   currentBalance: number;
   /** Current staff assignment on this till (not movement history). */
   assignedStaffMemberId: string | null;
+  /** Cutover timestamp — sessions before this do not get first SESSION_PAYMENT. */
+  cashTrackingStartedAt: Date | null;
   movements: MemoryMovement[];
 };
 
@@ -392,6 +443,7 @@ export class MemoryCashLedger {
         code: s.code,
         currentBalance: 0,
         assignedStaffMemberId: null,
+        cashTrackingStartedAt: new Date(0),
         movements: [],
       });
     }
@@ -545,7 +597,7 @@ export class MemoryCashLedger {
         movementCount: acc.movements.length,
         hasInitialBalance: acc.movements.some((m) => m.type === 'INITIAL_BALANCE'),
       });
-      return this.post(
+      const movement = this.post(
         acc,
         null,
         plan.type,
@@ -554,7 +606,15 @@ export class MemoryCashLedger {
         null,
         reason ?? 'Cutover caisse production',
       );
+      acc.cashTrackingStartedAt = new Date(movement.createdAt);
+      return movement;
     });
+  }
+
+  /** Set cutover boundary for auto session sync tests. */
+  setCashTrackingStartedAt(cashAccountId: string, at: Date | null) {
+    const acc = this.requireAccount(cashAccountId);
+    acc.cashTrackingStartedAt = at;
   }
 
   async reverse(cashAccountId: string, movementId: string, reason?: string | null) {
@@ -587,6 +647,17 @@ export class MemoryCashLedger {
     });
   }
 
+  /** Earliest cutover timestamp across physical tills. */
+  earliestTrackingStartedAt(): Date | null {
+    let min: number | null = null;
+    for (const acc of this.accounts.values()) {
+      if (!acc.cashTrackingStartedAt) continue;
+      const t = acc.cashTrackingStartedAt.getTime();
+      if (min == null || t < min) min = t;
+    }
+    return min == null ? null : new Date(min);
+  }
+
   /**
    * Sync session paid → physical till (sticky cashAccountId once credited).
    */
@@ -594,8 +665,9 @@ export class MemoryCashLedger {
     cashAccountId: string | null;
     staffMemberId: string | null;
     sessionId: string;
-    previousPaidAmount: number | null;
-    targetPaid: number | null;
+    previousTargetPaid: number;
+    targetPaid: number;
+    sessionFinancialAt?: Date | null;
     reason?: string | null;
     failAfterPlan?: boolean;
   }): Promise<MemoryMovement | null> {
@@ -604,25 +676,48 @@ export class MemoryCashLedger {
     );
     const stickyTill = related.length > 0 ? related[0]!.cashAccountId : null;
     const staffMemberId = input.staffMemberId;
-    const resolvedTill =
+    const prospectiveTill =
       stickyTill ??
       input.cashAccountId ??
       (staffMemberId ? this.resolveCashAccountForStaff(staffMemberId) : null);
+    const trackingAt = prospectiveTill
+      ? (this.accounts.get(prospectiveTill)?.cashTrackingStartedAt ?? null)
+      : null;
+    const sessionFinancialAt = input.sessionFinancialAt ?? new Date();
+    const globalTrackingStartedAt = this.earliestTrackingStartedAt();
 
+    assertNewSessionCashCreditAllowed({
+      targetPaid: input.targetPaid,
+      hasLedgerHistory: related.length > 0,
+      sessionFinancialAt,
+      globalTrackingStartedAt,
+      staffMemberId,
+      cashAccountId: prospectiveTill,
+    });
+
+    const resolvedTill = prospectiveTill;
     const netCredited = sumNetForReference(related.map((m) => m.amount));
+    const allowFirstCredit = shouldAllowSessionCashCredit({
+      sessionFinancialAt,
+      cashTrackingStartedAt: trackingAt,
+      hasLedgerHistory: related.length > 0,
+    });
     const plan = planSessionPaidSync({
       netCredited,
       hasLedgerHistory: related.length > 0,
       hasSessionPayment: related.some((m) => m.type === 'SESSION_PAYMENT'),
-      previousPaidAmount: input.previousPaidAmount,
+      previousTargetPaid: input.previousTargetPaid,
       targetPaid: input.targetPaid,
+      allowFirstCredit,
     });
 
-    assertSessionCashCreditContext({
-      plan,
-      staffMemberId,
-      cashAccountId: resolvedTill,
-    });
+    if (allowFirstCredit || related.length > 0) {
+      assertSessionCashCreditContext({
+        plan,
+        staffMemberId,
+        cashAccountId: resolvedTill,
+      });
+    }
     if (!plan || !resolvedTill) return null;
     if (input.failAfterPlan) throw new Error('ROLLBACK_TEST');
 

@@ -7,7 +7,8 @@ Au passage en production du ledger, **chaque caisse physique** (Caisse 1 / Caiss
 - Cutover **par caisse physique**, pas par fille.
 - **Pas** de backfill depuis `correctedAmount` / sessions / `expectedCash`.
 - Les paiements **avant** cutover restent hors caisse (legacy guard).
-- Les paiements **après** cutover alimentent la caisse du shift via `syncSessionPaidAmount` (attribution fille optionnelle sur le mouvement).
+- Les paiements **après** cutover alimentent la caisse via `syncSessionCashLedgerInTx` dès qu'une session reçoit son `expectedAmount` (finalisation Shelly) ou qu'un montant est corrigé.
+- `cash_accounts.cash_tracking_started_at` (défini au `INITIAL_BALANCE` ou backfillé depuis le premier mouvement) empêche tout backfill des sessions antérieures.
 
 ## Mécanisme
 

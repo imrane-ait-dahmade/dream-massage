@@ -13,6 +13,7 @@ import {
   planInitialBalance,
   planSessionPaidSync,
   planStaffAssignment,
+  resolveSessionPaidTarget,
   round2,
   SESSION_REF_TYPE,
   toCents,
@@ -113,7 +114,7 @@ async function run() {
       cashAccountId: 'CASH_1',
       staffMemberId: 'sara',
       sessionId: 'sess-1',
-      previousPaidAmount: null,
+      previousTargetPaid: 0,
       targetPaid: 200,
     });
     assert.ok(m);
@@ -125,7 +126,7 @@ async function run() {
       cashAccountId: 'CASH_2',
       staffMemberId: 'sara',
       sessionId: 'sess-1',
-      previousPaidAmount: 200,
+      previousTargetPaid: 200,
       targetPaid: 250,
     });
     assert.ok(corr);
@@ -143,14 +144,14 @@ async function run() {
       cashAccountId: 'CASH_1',
       staffMemberId: 'sara',
       sessionId: 'sess-a',
-      previousPaidAmount: null,
+      previousTargetPaid: 0,
       targetPaid: 200,
     });
     const again = await ledger.syncSessionPaid({
       cashAccountId: 'CASH_1',
       staffMemberId: 'sara',
       sessionId: 'sess-a',
-      previousPaidAmount: 200,
+      previousTargetPaid: 200,
       targetPaid: 200,
     });
     assert.equal(again, null);
@@ -164,15 +165,15 @@ async function run() {
       cashAccountId: 'CASH_2',
       staffMemberId: 'imane',
       sessionId: 'sess-r',
-      previousPaidAmount: null,
+      previousTargetPaid: 0,
       targetPaid: 200,
     });
     const rev = await ledger.syncSessionPaid({
       cashAccountId: 'CASH_1', // would-be wrong till — sticky wins
       staffMemberId: 'imane',
       sessionId: 'sess-r',
-      previousPaidAmount: 200,
-      targetPaid: null,
+      previousTargetPaid: 200,
+      targetPaid: 0,
     });
     assert.ok(rev);
     assert.equal(rev!.type, 'REVERSAL');
@@ -186,14 +187,14 @@ async function run() {
       cashAccountId: 'CASH_1',
       staffMemberId: 'sara',
       sessionId: 'sess-m',
-      previousPaidAmount: null,
+      previousTargetPaid: 0,
       targetPaid: 200,
     });
     await ledger.syncSessionPaid({
       cashAccountId: 'CASH_1',
       staffMemberId: 'sara',
       sessionId: 'sess-m',
-      previousPaidAmount: 200,
+      previousTargetPaid: 200,
       targetPaid: 250,
     });
     assert.equal(ledger.netForSession('sess-m'), 250);
@@ -201,7 +202,7 @@ async function run() {
       cashAccountId: 'CASH_1',
       staffMemberId: 'sara',
       sessionId: 'sess-m',
-      previousPaidAmount: 250,
+      previousTargetPaid: 250,
       targetPaid: 180,
     });
     assert.equal(ledger.netForSession('sess-m'), 180);
@@ -264,7 +265,7 @@ async function run() {
           cashAccountId: 'CASH_1',
           staffMemberId: 'sara',
           sessionId: 'sess-fail',
-          previousPaidAmount: null,
+          previousTargetPaid: 0,
           targetPaid: 200,
           failAfterPlan: true,
         }),
@@ -273,14 +274,15 @@ async function run() {
     assert.equal(ledger.getBalance('CASH_1'), 0);
   });
 
-  await test('legacy: pas de backfill', () => {
+  await test('legacy: pas de backfill avant cutover', () => {
     assert.equal(
       planSessionPaidSync({
         netCredited: 0,
         hasLedgerHistory: false,
         hasSessionPayment: false,
-        previousPaidAmount: 300,
+        previousTargetPaid: 300,
         targetPaid: 300,
+        allowFirstCredit: false,
       }),
       null,
     );
@@ -309,7 +311,7 @@ async function run() {
       cashAccountId: 'CASH_1',
       staffMemberId: 'sara',
       sessionId: 'sess-arch',
-      previousPaidAmount: null,
+      previousTargetPaid: 0,
       targetPaid: 200,
     });
     assert.equal(ledger.getBalance('CASH_1'), 200);
@@ -317,14 +319,16 @@ async function run() {
 
   await test('session sans till/staff → erreur si paiement requis', async () => {
     const ledger = new MemoryCashLedger();
+    ledger.setCashTrackingStartedAt('CASH_1', new Date(0));
     await assert.rejects(
       () =>
         ledger.syncSessionPaid({
-          cashAccountId: null,
+          cashAccountId: 'CASH_1',
           staffMemberId: null,
           sessionId: 'x',
-          previousPaidAmount: null,
+          previousTargetPaid: 0,
           targetPaid: 100,
+          sessionFinancialAt: new Date(),
         }),
       /Session sans fille/,
     );
@@ -332,14 +336,16 @@ async function run() {
 
   await test('session sans caisse affectée → erreur métier', async () => {
     const ledger = new MemoryCashLedger();
+    ledger.setCashTrackingStartedAt('CASH_1', new Date(0));
     await assert.rejects(
       () =>
         ledger.syncSessionPaid({
           cashAccountId: null,
           staffMemberId: 'sara',
           sessionId: 'x2',
-          previousPaidAmount: null,
+          previousTargetPaid: 0,
           targetPaid: 100,
+          sessionFinancialAt: new Date(),
         }),
       (err: Error) => err.message.includes('Aucune caisse'),
     );
@@ -396,7 +402,7 @@ async function run() {
       cashAccountId: null,
       staffMemberId: 'sara',
       sessionId: 'pay-1',
-      previousPaidAmount: null,
+      previousTargetPaid: 0,
       targetPaid: 200,
     });
     assert.ok(m);
@@ -408,7 +414,7 @@ async function run() {
       cashAccountId: null,
       staffMemberId: 'sara',
       sessionId: 'pay-1',
-      previousPaidAmount: 200,
+      previousTargetPaid: 200,
       targetPaid: 200,
     });
     assert.equal(again, null);
@@ -422,7 +428,7 @@ async function run() {
           cashAccountId: null,
           staffMemberId: 'sara',
           sessionId: 'fail-1',
-          previousPaidAmount: null,
+          previousTargetPaid: 0,
           targetPaid: 50,
           failAfterPlan: true,
         }),
@@ -438,7 +444,7 @@ async function run() {
       cashAccountId: null,
       staffMemberId: 'sara',
       sessionId: 'reassign',
-      previousPaidAmount: null,
+      previousTargetPaid: 0,
       targetPaid: 200,
     });
     const balanceBefore = ledger.getBalance('CASH_1');
@@ -448,7 +454,7 @@ async function run() {
       cashAccountId: null,
       staffMemberId: 'salma',
       sessionId: 'reassign-2',
-      previousPaidAmount: null,
+      previousTargetPaid: 0,
       targetPaid: 300,
     });
     assert.equal(ledger.getBalance('CASH_1'), 500);
@@ -466,7 +472,7 @@ async function run() {
       cashAccountId: null,
       staffMemberId: 'sara',
       sessionId: 'f1',
-      previousPaidAmount: null,
+      previousTargetPaid: 0,
       targetPaid: 100,
     });
     const oldMove = ledger.listMovements({ staffMemberId: 'sara' }).items[0]!;
@@ -486,6 +492,252 @@ async function run() {
         }),
       (e: Error) => e.message === NO_CASH_FOR_STAFF_MSG,
     );
+  });
+
+  console.log('session auto-sync (expectedAmount → caisse)');
+
+  await test('1–2. cutover 180 + session Oumaima +20 → 200', async () => {
+    const ledger = new MemoryCashLedger();
+    ledger.assignStaffToCashAccount('CASH_1', 'oumaima');
+    await ledger.setInitialBalance('CASH_1', 180);
+    const cutoverAt = new Date('2026-08-30T10:00:00Z');
+    ledger.setCashTrackingStartedAt('CASH_1', cutoverAt);
+    const sessionAt = new Date('2026-08-30T12:00:00Z');
+    await ledger.syncSessionPaid({
+      cashAccountId: null,
+      staffMemberId: 'oumaima',
+      sessionId: 'sess-new-1',
+      previousTargetPaid: 0,
+      targetPaid: 20,
+      sessionFinancialAt: sessionAt,
+    });
+    assert.equal(ledger.getBalance('CASH_1'), 200);
+    const moves = ledger.listMovements({ cashAccountId: 'CASH_1', staffMemberId: 'oumaima' });
+    assert.equal(moves.total, 1);
+    assert.equal(moves.items[0]!.amount, 20);
+  });
+
+  await test('3. session Zainab +30 sur CASH_2', async () => {
+    const ledger = new MemoryCashLedger();
+    ledger.assignStaffToCashAccount('CASH_2', 'zainab');
+    await ledger.setInitialBalance('CASH_2', 480);
+    ledger.setCashTrackingStartedAt('CASH_2', new Date('2026-08-30T10:00:00Z'));
+    await ledger.syncSessionPaid({
+      cashAccountId: null,
+      staffMemberId: 'zainab',
+      sessionId: 'sess-new-2',
+      previousTargetPaid: 0,
+      targetPaid: 30,
+      sessionFinancialAt: new Date('2026-08-30T12:00:00Z'),
+    });
+    assert.equal(ledger.getBalance('CASH_2'), 510);
+  });
+
+  await test('4. replay même session → pas de double crédit', async () => {
+    const ledger = new MemoryCashLedger();
+    ledger.assignStaffToCashAccount('CASH_1', 'oumaima');
+    ledger.setCashTrackingStartedAt('CASH_1', new Date(0));
+    await ledger.syncSessionPaid({
+      cashAccountId: null,
+      staffMemberId: 'oumaima',
+      sessionId: 'replay',
+      previousTargetPaid: 0,
+      targetPaid: 20,
+      sessionFinancialAt: new Date(),
+    });
+    const again = await ledger.syncSessionPaid({
+      cashAccountId: null,
+      staffMemberId: 'oumaima',
+      sessionId: 'replay',
+      previousTargetPaid: 20,
+      targetPaid: 20,
+      sessionFinancialAt: new Date(),
+    });
+    assert.equal(again, null);
+    assert.equal(ledger.getBalance('CASH_1'), 20);
+  });
+
+  await test('5. expected 20 puis corrected 30 → +10 seulement', async () => {
+    const ledger = new MemoryCashLedger();
+    ledger.assignStaffToCashAccount('CASH_1', 'oumaima');
+    ledger.setCashTrackingStartedAt('CASH_1', new Date(0));
+    await ledger.syncSessionPaid({
+      cashAccountId: null,
+      staffMemberId: 'oumaima',
+      sessionId: 'corr-1',
+      previousTargetPaid: 0,
+      targetPaid: 20,
+      sessionFinancialAt: new Date(),
+    });
+    const corr = await ledger.syncSessionPaid({
+      cashAccountId: null,
+      staffMemberId: 'oumaima',
+      sessionId: 'corr-1',
+      previousTargetPaid: 20,
+      targetPaid: 30,
+      sessionFinancialAt: new Date(),
+    });
+    assert.equal(corr!.type, 'CORRECTION');
+    assert.equal(corr!.amount, 10);
+    assert.equal(ledger.getBalance('CASH_1'), 30);
+  });
+
+  await test('6. corrected 30 puis clear → retour expected 20 (-10)', async () => {
+    const ledger = new MemoryCashLedger();
+    ledger.assignStaffToCashAccount('CASH_1', 'oumaima');
+    ledger.setCashTrackingStartedAt('CASH_1', new Date(0));
+    await ledger.syncSessionPaid({
+      cashAccountId: null,
+      staffMemberId: 'oumaima',
+      sessionId: 'clear-1',
+      previousTargetPaid: 0,
+      targetPaid: 20,
+      sessionFinancialAt: new Date(),
+    });
+    await ledger.syncSessionPaid({
+      cashAccountId: null,
+      staffMemberId: 'oumaima',
+      sessionId: 'clear-1',
+      previousTargetPaid: 20,
+      targetPaid: 30,
+      sessionFinancialAt: new Date(),
+    });
+    const cleared = await ledger.syncSessionPaid({
+      cashAccountId: null,
+      staffMemberId: 'oumaima',
+      sessionId: 'clear-1',
+      previousTargetPaid: 30,
+      targetPaid: 20,
+      sessionFinancialAt: new Date(),
+    });
+    assert.equal(cleared!.type, 'CORRECTION');
+    assert.equal(cleared!.amount, -10);
+    assert.equal(ledger.getBalance('CASH_1'), 20);
+  });
+
+  await test('7. changement plan 20 → 40 → +20', async () => {
+    const ledger = new MemoryCashLedger();
+    ledger.assignStaffToCashAccount('CASH_1', 'oumaima');
+    ledger.setCashTrackingStartedAt('CASH_1', new Date(0));
+    await ledger.syncSessionPaid({
+      cashAccountId: null,
+      staffMemberId: 'oumaima',
+      sessionId: 'plan-1',
+      previousTargetPaid: 0,
+      targetPaid: 20,
+      sessionFinancialAt: new Date(),
+    });
+    const plan = await ledger.syncSessionPaid({
+      cashAccountId: null,
+      staffMemberId: 'oumaima',
+      sessionId: 'plan-1',
+      previousTargetPaid: 20,
+      targetPaid: 40,
+      sessionFinancialAt: new Date(),
+    });
+    assert.equal(plan!.amount, 20);
+    assert.equal(ledger.getBalance('CASH_1'), 40);
+  });
+
+  await test('8. session historique avant cutover → aucun crédit', async () => {
+    const ledger = new MemoryCashLedger();
+    ledger.assignStaffToCashAccount('CASH_1', 'oumaima');
+    ledger.setCashTrackingStartedAt('CASH_1', new Date('2026-08-30T14:00:00Z'));
+    const m = await ledger.syncSessionPaid({
+      cashAccountId: null,
+      staffMemberId: 'oumaima',
+      sessionId: 'old-1',
+      previousTargetPaid: 0,
+      targetPaid: 200,
+      sessionFinancialAt: new Date('2026-08-30T10:00:00Z'),
+    });
+    assert.equal(m, null);
+    assert.equal(ledger.getBalance('CASH_1'), 0);
+  });
+
+  await test('9. session après cutover → crédit auto', async () => {
+    const ledger = new MemoryCashLedger();
+    ledger.assignStaffToCashAccount('CASH_1', 'oumaima');
+    ledger.setCashTrackingStartedAt('CASH_1', new Date('2026-08-30T10:00:00Z'));
+    const m = await ledger.syncSessionPaid({
+      cashAccountId: null,
+      staffMemberId: 'oumaima',
+      sessionId: 'after-1',
+      previousTargetPaid: 0,
+      targetPaid: 25,
+      sessionFinancialAt: new Date('2026-08-30T15:00:00Z'),
+    });
+    assert.ok(m);
+    assert.equal(m!.amount, 25);
+  });
+
+  await test('10. fille sans caisse → erreur', async () => {
+    const ledger = new MemoryCashLedger();
+    ledger.setCashTrackingStartedAt('CASH_1', new Date(0));
+    await assert.rejects(
+      () =>
+        ledger.syncSessionPaid({
+          cashAccountId: null,
+          staffMemberId: 'ghost',
+          sessionId: 'no-till',
+          previousTargetPaid: 0,
+          targetPaid: 20,
+          sessionFinancialAt: new Date(),
+        }),
+      (e: Error) => e.message.includes('Aucune caisse'),
+    );
+  });
+
+  await test('11. deux filles indépendantes', async () => {
+    const ledger = new MemoryCashLedger();
+    ledger.assignStaffToCashAccount('CASH_1', 'oumaima');
+    ledger.assignStaffToCashAccount('CASH_2', 'zainab');
+    ledger.setCashTrackingStartedAt('CASH_1', new Date(0));
+    ledger.setCashTrackingStartedAt('CASH_2', new Date(0));
+    await ledger.syncSessionPaid({
+      cashAccountId: null,
+      staffMemberId: 'oumaima',
+      sessionId: 'dual-1',
+      previousTargetPaid: 0,
+      targetPaid: 20,
+      sessionFinancialAt: new Date(),
+    });
+    await ledger.syncSessionPaid({
+      cashAccountId: null,
+      staffMemberId: 'zainab',
+      sessionId: 'dual-2',
+      previousTargetPaid: 0,
+      targetPaid: 30,
+      sessionFinancialAt: new Date(),
+    });
+    assert.equal(ledger.getBalance('CASH_1'), 20);
+    assert.equal(ledger.getBalance('CASH_2'), 30);
+  });
+
+  await test('12. rollback si échec après plan', async () => {
+    const ledger = new MemoryCashLedger();
+    ledger.assignStaffToCashAccount('CASH_1', 'oumaima');
+    ledger.setCashTrackingStartedAt('CASH_1', new Date(0));
+    await assert.rejects(
+      () =>
+        ledger.syncSessionPaid({
+          cashAccountId: null,
+          staffMemberId: 'oumaima',
+          sessionId: 'rb-1',
+          previousTargetPaid: 0,
+          targetPaid: 20,
+          sessionFinancialAt: new Date(),
+          failAfterPlan: true,
+        }),
+      /ROLLBACK_TEST/,
+    );
+    assert.equal(ledger.getBalance('CASH_1'), 0);
+  });
+
+  await test('resolveSessionPaidTarget corrected ?? expected', () => {
+    assert.equal(resolveSessionPaidTarget(null, 20), 20);
+    assert.equal(resolveSessionPaidTarget(30, 20), 30);
+    assert.equal(resolveSessionPaidTarget(null, null), 0);
   });
 
   console.log('optional reason on manual operations');

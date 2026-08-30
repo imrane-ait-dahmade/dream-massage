@@ -20,6 +20,9 @@ import {
   planReversal,
   planSessionPaidSync,
   planStaffAssignment,
+  resolveSessionPaidTarget,
+  shouldAllowSessionCashCredit,
+  assertNewSessionCashCreditAllowed,
   normalizeReason,
   round2,
   SESSION_REF_TYPE,
@@ -82,6 +85,18 @@ async function findActiveTillForStaff(
     },
     select: { id: true, code: true, name: true },
   });
+}
+
+async function getGlobalCashTrackingStartedAt(
+  tx: Prisma.TransactionClient,
+): Promise<Date | null> {
+  const rows = await tx.cashAccount.findMany({
+    where: { code: { in: [...PHYSICAL_CASH_CODES] }, cashTrackingStartedAt: { not: null } },
+    select: { cashTrackingStartedAt: true },
+    orderBy: { cashTrackingStartedAt: 'asc' },
+    take: 1,
+  });
+  return rows[0]?.cashTrackingStartedAt ?? null;
 }
 
 async function optionalStaff(tx: Prisma.TransactionClient, staffMemberId: string | null | undefined) {
@@ -307,7 +322,10 @@ export const cashService = {
 
       await tx.cashAccount.update({
         where: { id: account.id },
-        data: { currentBalance: money(plan.balanceAfter) },
+        data: {
+          currentBalance: money(plan.balanceAfter),
+          cashTrackingStartedAt: movement.createdAt,
+        },
       });
 
       await tx.settingsAuditLog.create({
@@ -407,16 +425,18 @@ export const cashService = {
    * - Not exposed over HTTP
    *
    * Write paths that MUST call this (same TX as session update):
+   * - chair-state.service session completion (expectedAmount)
    * - sessionService.correctSession (set / clearCorrection)
-   * - session-plan-change applyPaidAmountChangeInTx
+   * - session-plan-change applyPaidAmountChangeInTx / applySessionPlanChangeInTx
    */
   async syncSessionPaidAmount(
     opts: {
       sessionId: string;
       cashAccountId: string | null | undefined;
       staffMemberId: string | null | undefined;
-      previousPaidAmount: number | null;
-      targetPaid: number | null;
+      previousTargetPaid: number;
+      targetPaid: number;
+      sessionFinancialAt?: Date | null;
       reason?: string | null;
       createdById?: string | null;
     },
@@ -434,6 +454,34 @@ export const cashService = {
       // Sticky till: reassignment of staff on account must not move historical session credits.
       const stickyTill = existing.length > 0 ? existing[0]!.cashAccountId : null;
       const staffMemberId = opts.staffMemberId ?? null;
+      let cashTrackingStartedAt: Date | null = null;
+      let prospectiveTill = stickyTill;
+      if (!prospectiveTill && staffMemberId) {
+        const till = await findActiveTillForStaff(tx, staffMemberId);
+        prospectiveTill = till?.id ?? null;
+      }
+      if (!prospectiveTill) {
+        prospectiveTill = opts.cashAccountId ?? null;
+      }
+      if (prospectiveTill) {
+        const tillRow = await tx.cashAccount.findUnique({
+          where: { id: prospectiveTill },
+          select: { cashTrackingStartedAt: true },
+        });
+        cashTrackingStartedAt = tillRow?.cashTrackingStartedAt ?? null;
+      }
+
+      const globalTrackingStartedAt = await getGlobalCashTrackingStartedAt(tx);
+
+      assertNewSessionCashCreditAllowed({
+        targetPaid: opts.targetPaid,
+        hasLedgerHistory: existing.length > 0,
+        sessionFinancialAt: opts.sessionFinancialAt ?? null,
+        globalTrackingStartedAt,
+        staffMemberId,
+        cashAccountId: prospectiveTill,
+      });
+
       let cashAccountId = stickyTill;
       if (!cashAccountId && staffMemberId) {
         const till = await findActiveTillForStaff(tx, staffMemberId);
@@ -444,19 +492,27 @@ export const cashService = {
       }
 
       const netCredited = round2(existing.reduce((s, m) => s + toNum(m.amount), 0));
+      const allowFirstCredit = shouldAllowSessionCashCredit({
+        sessionFinancialAt: opts.sessionFinancialAt ?? null,
+        cashTrackingStartedAt,
+        hasLedgerHistory: existing.length > 0,
+      });
       const plan = planSessionPaidSync({
         netCredited,
         hasLedgerHistory: existing.length > 0,
         hasSessionPayment: existing.some((m) => m.type === 'SESSION_PAYMENT'),
-        previousPaidAmount: opts.previousPaidAmount,
+        previousTargetPaid: opts.previousTargetPaid,
         targetPaid: opts.targetPaid,
+        allowFirstCredit,
       });
 
-      assertSessionCashCreditContext({
-        plan,
-        staffMemberId,
-        cashAccountId,
-      });
+      if (allowFirstCredit || existing.length > 0) {
+        assertSessionCashCreditContext({
+          plan,
+          staffMemberId,
+          cashAccountId,
+        });
+      }
       if (!plan) return null;
       if (!cashAccountId) {
         // Satisfies TS; assertSessionCashCreditContext already throws when plan + missing till.
@@ -895,7 +951,12 @@ export const cashService = {
 };
 
 // Re-export helpers used by tests / session wiring
-export { applySignedAmount, round2, SESSION_REF_TYPE };
+export {
+  applySignedAmount,
+  resolveSessionPaidTarget,
+  round2,
+  SESSION_REF_TYPE,
+};
 
 /** Resolve session staff + physical till via current CashAccount.staffMemberId assignment. */
 export async function resolveSessionCashContext(
