@@ -457,6 +457,10 @@ export const cashService = {
         cashAccountId,
       });
       if (!plan) return null;
+      if (!cashAccountId) {
+        // Satisfies TS; assertSessionCashCreditContext already throws when plan + missing till.
+        return null;
+      }
 
       return postMovementInTx(tx, {
         cashAccountId,
