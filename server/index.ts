@@ -329,9 +329,9 @@ app.use('/api/shifts', requireAuth, requireOwnerAdmin, shiftRouter);
 app.use('/api/sessions', requireAuth, sessionRouter);
 app.use('/api/session-plan-change-requests', requireAuth, sessionPlanChangeRouter);
 
-// ── Cash accounts (owner/admin) ────────────────────────────────────────────────
+// ── Cash accounts (owner/admin + assigned staff read) ─────────────────────────
 
-app.use('/api/cash', requireAuth, requireOwnerAdmin, cashRouter);
+app.use('/api/cash', requireAuth, cashRouter);
 
 // ── 404 ────────────────────────────────────────────────────────────────────────
 

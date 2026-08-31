@@ -703,7 +703,7 @@ export const cashService = {
     };
   },
 
-  async listAccountsWithDayStats() {
+  async listAccountsWithDayStats(opts?: { restrictToStaffMemberId?: string | null }) {
     await this.ensurePhysicalAccounts();
 
     const tz = getTimezone();
@@ -711,7 +711,12 @@ export const cashService = {
     const { start, end } = getDayBoundsUtc(businessDate, tz);
 
     const accounts = await prisma.cashAccount.findMany({
-      where: { code: { in: [...PHYSICAL_CASH_CODES] } },
+      where: {
+        code: { in: [...PHYSICAL_CASH_CODES] },
+        ...(opts?.restrictToStaffMemberId?.trim()
+          ? { staffMemberId: opts.restrictToStaffMemberId.trim() }
+          : {}),
+      },
       orderBy: { code: 'asc' },
       select: {
         id: true,

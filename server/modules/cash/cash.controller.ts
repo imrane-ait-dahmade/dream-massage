@@ -2,20 +2,34 @@ import { Router } from 'express';
 import type { Response } from 'express';
 import { z } from 'zod';
 import type { AuthRequest } from '../../middleware/auth.middleware';
-import { requireOwner, requireOwnerAdmin } from '../../middleware/auth.middleware';
+import {
+  isAssistant,
+  isOwnerOrAdmin,
+  requireOwner,
+  requireOwnerAdmin,
+} from '../../middleware/auth.middleware';
+import type { AuthUser } from '../auth/auth.service';
+import { getBusinessDate, getTimezone } from '../../utils/time';
 import { cashService } from './cash.service';
 import { adminCreditBodySchema } from './cash.credit-http';
 import { normalizeReason } from './cash.logic';
+import { authenticatedStaffMemberId } from './cash-access';
+import {
+  assertUserCanAccessCashAccount,
+  resolveStaffReadableCashAccountId,
+} from './cash-access.service';
 
 const router = Router();
-
-router.use(requireOwnerAdmin);
 
 function handleError(res: Response, err: unknown): void {
   const msg = err instanceof Error ? err.message : String(err);
   const status = err instanceof Error ? (err as { status?: number }).status : undefined;
   if (status === 404 || msg.toLowerCase().includes('introuvable')) {
     res.status(404).json({ ok: false, error: msg });
+    return;
+  }
+  if (status === 403) {
+    res.status(403).json({ ok: false, error: msg });
     return;
   }
   if (status === 409) {
@@ -49,10 +63,6 @@ const adjustSchema = z
   })
   .strict();
 
-/**
- * Admin manual credit only.
- * System types and session references are never accepted from HTTP.
- */
 export const creditSchema = adminCreditBodySchema;
 
 const initialBalanceSchema = z
@@ -104,89 +114,164 @@ function parseMovementQuery(query: AuthRequest['query']) {
   };
 }
 
+async function enforceStaffTillScope(
+  user: AuthUser | undefined,
+  requestedCashAccountId: string | null | undefined,
+): Promise<string | null> {
+  if (!user || isOwnerOrAdmin(user)) return requestedCashAccountId ?? null;
+
+  const tillId = await resolveStaffReadableCashAccountId(user);
+  if (!tillId) return null;
+
+  if (requestedCashAccountId && requestedCashAccountId !== tillId) {
+    throw Object.assign(new Error('Accès refusé à cette caisse.'), { status: 403 });
+  }
+  return tillId;
+}
+
 // GET /api/cash/accounts — list physical tills with today stats + storeTotal
-router.get('/accounts', (_req, res) => {
-  cashService
-    .listAccountsWithDayStats()
-    .then((data) => res.json({ ok: true, ...data }))
-    .catch((err) => handleError(res, err));
+router.get('/accounts', async (req: AuthRequest, res) => {
+  try {
+    if (isAssistant(req.user)) {
+      const staffId = authenticatedStaffMemberId(req.user);
+      if (!staffId) {
+        res.json({
+          ok: true,
+          businessDate: getBusinessDate(getTimezone()),
+          storeTotal: 0,
+          accounts: [],
+        });
+        return;
+      }
+      const data = await cashService.listAccountsWithDayStats({
+        restrictToStaffMemberId: staffId,
+      });
+      res.json({ ok: true, ...data });
+      return;
+    }
+
+    const data = await cashService.listAccountsWithDayStats();
+    res.json({ ok: true, ...data });
+  } catch (err) {
+    handleError(res, err);
+  }
 });
 
 // GET /api/cash/movements?cashAccountId=&staffMemberId=&page=&pageSize=&type=&date=
-// Cross-till staff filter (optional cashAccountId).
-router.get('/movements', (req, res) => {
-  const q = parseMovementQuery(req.query);
-  cashService
-    .listMovements({
-      cashAccountId: q.cashAccountId,
-      staffMemberId: q.staffMemberId,
+router.get('/movements', async (req: AuthRequest, res) => {
+  try {
+    const q = parseMovementQuery(req.query);
+    const cashAccountId = await enforceStaffTillScope(req.user, q.cashAccountId);
+
+    if (isAssistant(req.user) && !cashAccountId) {
+      res.json({ ok: true, items: [], page: 1, pageSize: q.pageSize, total: 0, totalPages: 0 });
+      return;
+    }
+
+    const data = await cashService.listMovements({
+      cashAccountId,
+      staffMemberId: isOwnerOrAdmin(req.user) ? q.staffMemberId : null,
       page: q.page,
       pageSize: q.pageSize,
       type: q.type,
       date: q.date,
-    })
-    .then((data) => res.json({ ok: true, ...data }))
-    .catch((err) => handleError(res, err));
+    });
+    res.json({ ok: true, ...data });
+  } catch (err) {
+    handleError(res, err);
+  }
 });
 
 // GET /api/cash/accounts/:cashAccountId/day-stats?date=&staffMemberId=
-router.get('/accounts/:cashAccountId/day-stats', (req, res) => {
-  const date = typeof req.query.date === 'string' ? req.query.date : undefined;
-  const staffMemberId =
-    typeof req.query.staffMemberId === 'string' ? req.query.staffMemberId : undefined;
-  cashService
-    .getDayStats(req.params.cashAccountId, date, staffMemberId)
-    .then((data) => res.json({ ok: true, ...data }))
-    .catch((err) => handleError(res, err));
+router.get('/accounts/:cashAccountId/day-stats', async (req: AuthRequest, res) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ ok: false, error: 'Unauthorized' });
+      return;
+    }
+    await assertUserCanAccessCashAccount(req.user, req.params.cashAccountId);
+
+    const date = typeof req.query.date === 'string' ? req.query.date : undefined;
+    const staffMemberId = isOwnerOrAdmin(req.user)
+      ? typeof req.query.staffMemberId === 'string'
+        ? req.query.staffMemberId
+        : undefined
+      : undefined;
+
+    const data = await cashService.getDayStats(req.params.cashAccountId, date, staffMemberId);
+    res.json({ ok: true, ...data });
+  } catch (err) {
+    handleError(res, err);
+  }
 });
 
-// GET /api/cash/accounts/:cashAccountId/movements?page=&pageSize=&type=&date=&staffMemberId=
-router.get('/accounts/:cashAccountId/movements', (req, res) => {
-  const q = parseMovementQuery(req.query);
-  cashService
-    .listMovements({
+// GET /api/cash/accounts/:cashAccountId/movements
+router.get('/accounts/:cashAccountId/movements', async (req: AuthRequest, res) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ ok: false, error: 'Unauthorized' });
+      return;
+    }
+    await assertUserCanAccessCashAccount(req.user, req.params.cashAccountId);
+
+    const q = parseMovementQuery(req.query);
+    const data = await cashService.listMovements({
       cashAccountId: req.params.cashAccountId,
-      staffMemberId: q.staffMemberId,
+      staffMemberId: isOwnerOrAdmin(req.user) ? q.staffMemberId : null,
       page: q.page,
       pageSize: q.pageSize,
       type: q.type,
       date: q.date,
-    })
-    .then((data) => res.json({ ok: true, ...data }))
-    .catch((err) => handleError(res, err));
+    });
+    res.json({ ok: true, ...data });
+  } catch (err) {
+    handleError(res, err);
+  }
 });
 
 // GET /api/cash/accounts/:cashAccountId
-router.get('/accounts/:cashAccountId', (req, res) => {
-  cashService
-    .getAccountDetail(req.params.cashAccountId)
-    .then((data) => res.json({ ok: true, ...data }))
-    .catch((err) => handleError(res, err));
+router.get('/accounts/:cashAccountId', async (req: AuthRequest, res) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ ok: false, error: 'Unauthorized' });
+      return;
+    }
+    await assertUserCanAccessCashAccount(req.user, req.params.cashAccountId);
+
+    const data = await cashService.getAccountDetail(req.params.cashAccountId);
+    res.json({ ok: true, ...data });
+  } catch (err) {
+    handleError(res, err);
+  }
 });
 
-// PATCH /api/cash/accounts/:cashAccountId/assignment — current staff on till
-router.patch('/accounts/:cashAccountId/assignment', (req: AuthRequest, res) => {
-  const parsed = assignmentSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ ok: false, error: 'Payload invalide', details: parsed.error.flatten() });
-    return;
-  }
-  if (!req.user?.id) {
-    res.status(401).json({ ok: false, error: 'Unauthorized' });
-    return;
-  }
-  cashService
-    .setCashAccountAssignment({
-      cashAccountId: req.params.cashAccountId,
-      staffMemberId: parsed.data.staffMemberId,
-      updatedById: req.user.id,
-    })
-    .then((result) => res.json({ ok: true, ...result }))
-    .catch((err) => handleError(res, err));
-});
+// ── Admin write routes ────────────────────────────────────────────────────────
 
-// POST /api/cash/accounts/:cashAccountId/credit — MANUAL_INCOME only
-router.post('/accounts/:cashAccountId/credit', (req: AuthRequest, res) => {
+router.patch(
+  '/accounts/:cashAccountId/assignment',
+  requireOwnerAdmin,
+  (req: AuthRequest, res) => {
+    const parsed = assignmentSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ ok: false, error: 'Payload invalide', details: parsed.error.flatten() });
+      return;
+    }
+    if (!req.user?.id) {
+      res.status(401).json({ ok: false, error: 'Unauthorized' });
+      return;
+    }
+    cashService
+      .setCashAccountAssignment({
+        cashAccountId: req.params.cashAccountId,
+        staffMemberId: parsed.data.staffMemberId,
+        updatedById: req.user.id,
+      })
+      .then((result) => res.json({ ok: true, ...result }))
+      .catch((err) => handleError(res, err));
+  },
+);
+
+router.post('/accounts/:cashAccountId/credit', requireOwnerAdmin, (req: AuthRequest, res) => {
   const parsed = creditSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ ok: false, error: 'Payload invalide', details: parsed.error.flatten() });
@@ -217,10 +302,6 @@ router.post('/accounts/:cashAccountId/credit', (req: AuthRequest, res) => {
     .catch((err) => handleError(res, err));
 });
 
-/**
- * POST /api/cash/accounts/:cashAccountId/initial-balance
- * Production cutover only — OWNER role (not daily ASSISTANT/ADMIN habit).
- */
 router.post(
   '/accounts/:cashAccountId/initial-balance',
   requireOwner,
@@ -255,8 +336,7 @@ router.post(
   },
 );
 
-// POST /api/cash/accounts/:cashAccountId/withdraw
-router.post('/accounts/:cashAccountId/withdraw', (req: AuthRequest, res) => {
+router.post('/accounts/:cashAccountId/withdraw', requireOwnerAdmin, (req: AuthRequest, res) => {
   const parsed = withdrawSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ ok: false, error: 'Payload invalide', details: parsed.error.flatten() });
@@ -281,8 +361,7 @@ router.post('/accounts/:cashAccountId/withdraw', (req: AuthRequest, res) => {
     .catch((err) => handleError(res, err));
 });
 
-// POST /api/cash/accounts/:cashAccountId/adjust
-router.post('/accounts/:cashAccountId/adjust', (req: AuthRequest, res) => {
+router.post('/accounts/:cashAccountId/adjust', requireOwnerAdmin, (req: AuthRequest, res) => {
   const parsed = adjustSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ ok: false, error: 'Payload invalide', details: parsed.error.flatten() });
@@ -308,10 +387,8 @@ router.post('/accounts/:cashAccountId/adjust', (req: AuthRequest, res) => {
     .catch((err) => handleError(res, err));
 });
 
-// POST /api/cash/movements/:movementId/reverse
-router.post('/movements/:movementId/reverse', (req: AuthRequest, res) => {
-  const reason =
-    typeof req.body?.reason === 'string' ? req.body.reason : undefined;
+router.post('/movements/:movementId/reverse', requireOwnerAdmin, (req: AuthRequest, res) => {
+  const reason = typeof req.body?.reason === 'string' ? req.body.reason : undefined;
   cashService
     .reverse({
       movementId: req.params.movementId,

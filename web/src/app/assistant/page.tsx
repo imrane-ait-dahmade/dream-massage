@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   AlertTriangle,
@@ -12,6 +13,7 @@ import {
   Gift,
   ListChecks,
   RefreshCw,
+  Wallet,
 } from 'lucide-react';
 import { AuthGuard } from '@/components/AuthGuard';
 import { AssistantPlanChangeRequestModal } from '@/components/assistant/AssistantPlanChangeRequestModal';
@@ -259,6 +261,14 @@ function AssistantContent() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <Link
+              href="/caisses"
+              className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-2 text-xs font-medium text-stone-700"
+              title="Ma caisse"
+            >
+              <Wallet className="h-3.5 w-3.5" />
+              Caisse
+            </Link>
             <button
               type="button"
               onClick={() => void load()}

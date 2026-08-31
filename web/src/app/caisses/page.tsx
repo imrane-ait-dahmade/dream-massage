@@ -92,6 +92,7 @@ function CashPageContent() {
 
   const isAdmin = user?.role === 'OWNER' || user?.role === 'ADMIN';
   const isOwner = user?.role === 'OWNER';
+  const isStaff = user?.role === 'ASSISTANT';
 
   const selectedAccount = useMemo(
     () => accounts.find((a) => a.cashAccountId === selectedId) ?? null,
@@ -120,20 +121,31 @@ function CashPageContent() {
     setLoading(true);
     setError(null);
     try {
-      const [res, staffRes] = await Promise.all([
-        getCashAccounts(),
-        getStaffMembers('active').catch(() => ({ items: [] as StaffMember[] })),
-      ]);
+      const res = await getCashAccounts();
       setBusinessDate(res.businessDate);
       setStoreTotal(res.storeTotal);
       setAccounts(res.accounts);
-      setStaffList(staffRes.items);
+
+      if (user?.role === 'OWNER' || user?.role === 'ADMIN') {
+        const staffRes = await getStaffMembers('active').catch(() => ({
+          items: [] as StaffMember[],
+        }));
+        setStaffList(staffRes.items);
+      } else {
+        setStaffList([]);
+      }
+
+      // Staff: auto-select their only till
+      if (user?.role === 'ASSISTANT' && res.accounts.length === 1) {
+        setSelectedId(res.accounts[0]!.cashAccountId);
+        setFilterTillId(res.accounts[0]!.cashAccountId);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur de chargement');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user?.role]);
 
   const loadMovements = useCallback(
     async (
@@ -188,10 +200,13 @@ function CashPageContent() {
   );
 
   useEffect(() => {
-    getMe().then(setUser).catch(() => {});
+    getMe()
+      .then((u) => setUser(u))
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
+    if (!user) return;
     void loadList().then(() => {
       void loadMovements(1, {
         cashAccountId: null,
@@ -201,9 +216,8 @@ function CashPageContent() {
         staffMemberId: '',
       });
     });
-    // Initial load only
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadList]);
+  }, [user?.id, loadList]);
 
   useEffect(() => {
     if (!toast) return;
@@ -409,7 +423,7 @@ function CashPageContent() {
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-3">
             <Link
-              href="/"
+              href={isStaff ? '/assistant' : '/'}
               className="rounded-lg p-2 text-stone-500 transition hover:bg-stone-100 hover:text-stone-800"
               title="Retour"
             >
@@ -418,9 +432,13 @@ function CashPageContent() {
             <div className="flex items-center gap-2">
               <Wallet className="h-5 w-5 text-stone-700" />
               <div>
-                <h1 className="text-base font-semibold text-stone-900">Caisses</h1>
+                <h1 className="text-base font-semibold text-stone-900">
+                  {isStaff ? 'Ma caisse' : 'Caisses'}
+                </h1>
                 {businessDate && (
-                  <p className="text-xs text-stone-500">Administration · Journée {businessDate}</p>
+                  <p className="text-xs text-stone-500">
+                    {isStaff ? `Journée ${businessDate}` : `Administration · Journée ${businessDate}`}
+                  </p>
                 )}
               </div>
             </div>
@@ -460,18 +478,20 @@ function CashPageContent() {
           </div>
         )}
 
-        {/* Store total */}
-        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-800/70">
-            Total magasin
-          </p>
-          <p className="mt-0.5 text-2xl font-semibold tabular-nums text-amber-950">
-            {loading ? '…' : formatCashDH(storeTotal)}
-          </p>
-          <p className="mt-0.5 text-xs text-amber-800/60">Caisse 1 + Caisse 2 (soldes physiques)</p>
-        </div>
+        {/* Store total — OWNER/ADMIN only */}
+        {isAdmin && (
+          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-800/70">
+              Total magasin
+            </p>
+            <p className="mt-0.5 text-2xl font-semibold tabular-nums text-amber-950">
+              {loading ? '…' : formatCashDH(storeTotal)}
+            </p>
+            <p className="mt-0.5 text-xs text-amber-800/60">Caisse 1 + Caisse 2 (soldes physiques)</p>
+          </div>
+        )}
 
-        {!loading && accounts.length > 0 && (
+        {!loading && isAdmin && accounts.length > 0 && (
           <div className="mb-4 overflow-x-auto rounded-xl border border-stone-200 bg-white">
             <table className="min-w-full text-left text-sm">
               <thead className="border-b border-stone-100 bg-stone-50 text-[11px] uppercase tracking-wide text-stone-500">
@@ -528,7 +548,9 @@ function CashPageContent() {
           )}
           {!loading && accounts.length === 0 && (
             <div className="col-span-full rounded-xl border border-stone-200 bg-white px-4 py-10 text-center text-stone-400">
-              Aucune caisse physique
+              {isStaff
+                ? 'Aucune caisse ne vous est actuellement affectée.'
+                : 'Aucune caisse physique'}
             </div>
           )}
           {accounts.map((a) => {
@@ -540,7 +562,7 @@ function CashPageContent() {
                   selected
                     ? 'border-amber-300 ring-1 ring-amber-200'
                     : 'border-stone-200 hover:border-stone-300'
-                }`}
+                } ${isStaff ? 'sm:col-span-2 max-w-lg' : ''}`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
@@ -709,40 +731,44 @@ function CashPageContent() {
           )}
 
           <div className="mt-6 flex flex-wrap items-end gap-3">
-            <div>
-              <label className="block text-[11px] font-medium text-stone-500">Caisse</label>
-              <select
-                value={filterTillId}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setFilterTillId(v);
-                  setSelectedId(v || null);
-                }}
-                className="mt-1 rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              >
-                <option value="">Toutes</option>
-                {accounts.map((a) => (
-                  <option key={a.cashAccountId} value={a.cashAccountId}>
-                    {a.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-[11px] font-medium text-stone-500">Fille</label>
-              <select
-                value={filterStaffId}
-                onChange={(e) => setFilterStaffId(e.target.value)}
-                className="mt-1 rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              >
-                <option value="">Toutes</option>
-                {staffList.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {isAdmin && (
+              <>
+                <div>
+                  <label className="block text-[11px] font-medium text-stone-500">Caisse</label>
+                  <select
+                    value={filterTillId}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setFilterTillId(v);
+                      setSelectedId(v || null);
+                    }}
+                    className="mt-1 rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                  >
+                    <option value="">Toutes</option>
+                    {accounts.map((a) => (
+                      <option key={a.cashAccountId} value={a.cashAccountId}>
+                        {a.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-stone-500">Fille</label>
+                  <select
+                    value={filterStaffId}
+                    onChange={(e) => setFilterStaffId(e.target.value)}
+                    className="mt-1 rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                  >
+                    <option value="">Toutes</option>
+                    {staffList.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
             <div>
               <label className="block text-[11px] font-medium text-stone-500">Date</label>
               <input
@@ -1278,7 +1304,7 @@ function Modal({
 
 export default function CaissesPage() {
   return (
-    <AuthGuard allowedRoles={['OWNER', 'ADMIN']}>
+    <AuthGuard allowedRoles={['OWNER', 'ADMIN', 'ASSISTANT']}>
       <CashPageContent />
     </AuthGuard>
   );
