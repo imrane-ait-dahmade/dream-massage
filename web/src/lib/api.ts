@@ -1096,7 +1096,7 @@ export async function withdrawCash(
 
 export async function adjustCash(
   cashAccountId: string,
-  payload: { desiredBalance: number; reason: string },
+  payload: { desiredBalance: number; reason?: string },
 ): Promise<{
   ok: boolean;
   balanceBefore: number;

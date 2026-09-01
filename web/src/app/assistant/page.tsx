@@ -14,6 +14,7 @@ import {
   ListChecks,
   RefreshCw,
   Wallet,
+  ChevronRight,
 } from 'lucide-react';
 import { AuthGuard } from '@/components/AuthGuard';
 import { AssistantPlanChangeRequestModal } from '@/components/assistant/AssistantPlanChangeRequestModal';
@@ -320,6 +321,21 @@ function AssistantContent() {
             <p className="text-sm text-stone-500">Aucun shift ouvert pour le moment.</p>
           )}
         </section>
+
+        <Link
+          href="/caisses"
+          className="flex w-full min-h-[4.5rem] items-center gap-4 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-4 shadow-sm transition active:scale-[0.99] hover:border-amber-300 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500"
+          aria-label="Ma caisse — voir mon solde et mes mouvements"
+        >
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-800">
+            <Wallet className="h-6 w-6" aria-hidden />
+          </div>
+          <div className="min-w-0 flex-1 text-left">
+            <p className="text-base font-semibold text-stone-900">Ma caisse</p>
+            <p className="text-sm text-stone-600">Voir mon solde et mes mouvements</p>
+          </div>
+          <ChevronRight className="h-5 w-5 shrink-0 text-amber-700" aria-hidden />
+        </Link>
 
         <section>
           <h2 className="mb-2 text-sm font-semibold text-stone-800">Résumé du jour</h2>
