@@ -36,6 +36,7 @@ const MOVEMENT_TYPES: { value: '' | CashMovementType; label: string }[] = [
   { value: 'ADMIN_ADJUSTMENT', label: 'Ajustement' },
   { value: 'CORRECTION', label: 'Correction' },
   { value: 'REVERSAL', label: 'Annulation' },
+  { value: 'PRIME_DEDUCTION', label: 'Prime' },
 ];
 
 function signedCash(amount: number): string {
@@ -433,7 +434,7 @@ function CashPageContent() {
               <Wallet className="h-5 w-5 text-stone-700" />
               <div>
                 <h1 className="text-base font-semibold text-stone-900">
-                  {isStaff ? 'Ma caisse' : 'Caisses'}
+                  {isStaff ? 'Ma caisse — Solde net' : 'Caisses'}
                 </h1>
                 {businessDate && (
                   <p className="text-xs text-stone-500">
@@ -487,7 +488,7 @@ function CashPageContent() {
             <p className="mt-0.5 text-2xl font-semibold tabular-nums text-amber-950">
               {loading ? '…' : formatCashDH(storeTotal)}
             </p>
-            <p className="mt-0.5 text-xs text-amber-800/60">Caisse 1 + Caisse 2 (soldes physiques)</p>
+            <p className="mt-0.5 text-xs text-amber-800/60">Caisse 1 + Caisse 2 (soldes nets)</p>
           </div>
         )}
 
@@ -498,10 +499,11 @@ function CashPageContent() {
                 <tr>
                   <th className="px-4 py-2 font-semibold">Caisse</th>
                   <th className="px-4 py-2 font-semibold">Fille affectée</th>
-                  <th className="px-4 py-2 font-semibold text-right">Entrées</th>
+                  <th className="px-4 py-2 font-semibold text-right">Sessions</th>
+                  <th className="px-4 py-2 font-semibold text-right">Primes</th>
                   <th className="px-4 py-2 font-semibold text-right">Retraits</th>
                   <th className="px-4 py-2 font-semibold text-right">Ajust.</th>
-                  <th className="px-4 py-2 font-semibold text-right">Solde</th>
+                  <th className="px-4 py-2 font-semibold text-right">Solde net</th>
                 </tr>
               </thead>
               <tbody>
@@ -516,7 +518,14 @@ function CashPageContent() {
                       )}
                     </td>
                     <td className="px-4 py-2 text-right tabular-nums">
-                      {a.incomes ? signedCash(a.incomes) : '—'}
+                      {(a.sessionIncome ?? a.incomes)
+                        ? signedCash(a.sessionIncome ?? a.incomes)
+                        : '—'}
+                    </td>
+                    <td className="px-4 py-2 text-right tabular-nums text-violet-700">
+                      {a.primeDeductions
+                        ? signedCash(a.primeDeductions)
+                        : '—'}
                     </td>
                     <td className="px-4 py-2 text-right tabular-nums text-red-700">
                       {a.withdrawals ? `−${formatCashDH(a.withdrawals)}` : '—'}
@@ -588,14 +597,27 @@ function CashPageContent() {
                 </div>
 
                 <p className="mt-3 text-[11px] font-medium uppercase tracking-wide text-stone-400">
-                  Solde physique
+                  {isStaff ? 'Solde net' : 'Solde net caisse'}
                 </p>
                 <p className="text-2xl font-semibold tabular-nums text-stone-900">
                   {formatCashDH(a.physicalBalance)}
                 </p>
 
-                <div className="mt-3 grid grid-cols-3 gap-2">
-                  <Stat label="Entrées" value={a.incomes ? signedCash(a.incomes) : '—'} tone="pos" />
+                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  <Stat
+                    label="Sessions"
+                    value={
+                      (a.sessionIncome ?? a.incomes)
+                        ? signedCash(a.sessionIncome ?? a.incomes)
+                        : '—'
+                    }
+                    tone="pos"
+                  />
+                  <Stat
+                    label="Primes"
+                    value={a.primeDeductions ? signedCash(a.primeDeductions) : '—'}
+                    tone="neg"
+                  />
                   <Stat
                     label="Retraits"
                     value={a.withdrawals ? `−${formatCashDH(a.withdrawals)}` : '—'}
@@ -664,12 +686,12 @@ function CashPageContent() {
               </h2>
               {detail ? (
                 <p className="mt-1 text-sm text-stone-600">
-                  Solde physique :{' '}
+                  Solde net :{' '}
                   <span className="font-semibold text-stone-900">
                     {formatCashDH(detail.physicalBalance)}
                   </span>
                   <span className="ml-2 text-xs text-stone-400">
-                    (inchangé par le filtre fille)
+                    (revenu sessions − primes − retraits ± ajustements)
                   </span>
                 </p>
               ) : (
@@ -712,17 +734,30 @@ function CashPageContent() {
               <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-500">
                 Aujourd&apos;hui ({detail.businessDate})
               </h3>
-              <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-5">
+              <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
                 <Stat label="Opening" value={formatCashDH(detail.today.openingBalance)} />
-                <Stat label="Income" value={signedCash(detail.today.incomes)} tone="pos" />
                 <Stat
-                  label="Withdrawals"
+                  label="Sessions"
+                  value={signedCash(detail.today.sessionIncome ?? detail.today.incomes)}
+                  tone="pos"
+                />
+                <Stat
+                  label="Primes"
+                  value={
+                    detail.today.primeDeductions
+                      ? signedCash(detail.today.primeDeductions)
+                      : '—'
+                  }
+                  tone="neg"
+                />
+                <Stat
+                  label="Retraits"
                   value={`−${formatCashDH(detail.today.withdrawals)}`}
                   tone="neg"
                 />
-                <Stat label="Adjustments" value={signedCash(detail.today.adjustments)} />
+                <Stat label="Ajustements" value={signedCash(detail.today.adjustments)} />
                 <Stat
-                  label="Closing"
+                  label="Solde net"
                   value={formatCashDH(detail.today.currentBalance)}
                   strong
                 />

@@ -658,6 +658,7 @@ enum CashMovementType {
   ADMIN_ADJUSTMENT
   CORRECTION
   REVERSAL
+  PRIME_DEDUCTION
 }
 
 enum UserRole {

@@ -15,19 +15,25 @@ import {
   assertWithdrawAmount,
   computeDayStats,
   movementLabel,
+  netPrimeDeductedFromMovements,
+  NO_CASH_FOR_STAFF_MSG,
   planAdjustment,
   planInitialBalance,
   planReversal,
   planSessionPaidSync,
+  planShiftPrimeSync,
   planStaffAssignment,
   resolveSessionPaidTarget,
   shouldAllowSessionCashCredit,
+  shouldAllowShiftPrimeDeduction,
   assertNewSessionCashCreditAllowed,
   normalizeReason,
   round2,
   SESSION_REF_TYPE,
+  SHIFT_PRIME_REF_TYPE,
   type CashMovementType,
 } from './cash.logic';
+import { primeCalculationService } from '../prime/prime-calculation.service';
 
 export const PHYSICAL_CASH_CODES = ['CASH_1', 'CASH_2'] as const;
 export type PhysicalCashCode = (typeof PHYSICAL_CASH_CODES)[number];
@@ -535,6 +541,121 @@ export const cashService = {
     return prisma.$transaction(run);
   },
 
+  /**
+   * Idempotent sync: bring PRIME_DEDUCTION net for shift to PrimeCalculationService totalPrime.
+   * System-only — never exposed over HTTP.
+   *
+   * Cutover: no first deduction before cashTrackingStartedAt unless shift sessions
+   * already have ledger history or prime was previously synced.
+   */
+  async syncShiftPrimeDeduction(shiftId: string, externalTx?: Prisma.TransactionClient) {
+    const run = async (tx: Prisma.TransactionClient) => {
+      const shift = await tx.shift.findUnique({
+        where: { id: shiftId },
+        select: { id: true, staffMemberId: true, startedAt: true },
+      });
+      if (!shift?.staffMemberId) return null;
+
+      const summary = await primeCalculationService.calculateShiftPrimeSummary(shiftId);
+      const desiredPrime = summary.totals.totalPrime;
+
+      const existingForTill = await tx.cashMovement.findMany({
+        where: {
+          referenceType: SHIFT_PRIME_REF_TYPE,
+          referenceId: shiftId,
+        },
+        select: { type: true, amount: true, cashAccountId: true },
+      });
+
+      const primeForTill = existingForTill.filter((m) => m.type === 'PRIME_DEDUCTION');
+      const stickyTill = primeForTill.length > 0 ? primeForTill[0]!.cashAccountId : null;
+
+      let cashAccountId = stickyTill;
+      if (!cashAccountId) {
+        const till = await findActiveTillForStaff(tx, shift.staffMemberId);
+        cashAccountId = till?.id ?? null;
+      }
+
+      if (!cashAccountId) {
+        if (desiredPrime > 0) {
+          throw httpError(422, NO_CASH_FOR_STAFF_MSG);
+        }
+        return null;
+      }
+
+      await lockAccount(tx, cashAccountId);
+
+      const existing = await tx.cashMovement.findMany({
+        where: {
+          referenceType: SHIFT_PRIME_REF_TYPE,
+          referenceId: shiftId,
+        },
+        select: { type: true, amount: true, cashAccountId: true },
+      });
+
+      const primeMovements = existing.filter((m) => m.type === 'PRIME_DEDUCTION');
+
+      const tillRow = await tx.cashAccount.findUnique({
+        where: { id: cashAccountId },
+        select: { cashTrackingStartedAt: true },
+      });
+      const cashTrackingStartedAt = tillRow?.cashTrackingStartedAt ?? null;
+
+      const sessions = await tx.chairSession.findMany({
+        where: { shiftId },
+        select: { id: true },
+      });
+      const sessionIds = sessions.map((s) => s.id);
+      let hasSessionPaymentsInLedger = false;
+      if (sessionIds.length > 0) {
+        const sessionMovement = await tx.cashMovement.findFirst({
+          where: {
+            referenceType: SESSION_REF_TYPE,
+            referenceId: { in: sessionIds },
+          },
+          select: { id: true },
+        });
+        hasSessionPaymentsInLedger = !!sessionMovement;
+      }
+
+      const alreadyDeductedPrime = netPrimeDeductedFromMovements(
+        primeMovements.map((m) => toNum(m.amount)),
+      );
+
+      const allowFirstDeduction = shouldAllowShiftPrimeDeduction({
+        hasPrimeLedgerHistory: primeMovements.length > 0,
+        shiftStartedAt: shift.startedAt,
+        cashTrackingStartedAt,
+        hasSessionPaymentsInLedger,
+      });
+
+      const plan = planShiftPrimeSync({
+        desiredPrime,
+        alreadyDeductedPrime,
+        allowFirstDeduction,
+        hasPrimeLedgerHistory: primeMovements.length > 0,
+      });
+
+      if (!plan) return null;
+
+      const staffName = summary.shift.staffMemberName;
+      const shiftLabel = summary.shift.shiftTypeName ?? 'shift';
+
+      return postMovementInTx(tx, {
+        cashAccountId,
+        staffMemberId: shift.staffMemberId,
+        type: plan.type,
+        amount: plan.amount,
+        referenceType: SHIFT_PRIME_REF_TYPE,
+        referenceId: shiftId,
+        reason: `Prime ${staffName} — ${shiftLabel}`,
+      });
+    };
+
+    if (externalTx) return run(externalTx);
+    return prisma.$transaction(run);
+  },
+
   async withdraw(input: {
     cashAccountId: string;
     amount: number;
@@ -696,6 +817,8 @@ export const cashService = {
       staffMemberId: staffMemberId?.trim() || null,
       physicalBalance,
       openingBalance: stats.openingBalance,
+      sessionIncome: stats.sessionIncome,
+      primeDeductions: stats.primeDeductions,
       dailyIncome: stats.dailyIncome,
       withdrawals: stats.withdrawals,
       adjustments: stats.adjustments,
@@ -750,6 +873,8 @@ export const cashService = {
         staffMemberId: a.staffMemberId,
         staffMemberName: a.staffMember?.name ?? null,
         openingBalance: stats.openingBalance,
+        sessionIncome: stats.sessionIncome,
+        primeDeductions: stats.primeDeductions,
         incomes: stats.dailyIncome,
         dailyIncome: stats.dailyIncome,
         withdrawals: stats.withdrawals,
@@ -797,6 +922,8 @@ export const cashService = {
       physicalBalance: day.physicalBalance,
       today: {
         openingBalance: day.openingBalance,
+        sessionIncome: day.sessionIncome,
+        primeDeductions: day.primeDeductions,
         incomes: day.dailyIncome,
         withdrawals: day.withdrawals,
         adjustments: day.adjustments,

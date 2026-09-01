@@ -4,6 +4,7 @@ import { env } from '../../config/env';
 import { logger } from '../../utils/logger';
 import { primeCalculationService } from '../prime/prime-calculation.service';
 import type { ShiftPrimeSummary } from '../prime/prime-calculation.service';
+import { syncShiftPrimeToCash } from '../cash/shift-cash-sync';
 import { assessShiftDeletion } from './shift-delete.logic';
 
 // ── Reusable include block for shift responses ─────────────────────────────────
@@ -322,6 +323,8 @@ export class ShiftService {
         expectedCash:   t.grossRevenue,
       },
     });
+
+    await syncShiftPrimeToCash(shiftId);
 
     return summary;
   }

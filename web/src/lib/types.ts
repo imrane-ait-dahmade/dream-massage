@@ -683,7 +683,8 @@ export type CashMovementType =
   | 'WITHDRAWAL'
   | 'ADMIN_ADJUSTMENT'
   | 'CORRECTION'
-  | 'REVERSAL';
+  | 'REVERSAL'
+  | 'PRIME_DEDUCTION';
 
 /** Physical till row from GET /api/cash/accounts */
 export interface CashAccountRow {
@@ -697,10 +698,14 @@ export interface CashAccountRow {
   staffMemberId: string | null;
   staffMemberName: string | null;
   openingBalance: number;
+  /** Net session payments today (SESSION_PAYMENT + corrections) */
+  sessionIncome?: number;
+  /** Sum of PRIME_DEDUCTION today (negative in ledger) */
+  primeDeductions?: number;
   incomes: number;
   withdrawals: number;
   adjustments: number;
-  /** Closing / day current balance (same as physical for list) */
+  /** Net till balance (after session income and prime deductions) */
   currentBalance: number;
 }
 
@@ -725,6 +730,8 @@ export interface CashAccountDetailResponse {
   currentBalance: number;
   today: {
     openingBalance: number;
+    sessionIncome?: number;
+    primeDeductions?: number;
     incomes: number;
     withdrawals: number;
     adjustments: number;

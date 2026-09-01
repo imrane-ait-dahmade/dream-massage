@@ -11,9 +11,11 @@ export type CashMovementType =
   | 'WITHDRAWAL'
   | 'ADMIN_ADJUSTMENT'
   | 'CORRECTION'
-  | 'REVERSAL';
+  | 'REVERSAL'
+  | 'PRIME_DEDUCTION';
 
 export const SESSION_REF_TYPE = 'ChairSession' as const;
+export const SHIFT_PRIME_REF_TYPE = 'SHIFT_PRIME' as const;
 
 /** Shown when a paid session sync requires a till but none is assigned to the staff member. */
 export const NO_CASH_FOR_STAFF_MSG = "Aucune caisse n'est affectée à cette fille.";
@@ -310,6 +312,56 @@ export function planSessionPaidSync(input: {
   return { type: 'CORRECTION', amount: delta };
 }
 
+/**
+ * Positive prime already deducted from till (sum of PRIME_DEDUCTION is negative).
+ * Example: movements -20 → returns 20.
+ */
+export function netPrimeDeductedFromMovements(amounts: number[]): number {
+  const netCents = amounts.reduce((s, a) => s + toCents(a), 0);
+  return fromCents(-netCents);
+}
+
+/**
+ * First prime deduction allowed when shift is post-cutover OR shift sessions
+ * already have ledger history OR prime was already synced for this shift.
+ */
+export function shouldAllowShiftPrimeDeduction(input: {
+  hasPrimeLedgerHistory: boolean;
+  shiftStartedAt: Date | null;
+  cashTrackingStartedAt: Date | null;
+  hasSessionPaymentsInLedger: boolean;
+}): boolean {
+  if (input.hasPrimeLedgerHistory) return true;
+  if (input.hasSessionPaymentsInLedger) return true;
+  if (!input.cashTrackingStartedAt || !input.shiftStartedAt) return false;
+  return input.shiftStartedAt.getTime() >= input.cashTrackingStartedAt.getTime();
+}
+
+/**
+ * Idempotent shift prime sync: desiredPrime vs already deducted → signed PRIME_DEDUCTION delta.
+ * Positive delta (more prime owed) → negative movement; decrease → positive restitution.
+ */
+export function planShiftPrimeSync(input: {
+  desiredPrime: number;
+  alreadyDeductedPrime: number;
+  allowFirstDeduction: boolean;
+  hasPrimeLedgerHistory: boolean;
+}): { type: 'PRIME_DEDUCTION'; amount: number } | null {
+  const desired = round2(input.desiredPrime);
+  if (desired < 0) {
+    throw Object.assign(new Error('La prime ne peut pas être négative.'), { status: 400 });
+  }
+  const already = round2(input.alreadyDeductedPrime);
+  const delta = round2(desired - already);
+  if (delta === 0) return null;
+
+  if (!input.allowFirstDeduction && !input.hasPrimeLedgerHistory) {
+    return null;
+  }
+
+  return { type: 'PRIME_DEDUCTION', amount: round2(-delta) };
+}
+
 /** Reverse a prior movement: opposite signed amount as REVERSAL. */
 export function planReversal(originalAmount: number): {
   type: 'REVERSAL';
@@ -322,6 +374,19 @@ export function planReversal(originalAmount: number): {
   return { type: 'REVERSAL', amount: fromCents(-cents) };
 }
 
+const SESSION_INCOME_TYPES: CashMovementType[] = [
+  'SESSION_PAYMENT',
+  'CORRECTION',
+  'REVERSAL',
+];
+
+const ADJUSTMENT_TYPES: CashMovementType[] = [
+  'ADMIN_ADJUSTMENT',
+  'MANUAL_INCOME',
+  'INITIAL_BALANCE',
+];
+
+/** @deprecated use sessionIncome — kept for backward-compatible dailyIncome */
 const INCOME_TYPES: CashMovementType[] = [
   'SESSION_PAYMENT',
   'MANUAL_INCOME',
@@ -330,26 +395,31 @@ const INCOME_TYPES: CashMovementType[] = [
 
 /**
  * Daily stats from current_balance + today's movements only.
- * opening = current - sum(today amounts); closing = current.
+ * opening = current - sum(today amounts); closing = current (net after primes).
  */
 export function computeDayStats(input: {
   currentBalance: number;
   todayMovements: Array<{ type: CashMovementType; amount: number }>;
 }): {
   openingBalance: number;
-  dailyIncome: number;
+  sessionIncome: number;
+  primeDeductions: number;
   withdrawals: number;
   adjustments: number;
   closingBalance: number;
-  /** @deprecated alias of dailyIncome */
+  /** @deprecated alias of sessionIncome + manual/initial (legacy) */
+  dailyIncome: number;
+  /** @deprecated alias of sessionIncome + manual/initial (legacy) */
   incomes: number;
   /** @deprecated alias of closingBalance */
   currentBalance: number;
 } {
   const currentCents = toCents(input.currentBalance);
-  let incomeCents = 0;
+  let sessionIncomeCents = 0;
+  let primeCents = 0;
   let withdrawalCents = 0;
   let adjustmentCents = 0;
+  let legacyIncomeCents = 0;
   let todayNetCents = 0;
 
   for (const m of input.todayMovements) {
@@ -357,23 +427,35 @@ export function computeDayStats(input: {
     todayNetCents += a;
     if (m.type === 'WITHDRAWAL') {
       withdrawalCents += Math.abs(a);
-    } else if (INCOME_TYPES.includes(m.type)) {
-      incomeCents += a;
+    } else if (m.type === 'PRIME_DEDUCTION') {
+      primeCents += a;
+    } else if (SESSION_INCOME_TYPES.includes(m.type)) {
+      sessionIncomeCents += a;
+    } else if (ADJUSTMENT_TYPES.includes(m.type)) {
+      adjustmentCents += a;
     } else {
       adjustmentCents += a;
     }
   }
 
+  const manualInitialCents = input.todayMovements
+    .filter((m) => m.type === 'MANUAL_INCOME' || m.type === 'INITIAL_BALANCE')
+    .reduce((s, m) => s + toCents(m.amount), 0);
+  legacyIncomeCents = sessionIncomeCents + manualInitialCents;
+
   const opening = fromCents(currentCents - todayNetCents);
-  const incomes = fromCents(incomeCents);
+  const sessionIncome = fromCents(sessionIncomeCents);
+  const incomes = fromCents(legacyIncomeCents);
   const closing = fromCents(currentCents);
 
   return {
     openingBalance: opening,
-    dailyIncome: incomes,
+    sessionIncome,
+    primeDeductions: fromCents(primeCents),
     withdrawals: fromCents(withdrawalCents),
     adjustments: fromCents(adjustmentCents),
     closingBalance: closing,
+    dailyIncome: incomes,
     incomes,
     currentBalance: closing,
   };
@@ -395,6 +477,8 @@ export function movementLabel(type: CashMovementType): string {
       return 'Correction';
     case 'REVERSAL':
       return 'Annulation';
+    case 'PRIME_DEDUCTION':
+      return 'Prime';
     default:
       return type;
   }
@@ -741,6 +825,89 @@ export class MemoryCashLedger {
         .filter((m) => m.referenceType === SESSION_REF_TYPE && m.referenceId === sessionId)
         .map((m) => m.amount),
     );
+  }
+
+  netPrimeForShift(shiftId: string): number {
+    return netPrimeDeductedFromMovements(
+      this.allMovements()
+        .filter(
+          (m) =>
+            m.referenceType === SHIFT_PRIME_REF_TYPE &&
+            m.referenceId === shiftId &&
+            m.type === 'PRIME_DEDUCTION',
+        )
+        .map((m) => m.amount),
+    );
+  }
+
+  cashAccountIdForShiftPrime(shiftId: string): string | null {
+    const m = this.allMovements().find(
+      (x) => x.referenceType === SHIFT_PRIME_REF_TYPE && x.referenceId === shiftId,
+    );
+    return m?.cashAccountId ?? null;
+  }
+
+  /**
+   * Sync shift prime → physical till (sticky cashAccountId once credited).
+   * desiredPrime comes from PrimeCalculationService in production.
+   */
+  async syncShiftPrime(input: {
+    shiftId: string;
+    staffMemberId: string | null;
+    cashAccountId: string | null;
+    desiredPrime: number;
+    shiftStartedAt?: Date | null;
+    hasSessionPaymentsInLedger?: boolean;
+    reason?: string | null;
+  }): Promise<MemoryMovement | null> {
+    const related = this.allMovements().filter(
+      (m) => m.referenceType === SHIFT_PRIME_REF_TYPE && m.referenceId === input.shiftId,
+    );
+    const primeMovements = related.filter((m) => m.type === 'PRIME_DEDUCTION');
+    const stickyTill = primeMovements.length > 0 ? primeMovements[0]!.cashAccountId : null;
+    const staffMemberId = input.staffMemberId;
+    let prospectiveTill = stickyTill;
+    if (!prospectiveTill && staffMemberId) {
+      prospectiveTill = this.resolveCashAccountForStaff(staffMemberId);
+    }
+    if (!prospectiveTill) {
+      prospectiveTill = input.cashAccountId;
+    }
+    if (!prospectiveTill) return null;
+
+    return this.withLock(prospectiveTill, () => {
+      const freshRelated = this.allMovements().filter(
+        (m) => m.referenceType === SHIFT_PRIME_REF_TYPE && m.referenceId === input.shiftId,
+      );
+      const freshPrime = freshRelated.filter((m) => m.type === 'PRIME_DEDUCTION');
+      const trackingAt =
+        this.accounts.get(prospectiveTill!)?.cashTrackingStartedAt ?? null;
+      const shiftStartedAt = input.shiftStartedAt ?? new Date(0);
+      const alreadyDeducted = netPrimeDeductedFromMovements(freshPrime.map((m) => m.amount));
+      const allowFirstDeduction = shouldAllowShiftPrimeDeduction({
+        hasPrimeLedgerHistory: freshPrime.length > 0,
+        shiftStartedAt,
+        cashTrackingStartedAt: trackingAt,
+        hasSessionPaymentsInLedger: input.hasSessionPaymentsInLedger ?? false,
+      });
+      const plan = planShiftPrimeSync({
+        desiredPrime: input.desiredPrime,
+        alreadyDeductedPrime: alreadyDeducted,
+        allowFirstDeduction,
+        hasPrimeLedgerHistory: freshPrime.length > 0,
+      });
+      if (!plan) return null;
+      const acc = this.requireAccount(prospectiveTill!);
+      return this.post(
+        acc,
+        staffMemberId,
+        plan.type,
+        plan.amount,
+        SHIFT_PRIME_REF_TYPE,
+        input.shiftId,
+        input.reason ?? null,
+      );
+    });
   }
 
   cashAccountIdForSession(sessionId: string): string | null {

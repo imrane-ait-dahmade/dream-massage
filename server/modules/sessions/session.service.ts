@@ -3,6 +3,7 @@ import { sessionSettingsService } from '../settings/session-settings.service';
 import type { AuthUser } from '../auth/auth.service';
 import { assessSessionDeletion } from './session-delete.logic';
 import { syncSessionCashLedgerInTx } from '../cash/session-cash-sync';
+import { syncShiftPrimeForSessionAfterCommit } from '../cash/shift-cash-sync';
 
 // Resolve actor userId — falls back to first OWNER from DB
 async function resolveActorUserId(user?: AuthUser | null): Promise<string | null> {
@@ -174,6 +175,8 @@ export const sessionService = {
 
       return row;
     });
+
+    await syncShiftPrimeForSessionAfterCommit(sessionId);
 
     return mapSession(updated);
   },

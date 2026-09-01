@@ -5,6 +5,7 @@ import type { AuthUser } from '../auth/auth.service';
 import { dashboardService } from '../dashboard/dashboard.service';
 import { homeDashboardService } from '../dashboard/home-dashboard.service';
 import { syncSessionCashLedgerInTx } from '../cash/session-cash-sync';
+import { syncShiftPrimeForSessionAfterCommit } from '../cash/shift-cash-sync';
 import {
   assertNoPendingRequest,
   assertPaidAmountIsDifferent,
@@ -524,6 +525,8 @@ export const sessionPlanChangeService = {
       return { session: updatedSession, request: fullRequest };
     });
 
+    await syncShiftPrimeForSessionAfterCommit(sessionId);
+
     invalidateDashboards();
     return {
       session: mapSessionResponse(result.session),
@@ -771,6 +774,8 @@ export const sessionPlanChangeService = {
 
       return { session: updatedSession, request: fullRequest };
     });
+
+    await syncShiftPrimeForSessionAfterCommit(result.session.id);
 
     invalidateDashboards();
     return {
