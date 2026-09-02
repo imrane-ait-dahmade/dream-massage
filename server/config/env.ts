@@ -72,6 +72,11 @@ const envSchema = z.object({
     .string()
     .default('false')
     .transform((v) => v === 'true'),
+  // When true: assistants self-start shifts; auto-open from StaffSchedule is disabled.
+  SELF_START_SHIFT_ENABLED: z
+    .string()
+    .default('false')
+    .transform((v) => v === 'true'),
   AUTO_SHIFT_SHOP_OPEN_TIME: z
     .string()
     .regex(/^\d{2}:\d{2}$/, 'AUTO_SHIFT_SHOP_OPEN_TIME must be HH:mm')

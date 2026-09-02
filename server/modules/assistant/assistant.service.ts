@@ -1,16 +1,23 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
+import { env } from '../../config/env';
 import { primeCalculationService } from '../prime/prime-calculation.service';
+import { shiftService } from '../shifts/shift.service';
+import { isAllowedShiftTypeName } from '../shifts/shift-period';
 import type { AuthUser } from '../auth/auth.service';
 import { getBusinessDate, getDayBoundsUtc } from '../../utils/time';
 import { SESSION_OPERATIONAL_WHERE } from '../archive/archive-filters';
 import { sessionPlanChangeService } from '../sessions/session-plan-change.service';
 import type {
   AssistantAlert,
+  AssistantCloseShiftResponse,
   AssistantDashboardResponse,
   AssistantMeResponse,
   AssistantSessionRow,
   AssistantSessionsListResponse,
+  AssistantShiftTypeOption,
+  AssistantShopOpenShift,
+  AssistantStartShiftResponse,
   AssistantSummary,
 } from './assistant.types';
 
@@ -183,6 +190,87 @@ async function resolveStaffMemberId(
 }
 
 export class AssistantService {
+  async listSelfStartShiftTypes(): Promise<AssistantShiftTypeOption[]> {
+    const types = await prisma.shiftType.findMany({
+      where:   { isActive: true, archivedAt: null },
+      orderBy: { sortOrder: 'asc' },
+      select:  { id: true, name: true, label: true, startTime: true, endTime: true },
+    });
+    return types
+      .filter((t) => isAllowedShiftTypeName(t.name))
+      .map((t) => ({
+        id:        t.id,
+        name:      t.name,
+        label:     t.label ?? t.name,
+        startTime: t.startTime,
+        endTime:   t.endTime,
+      }));
+  }
+
+  async startShift(user: AuthUser, shiftTypeId: string): Promise<AssistantStartShiftResponse> {
+    if (user.role !== 'ASSISTANT' || !user.staffMemberId) {
+      const err = new Error('Forbidden');
+      (err as Error & { status?: number }).status = 403;
+      throw err;
+    }
+    if (!env.SELF_START_SHIFT_ENABLED) {
+      const err = new Error('Le démarrage de shift par l\'assistante n\'est pas activé.');
+      (err as Error & { status?: number }).status = 403;
+      throw err;
+    }
+
+    const shift = await shiftService.startAssistantShift(
+      shiftTypeId,
+      user.id,
+      user.staffMemberId,
+    );
+
+    return {
+      ok: true,
+      shift: {
+        id:             shift.id,
+        status:         shift.status,
+        startedAt:      shift.startedAt.toISOString(),
+        businessDate:   shift.businessDate,
+        scheduledEndAt: shift.scheduledEndAt?.toISOString() ?? null,
+        staffMember:    { id: shift.staffMember.id, name: shift.staffMember.name },
+        shiftType: {
+          id:    shift.shiftType?.id ?? shiftTypeId,
+          label: shift.shiftType?.label ?? shift.shiftType?.name ?? null,
+          name:  shift.shiftType?.name ?? '',
+        },
+      },
+    };
+  }
+
+  async closeShift(user: AuthUser, declaredCash?: number): Promise<AssistantCloseShiftResponse> {
+    if (user.role !== 'ASSISTANT' || !user.staffMemberId) {
+      const err = new Error('Forbidden');
+      (err as Error & { status?: number }).status = 403;
+      throw err;
+    }
+    if (!env.SELF_START_SHIFT_ENABLED) {
+      const err = new Error('La fermeture de shift par l\'assistante n\'est pas activée.');
+      (err as Error & { status?: number }).status = 403;
+      throw err;
+    }
+
+    const closed = await shiftService.closeAssistantShift(
+      user.id,
+      user.staffMemberId,
+      declaredCash,
+    );
+
+    return {
+      ok: true,
+      shift: {
+        id:      closed.id,
+        status:  closed.status,
+        endedAt: closed.endedAt?.toISOString() ?? null,
+      },
+    };
+  }
+
   async getMe(user: AuthUser): Promise<AssistantMeResponse> {
     if (user.role !== 'ASSISTANT' || !user.staffMemberId) {
       const err = new Error('Forbidden');
@@ -309,10 +397,38 @@ export class AssistantService {
         }
       : null;
 
+    const shopOpenRow = await prisma.shift.findFirst({
+      where:   { status: 'OPEN', endedAt: null },
+      orderBy: { startedAt: 'desc' },
+      include: {
+        staffMember: { select: { id: true, name: true } },
+        shiftType:   { select: { label: true, name: true } },
+      },
+    });
+
+    let shopOpenShift: AssistantShopOpenShift | null = null;
+    if (shopOpenRow) {
+      shopOpenShift = {
+        id:             shopOpenRow.id,
+        staffMember:    { id: shopOpenRow.staffMember.id, name: shopOpenRow.staffMember.name },
+        shiftTypeLabel: shopOpenRow.shiftType?.label ?? shopOpenRow.shiftType?.name ?? null,
+        status:         shopOpenRow.status,
+        startedAt:      shopOpenRow.startedAt.toISOString(),
+        isOwn:          shopOpenRow.staffMemberId === staffMemberId,
+      };
+    }
+
+    const availableShiftTypes = env.SELF_START_SHIFT_ENABLED
+      ? await this.listSelfStartShiftTypes()
+      : [];
+
     return {
       date,
       staffMember: { id: staffMember.id, name: staffMember.name },
       currentShift,
+      shopOpenShift,
+      selfStartShiftEnabled: env.SELF_START_SHIFT_ENABLED,
+      availableShiftTypes,
       summary,
       sessions,
       alerts: buildAlerts(rawSessions),

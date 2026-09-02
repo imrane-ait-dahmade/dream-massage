@@ -360,6 +360,7 @@ httpServer.listen(PORT, '0.0.0.0', () => {
     logger.info(`  shellyPollMs      : ${env.SHELLY_POLL_INTERVAL_MS}`);
   }
   logger.info(`  autoShiftEnabled  : ${env.AUTO_SHIFT_ENABLED}`);
+  logger.info(`  selfStartShift    : ${env.SELF_START_SHIFT_ENABLED}`);
   if (env.AUTO_SHIFT_ENABLED) {
     logger.info(`  autoShiftInterval : ${env.AUTO_SHIFT_CHECK_INTERVAL_MS}ms`);
     logger.info(`  multipleOpenShifts: ${env.ALLOW_MULTIPLE_OPEN_SHIFTS}`);

@@ -3,6 +3,7 @@ import type { ChairStatus } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { env } from '../../config/env';
 import { logger } from '../../utils/logger';
+import { shiftService } from '../shifts/shift.service';
 import { pricingService } from '../pricing/pricing.service';
 import { syncSessionCashLedgerInTx } from '../cash/session-cash-sync';
 import { syncShiftPrimeForSessionAfterCommit } from '../cash/shift-cash-sync';
@@ -361,12 +362,9 @@ export class ChairStateService {
 
     usageMetrics.incr('dbReads');
     lastTickDbWrites += 1;
-    const openShift = await prisma.shift.findFirst({
-      where: { status: 'OPEN', endedAt: null },
-      orderBy: { startedAt: 'desc' },
-      select: { id: true },
-    });
-    const anomalyType: string | null = openShift ? null : 'NO_OPEN_SHIFT';
+    const { shiftId: resolvedShiftId, anomalyType: shiftAnomaly } =
+      await shiftService.resolveOpenShiftForSession();
+    const anomalyType: string | null = shiftAnomaly;
 
     lastTickDbWrites += 4;
     usageMetrics.incr('dbWrites', 4);
@@ -374,7 +372,7 @@ export class ChairStateService {
       const s = await tx.chairSession.create({
         data: {
           chairId: chair.id,
-          shiftId: openShift?.id ?? null,
+          shiftId: resolvedShiftId ?? null,
           status: 'ACTIVE',
           detectedStartAt: maybeActiveSince,
           confirmedStartAt: now,
@@ -428,7 +426,12 @@ export class ChairStateService {
           eventType: 'SESSION_STARTED',
           toStatus: 'ACTIVE',
           powerWatts,
-          message: anomalyType === 'NO_OPEN_SHIFT' ? 'Started with no open shift' : null,
+          message:
+            anomalyType === 'NO_OPEN_SHIFT'
+              ? 'Started with no open shift'
+              : anomalyType === 'MULTIPLE_OPEN_SHIFTS'
+                ? 'Started with multiple open shifts (invalid)'
+                : null,
           createdAt: now,
         },
         select: { id: true },
@@ -448,6 +451,8 @@ export class ChairStateService {
 
     if (anomalyType === 'NO_OPEN_SHIFT') {
       logger.warn(`[state-machine] ${chair.name}: session ${session.id.slice(-8)} started — NO_OPEN_SHIFT`);
+    } else if (anomalyType === 'MULTIPLE_OPEN_SHIFTS') {
+      logger.error(`[state-machine] ${chair.name}: session ${session.id.slice(-8)} started — MULTIPLE_OPEN_SHIFTS`);
     } else {
       logger.info(`[state-machine] ${chair.name}: session ${session.id.slice(-8)} STARTED`);
     }

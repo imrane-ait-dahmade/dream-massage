@@ -2,10 +2,20 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { env } from '../../config/env';
 import { logger } from '../../utils/logger';
+import { getBusinessDate, getTimezone } from '../../utils/time';
 import { primeCalculationService } from '../prime/prime-calculation.service';
 import type { ShiftPrimeSummary } from '../prime/prime-calculation.service';
 import { syncShiftPrimeToCash } from '../cash/shift-cash-sync';
 import { assessShiftDeletion } from './shift-delete.logic';
+import {
+  assertSelfStartShiftTypeAllowed,
+  buildSelfStartSchedule,
+} from './shift-self-start.logic';
+import {
+  buildShiftAlreadyOpenMessage,
+  resolveOpenShiftForSession,
+  type OpenShiftResolveResult,
+} from './shift-open-resolve.logic';
 
 // ── Reusable include block for shift responses ─────────────────────────────────
 
@@ -46,6 +56,12 @@ export type AutoCloseShiftResult = {
   shiftId: string;
 };
 
+export type ShiftConflictInfo = {
+  id: string;
+  staffMember: { id: string; name: string };
+  shiftType: { id: string | null; label: string | null; name: string | null };
+};
+
 export type CloseOpenShiftsBatchResult = {
   openFound: number;
   closed: number;
@@ -53,6 +69,184 @@ export type CloseOpenShiftsBatchResult = {
 };
 
 export class ShiftService {
+  /**
+   * Resolves the single shop-wide OPEN shift for new ChairSession attribution.
+   * 0 OPEN → NO_OPEN_SHIFT; 1 OPEN → attach; >1 OPEN → log error, MULTIPLE_OPEN_SHIFTS.
+   */
+  async resolveOpenShiftForSession(): Promise<OpenShiftResolveResult> {
+    const openShifts = await prisma.shift.findMany({
+      where:   { status: 'OPEN', endedAt: null },
+      orderBy: { startedAt: 'desc' },
+      select:  { id: true },
+    });
+    const result = resolveOpenShiftForSession(openShifts.map((s) => s.id));
+    if (result.anomalyType === 'MULTIPLE_OPEN_SHIFTS') {
+      logger.error(
+        `[shift] INVALID: ${openShifts.length} OPEN shifts — refusing session attribution ` +
+        `(ids=[${openShifts.map((s) => s.id).join(', ')}])`,
+      );
+    }
+    return result;
+  }
+
+  /**
+   * Returns the currently OPEN shift with staff/type info (for 409 responses).
+   */
+  async getOpenShiftConflict(): Promise<ShiftConflictInfo | null> {
+    const row = await prisma.shift.findFirst({
+      where:   { status: 'OPEN', endedAt: null },
+      orderBy: { startedAt: 'desc' },
+      select: {
+        id: true,
+        staffMember: { select: { id: true, name: true } },
+        shiftType:   { select: { id: true, name: true, label: true } },
+      },
+    });
+    if (!row) return null;
+    return {
+      id:          row.id,
+      staffMember: row.staffMember,
+      shiftType: {
+        id:    row.shiftType?.id ?? null,
+        name:  row.shiftType?.name ?? null,
+        label: row.shiftType?.label ?? row.shiftType?.name ?? null,
+      },
+    };
+  }
+
+  /**
+   * ASSISTANT self-start: opens a shift for the authenticated staff member.
+   * Fails with 409 if any shop-wide OPEN shift exists (does not auto-close).
+   * Uses a transaction + row lock for concurrency safety.
+   */
+  async startAssistantShift(
+    shiftTypeId: string,
+    openedByUserId: string,
+    staffMemberId: string,
+  ) {
+    const tz           = getTimezone();
+    const businessDate = getBusinessDate(tz);
+    const now          = new Date();
+
+    const staff = await prisma.staffMember.findUnique({
+      where:  { id: staffMemberId },
+      select: { id: true, name: true, isActive: true, archivedAt: true },
+    });
+    if (!staff || !staff.isActive || staff.archivedAt) {
+      throw Object.assign(new Error('Membre du staff introuvable ou inactif'), { status: 404 });
+    }
+
+    const shiftType = await prisma.shiftType.findUnique({
+      where:  { id: shiftTypeId },
+      select: { id: true, name: true, label: true, startTime: true, endTime: true, isActive: true },
+    });
+    assertSelfStartShiftTypeAllowed(shiftType);
+
+    const cashAccount = await prisma.cashAccount.findFirst({
+      where: {
+        staffMemberId,
+        isActive: true,
+        code:     { in: ['CASH_1', 'CASH_2'] },
+      },
+      select: { id: true, code: true, name: true },
+    });
+    if (!cashAccount) {
+      throw Object.assign(
+        new Error('Aucune caisse physique n\'est affectée à votre compte. Contactez le gérant.'),
+        { status: 422 },
+      );
+    }
+
+    const schedule = buildSelfStartSchedule(shiftType!, businessDate, tz);
+
+    try {
+      return await prisma.$transaction(async (tx) => {
+        // Serialize concurrent start attempts (shop-wide).
+        await tx.$queryRaw`SELECT id FROM shifts WHERE status = 'OPEN' AND ended_at IS NULL FOR UPDATE`;
+
+        const existingOpen = await tx.shift.findMany({
+          where:   { status: 'OPEN', endedAt: null },
+          select:  {
+            id: true,
+            staffMemberId: true,
+            staffMember:   { select: { name: true } },
+            shiftType:     { select: { label: true, name: true } },
+          },
+        });
+
+        if (existingOpen.length > 0) {
+          const blocker = existingOpen[0]!;
+          const label   = blocker.shiftType?.label ?? blocker.shiftType?.name ?? 'Shift';
+          throw Object.assign(
+            new Error(buildShiftAlreadyOpenMessage(blocker.staffMember.name, label)),
+            {
+              status: 409,
+              currentShift: {
+                id:          blocker.id,
+                staffMember: { id: blocker.staffMemberId, name: blocker.staffMember.name },
+                shiftType:   {
+                  label: blocker.shiftType?.label ?? blocker.shiftType?.name ?? null,
+                },
+              },
+            },
+          );
+        }
+
+        return tx.shift.create({
+          data: {
+            staffMemberId:       staffMemberId,
+            shiftTypeId:         shiftTypeId,
+            cashAccountId:       cashAccount.id,
+            businessDate:        schedule.businessDate,
+            scheduledStartAt:    schedule.scheduledStartAt,
+            scheduledEndAt:      schedule.scheduledEndAt,
+            startedAt:           now,
+            status:              'OPEN',
+            openedByUserId:      openedByUserId,
+            openedAutomatically: false,
+            staffScheduleId:     null,
+            notes:               'Ouvert par l\'assistante',
+          },
+          include: SHIFT_INCLUDE,
+        });
+      });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        const conflict = await this.getOpenShiftConflict();
+        if (conflict) {
+          const label = conflict.shiftType.label ?? conflict.shiftType.name ?? 'Shift';
+          throw Object.assign(
+            new Error(buildShiftAlreadyOpenMessage(conflict.staffMember.name, label)),
+            { status: 409, currentShift: conflict },
+          );
+        }
+        throw Object.assign(new Error('Un shift est déjà en cours.'), { status: 409 });
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * ASSISTANT close: only the staff member's own OPEN shift.
+   */
+  async closeAssistantShift(
+    closedByUserId: string,
+    staffMemberId: string,
+    declaredCash?: number,
+  ) {
+    const open = await prisma.shift.findFirst({
+      where: { status: 'OPEN', endedAt: null, staffMemberId },
+      select: { id: true },
+    });
+    if (!open) {
+      throw Object.assign(
+        new Error('Aucun shift ouvert pour votre compte.'),
+        { status: 404 },
+      );
+    }
+    return this.closeShift(open.id, closedByUserId, declaredCash);
+  }
+
   /**
    * Returns every shift still OPEN (endedAt null). No business-date filter.
    */

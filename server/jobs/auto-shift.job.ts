@@ -21,6 +21,7 @@ export function getAutoShiftStatus() {
     shopCloseTime:           env.AUTO_SHIFT_SHOP_CLOSE_TIME,
     timezone:                getTimezone(),
     allowMultipleOpenShifts: env.ALLOW_MULTIPLE_OPEN_SHIFTS,
+    selfStartShiftEnabled:   env.SELF_START_SHIFT_ENABLED,
     lastRunAt:               lastRunAt?.toISOString() ?? null,
     lastResult,
     lastError,

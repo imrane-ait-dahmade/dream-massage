@@ -144,7 +144,20 @@ CREATE UNIQUE INDEX unique_initial_balance_per_account
 
 Migration `20260826160000_unique_initial_balance`. Enforced also in `CashService.setInitialBalance`.
 
-### 10. One active staff member per physical till (current assignment)
+### 11. One OPEN shift shop-wide (self-start mode)
+
+When `SELF_START_SHIFT_ENABLED=true`, at most one OPEN shift may exist in the shop.
+Migration `20260901183000_self_start_single_open_shift` creates:
+
+```sql
+CREATE UNIQUE INDEX unique_single_open_shift_shop_wide
+  ON shifts ((true))
+  WHERE status = 'OPEN' AND ended_at IS NULL;
+```
+
+**Note**: Incompatible with `ALLOW_MULTIPLE_OPEN_SHIFTS=true`. Self-start requires mono-shift mode.
+
+### 12. One active staff member per physical till (current assignment)
 
 Prevents the same girl from being assigned to both `CASH_1` and `CASH_2` at once.
 Historical `cash_movements.staff_member_id` is never updated on reassignment.

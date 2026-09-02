@@ -228,6 +228,11 @@ class AutoShiftService {
     ownerId: string | null,
     activeShiftTypeId?: string | null,
   ): Promise<{ opened: number; skipReason?: string }> {
+    if (env.SELF_START_SHIFT_ENABLED) {
+      autoShiftLog('decision: skip — SELF_START_SHIFT_ENABLED (auto-open from planning disabled)');
+      return { opened: 0, skipReason: 'self-start mode: auto-open disabled' };
+    }
+
     const tz           = getTimezone();
     const businessDate = getBusinessDate(tz);
     const dow          = todayDayOfWeek(tz);
