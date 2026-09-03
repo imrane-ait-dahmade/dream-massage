@@ -582,9 +582,56 @@ export interface AssistantDashboardResponse {
   date: string;
   staffMember: AssistantStaffInfo;
   currentShift: AssistantCurrentShift | null;
+  shopOpenShift?: AssistantShopOpenShift | null;
+  selfStartShiftEnabled?: boolean;
+  availableShiftTypes?: AssistantShiftTypeOption[];
   summary: AssistantSummary;
   sessions: AssistantSessionRow[];
   alerts: AssistantAlert[];
+}
+
+export interface AssistantShopOpenShift {
+  id: string;
+  staffMember: AssistantStaffInfo;
+  shiftTypeLabel: string | null;
+  status: string;
+  startedAt: string;
+  isOwn: boolean;
+}
+
+export interface AssistantShiftTypeOption {
+  id: string;
+  name: string;
+  label: string | null;
+  startTime: string;
+  endTime: string;
+}
+
+export interface AssistantShiftTypesResponse {
+  ok: boolean;
+  items: AssistantShiftTypeOption[];
+}
+
+export interface AssistantStartShiftResponse {
+  ok: true;
+  shift: {
+    id: string;
+    status: string;
+    startedAt: string;
+    businessDate: string | null;
+    scheduledEndAt: string | null;
+    staffMember: AssistantStaffInfo;
+    shiftType: { id: string; label: string | null; name: string };
+  };
+}
+
+export interface AssistantCloseShiftResponse {
+  ok: true;
+  shift: {
+    id: string;
+    status: string;
+    endedAt: string | null;
+  };
 }
 
 export interface AssistantSessionsListResponse {

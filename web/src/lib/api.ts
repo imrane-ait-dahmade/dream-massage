@@ -24,6 +24,9 @@ import type {
   AssistantMeResponse,
   AssistantDashboardResponse,
   AssistantSessionsListResponse,
+  AssistantShiftTypesResponse,
+  AssistantStartShiftResponse,
+  AssistantCloseShiftResponse,
   SettingsUser,
   SettingsUserRole,
   ShiftAutomationStatus,
@@ -919,6 +922,28 @@ export async function getAssistantToday(params?: {
   if (params?.staffMemberId) qs.set('staffMemberId', params.staffMemberId);
   const suffix = qs.toString() ? `?${qs}` : '';
   return apiRequest(`${BASE}/api/assistant/today${suffix}`);
+}
+
+export async function getAssistantShiftTypes(): Promise<AssistantShiftTypesResponse> {
+  return apiRequest(`${BASE}/api/assistant/shift-types`);
+}
+
+export async function startAssistantShift(shiftTypeId: string): Promise<AssistantStartShiftResponse> {
+  return apiRequest(`${BASE}/api/assistant/shift/start`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ shiftTypeId }),
+  });
+}
+
+export async function closeAssistantShift(
+  declaredCash?: number,
+): Promise<AssistantCloseShiftResponse> {
+  return apiRequest(`${BASE}/api/assistant/shift/close`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(declaredCash != null ? { declaredCash } : {}),
+  });
 }
 
 export async function getAssistantSessions(params?: {

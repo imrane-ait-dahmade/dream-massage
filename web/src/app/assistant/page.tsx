@@ -22,10 +22,13 @@ import {
   getAssistantToday,
   getAssistantPlanChangeRequests,
   logout,
+  startAssistantShift,
+  closeAssistantShift,
 } from '@/lib/api';
 import type {
   AssistantDashboardResponse,
   AssistantSessionRow,
+  AssistantShiftTypeOption,
   SessionPlanChangeRequest,
 } from '@/lib/types';
 import { formatDH, formatElapsed, formatTimeHHMM } from '@/lib/format';
@@ -183,6 +186,8 @@ function AssistantContent() {
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [requesting, setRequesting] = useState<AssistantSessionRow | null>(null);
+  const [shiftBusy, setShiftBusy] = useState(false);
+  const [shiftError, setShiftError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -219,6 +224,44 @@ function AssistantContent() {
     router.replace('/login');
   }
 
+  async function handleStartShift(shiftType: AssistantShiftTypeOption) {
+    setShiftBusy(true);
+    setShiftError(null);
+    try {
+      await startAssistantShift(shiftType.id);
+      setToast(`Shift ${shiftType.label ?? shiftType.name} démarré.`);
+      window.setTimeout(() => setToast(null), 4000);
+      await load();
+    } catch (err) {
+      setShiftError(err instanceof Error ? err.message : 'Impossible de démarrer le shift');
+    } finally {
+      setShiftBusy(false);
+    }
+  }
+
+  async function handleCloseShift() {
+    if (!window.confirm('Terminer votre shift maintenant ?')) return;
+    setShiftBusy(true);
+    setShiftError(null);
+    try {
+      await closeAssistantShift();
+      setToast('Shift terminé.');
+      window.setTimeout(() => setToast(null), 4000);
+      await load();
+    } catch (err) {
+      setShiftError(err instanceof Error ? err.message : 'Impossible de fermer le shift');
+    } finally {
+      setShiftBusy(false);
+    }
+  }
+
+  function shiftTypeButtonLabel(t: AssistantShiftTypeOption): string {
+    const n = (t.label ?? t.name).toUpperCase();
+    if (n.includes('MATIN') || n === 'MORNING') return 'Matin';
+    if (n.includes('SOIR') || n === 'EVENING') return 'Soir';
+    return t.label ?? t.name;
+  }
+
   if (loading && !data) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-stone-50">
@@ -242,7 +285,24 @@ function AssistantContent() {
     );
   }
 
-  const { summary, currentShift, sessions, alerts, staffMember, date } = data;
+  const {
+    summary,
+    currentShift,
+    shopOpenShift,
+    selfStartShiftEnabled,
+    availableShiftTypes,
+    sessions,
+    alerts,
+    staffMember,
+    date,
+  } = data;
+
+  const hasOwnOpenShift = currentShift?.status === 'OPEN';
+  const blockedByOther =
+    selfStartShiftEnabled &&
+    shopOpenShift &&
+    !shopOpenShift.isOwn &&
+    !hasOwnOpenShift;
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -296,7 +356,66 @@ function AssistantContent() {
             <Clock className="h-4 w-4 text-stone-500" />
             Shift du jour
           </div>
-          {currentShift ? (
+          {hasOwnOpenShift && currentShift ? (
+            <div className="space-y-3">
+              <div className="space-y-1 text-sm text-stone-700">
+                <p>
+                  <span className="font-medium">{currentShift.shiftTypeLabel ?? 'Shift'}</span>
+                  {' · '}
+                  <span className="font-medium text-emerald-700">Ouvert</span>
+                </p>
+                <p className="text-xs text-stone-500">
+                  Début {formatTimeHHMM(currentShift.startedAt)}
+                  {currentShift.scheduledEndAt &&
+                    ` · fin prévue ${formatTimeHHMM(currentShift.scheduledEndAt)}`}
+                </p>
+              </div>
+              {selfStartShiftEnabled && (
+                <button
+                  type="button"
+                  disabled={shiftBusy}
+                  onClick={() => void handleCloseShift()}
+                  className="w-full rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800 hover:bg-red-100 disabled:opacity-50"
+                >
+                  {shiftBusy ? '…' : 'Terminer mon shift'}
+                </button>
+              )}
+            </div>
+          ) : selfStartShiftEnabled ? (
+            <div className="space-y-3">
+              <p className="text-sm text-stone-600">
+                Bonjour <span className="font-medium text-stone-900">{staffMember.name}</span>
+              </p>
+              {blockedByOther && shopOpenShift ? (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-900">
+                  Un shift est actuellement actif :{' '}
+                  <span className="font-semibold">
+                    {shopOpenShift.staffMember.name} — {shopOpenShift.shiftTypeLabel ?? 'Shift'}
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm text-stone-500">Aucun shift actif</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-stone-400">
+                    Démarrer mon shift
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(availableShiftTypes ?? []).map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        disabled={shiftBusy}
+                        onClick={() => void handleStartShift(t)}
+                        className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-4 text-sm font-bold text-emerald-900 hover:bg-emerald-100 disabled:opacity-50"
+                      >
+                        {shiftTypeButtonLabel(t)}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          ) : currentShift ? (
             <div className="space-y-1 text-sm text-stone-700">
               <p>
                 <span className="font-medium">{currentShift.shiftTypeLabel ?? 'Shift'}</span>
@@ -319,6 +438,9 @@ function AssistantContent() {
             </div>
           ) : (
             <p className="text-sm text-stone-500">Aucun shift ouvert pour le moment.</p>
+          )}
+          {shiftError && (
+            <p className="mt-2 text-xs font-medium text-red-600">{shiftError}</p>
           )}
         </section>
 
