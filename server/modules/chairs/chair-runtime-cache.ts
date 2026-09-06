@@ -304,4 +304,24 @@ export function clearNoShiftStartBlocks(): number {
   return cleared;
 }
 
+/** After disable or session finalize — sync runtime without full cache reset. */
+export function syncChairDisabledInRuntime(chairId: string): void {
+  const chair = chairsById.get(chairId);
+  if (!chair) return;
+  chair.isEnabled = false;
+  chair.startBlockReason = null;
+  chair.status = 'IDLE';
+  chair.currentSessionId = null;
+  chair.maybeFinishedSince = null;
+  chair.maybeActiveSince = null;
+  chair.session = null;
+  chair.dirtyLive = false;
+}
+
+/** After re-enable — restore isEnabled flag in memory. */
+export function syncChairEnabledInRuntime(chairId: string): void {
+  const chair = chairsById.get(chairId);
+  if (chair) chair.isEnabled = true;
+}
+
 export { FALLBACK_CONFIG };

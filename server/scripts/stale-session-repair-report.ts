@@ -25,10 +25,10 @@ async function main() {
 
   const chairs = await prisma.chair.findMany({
     where: {
-      isEnabled: true,
       OR: [
         { status: { in: ['ACTIVE', 'MAYBE_FINISHED'] } },
         { sessions: { some: { status: 'ACTIVE' } } },
+        { isEnabled: false, sessions: { some: { status: 'ACTIVE' } } },
       ],
     },
     orderBy: { name: 'asc' },
@@ -87,6 +87,7 @@ async function main() {
 
     rows.push({
       chair: chair.name,
+      isEnabled: chair.isEnabled,
       sessionId: session.id,
       status: session.status,
       chairStatus: chair.status,

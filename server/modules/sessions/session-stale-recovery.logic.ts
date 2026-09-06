@@ -114,3 +114,7 @@ export function countBlockingSessions(
 ): number {
   return rows.filter((r) => isBlockingActiveSession(r)).length;
 }
+
+export function buildChairDisableBlockedMessage(): string {
+  return 'Impossible de désactiver ce fauteuil : une session est encore en cours.';
+}

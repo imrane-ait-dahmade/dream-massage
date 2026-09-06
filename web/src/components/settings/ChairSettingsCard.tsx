@@ -188,6 +188,7 @@ export function ChairSettingsCard({
   async function handleSaveInfo() {
     setSavingInfo(true);
     setInfoFeedback(null);
+    const previousEnabled = chair.isEnabled;
     try {
       await updateChair(chair.id, {
         displayName: infoForm.displayName.trim() || undefined,
@@ -196,6 +197,7 @@ export function ChairSettingsCard({
       setInfoFeedback({ type: 'success', msg: 'Fauteuil mis à jour' });
       onSaved();
     } catch (e) {
+      setInfoForm((f) => ({ ...f, isEnabled: previousEnabled }));
       setInfoFeedback({ type: 'error', msg: (e as Error).message });
     } finally {
       setSavingInfo(false);

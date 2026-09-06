@@ -65,9 +65,14 @@ router.patch('/chairs/:chairId', (req: Request, res: Response) => {
       }
       res.json(result);
     })
-    .catch((err: unknown) =>
-      res.status(500).json({ ok: false, error: 'Failed to update chair', detail: String(err) }),
-    );
+    .catch((err: unknown) => {
+      const status = (err as { status?: number }).status ?? 500;
+      res.status(status).json({
+        ok: false,
+        error: (err as Error).message || 'Failed to update chair',
+        detail: status >= 500 ? String(err) : undefined,
+      });
+    });
 });
 
 // PATCH /api/settings/chairs/:chairId/detection-config

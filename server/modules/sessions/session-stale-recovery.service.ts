@@ -1,6 +1,7 @@
 /**
  * DB-backed stale session recovery — startup, reconcile, shift close.
  */
+import type { ChairStatus, SessionStatus } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { env } from '../../config/env';
 import { logger } from '../../utils/logger';
@@ -15,9 +16,22 @@ import {
 } from './session-finalize.service';
 import { FALLBACK_CONFIG } from '../chairs/chair-runtime-cache';
 import { clearSessionMem, getChairMem, upsertChairMem } from '../chairs/chair-runtime-cache';
+import { buildChairDisableBlockedMessage } from './session-stale-recovery.logic';
+
+export { buildChairDisableBlockedMessage };
 
 let lastRecoveryAtMs = 0;
 const RECOVERY_MIN_INTERVAL_MS = 30_000;
+
+/** Chairs that may need stale session recovery (enabled or disabled). */
+function staleActiveChairWhere() {
+  return {
+    OR: [
+      { status: { in: ['ACTIVE', 'MAYBE_FINISHED'] as ChairStatus[] }, currentSessionId: { not: null } },
+      { sessions: { some: { status: 'ACTIVE' as SessionStatus } } },
+    ],
+  };
+}
 
 async function countOpenShifts(): Promise<number> {
   return prisma.shift.count({ where: { status: 'OPEN', endedAt: null } });
@@ -99,6 +113,7 @@ async function applyRecoveryDecision(
   chairId: string,
   decision: ReturnType<typeof evaluateStaleSessionRecovery>,
   endPowerWatts: number,
+  recoveryReasonOverride?: string,
 ): Promise<boolean> {
   if (decision.action === 'none') return false;
 
@@ -129,7 +144,7 @@ async function applyRecoveryDecision(
     maxPowerWatts: session.maxPowerWatts,
     avgPowerWatts: null,
     existingAnomalyType: session.anomalyType,
-    recoveryReason: decision.reason,
+    recoveryReason: recoveryReasonOverride ?? decision.reason,
   });
 
   const mem = getChairMem(chairId);
@@ -143,6 +158,120 @@ async function applyRecoveryDecision(
   return true;
 }
 
+const CHAIR_STALE_INCLUDE = {
+  detectionConfigs: { where: { isActive: true }, take: 1 },
+  sessions: {
+    where: { status: 'ACTIVE' as const },
+    take: 1,
+    orderBy: { startedAt: 'desc' as const },
+    include: { shift: { select: { status: true } } },
+  },
+} as const;
+
+async function loadChairForStaleRecovery(chairId: string) {
+  return prisma.chair.findUnique({
+    where: { id: chairId },
+    include: CHAIR_STALE_INCLUDE,
+  });
+}
+
+/** Recover one chair's ACTIVE session if stale rules apply. Returns true if recovered. */
+export async function recoverChairSession(
+  chairId: string,
+  opts?: { recoveryReasonOverride?: string },
+): Promise<boolean> {
+  const chair = await loadChairForStaleRecovery(chairId);
+  if (!chair) return false;
+  const session = chair.sessions[0];
+  if (!session) return false;
+
+  const openCount = await countOpenShifts();
+  const nowMs = Date.now();
+  const candidate = await buildCandidate(
+    chair,
+    session,
+    session.shift?.status ?? null,
+    openCount === 1,
+    nowMs,
+  );
+  const decision = evaluateStaleSessionRecovery(candidate);
+  const power = chair.currentPowerWatts ?? session.minPowerWatts ?? 0;
+  return applyRecoveryDecision(
+    chair.name,
+    session,
+    chair.id,
+    decision,
+    power,
+    opts?.recoveryReasonOverride,
+  );
+}
+
+/**
+ * Before disabling a chair: block real active massages, finalize stale recoverable sessions.
+ */
+export async function prepareChairForDisable(chairId: string): Promise<void> {
+  const chair = await loadChairForStaleRecovery(chairId);
+  if (!chair) return;
+
+  const session = chair.sessions[0];
+  if (!session) return;
+
+  const cfg = chair.detectionConfigs[0];
+  const stopThreshold = cfg?.stopThresholdWatts ?? FALLBACK_CONFIG.stopThresholdWatts;
+
+  if (
+    isBlockingActiveSession({
+      sessionStatus: session.status,
+      chairStatus: chair.status,
+      currentPowerWatts: chair.currentPowerWatts,
+      stopThresholdWatts: stopThreshold,
+    })
+  ) {
+    throw Object.assign(new Error(buildChairDisableBlockedMessage()), { status: 409 });
+  }
+
+  const openCount = await countOpenShifts();
+  const nowMs = Date.now();
+  const candidate = await buildCandidate(
+    chair,
+    session,
+    session.shift?.status ?? null,
+    openCount === 1,
+    nowMs,
+  );
+  const decision = evaluateStaleSessionRecovery(candidate);
+  const power = chair.currentPowerWatts ?? session.minPowerWatts ?? 0;
+
+  if (decision.action === 'finalize') {
+    await applyRecoveryDecision(
+      chair.name,
+      session,
+      chair.id,
+      decision,
+      power,
+      'CHAIR_DISABLE',
+    );
+  } else if (decision.action === 'mark_review') {
+    await markSessionNeedsReview(session.id, chair.id, decision.reason);
+    const mem = getChairMem(chairId);
+    if (mem) {
+      mem.status = 'IDLE';
+      mem.currentSessionId = null;
+      mem.maybeFinishedSince = null;
+      mem.session = null;
+      upsertChairMem(mem);
+    }
+  }
+
+  const stillActive = await prisma.chairSession.findFirst({
+    where: { chairId, status: 'ACTIVE' },
+    select: { id: true },
+  });
+  if (stillActive) {
+    throw Object.assign(new Error(buildChairDisableBlockedMessage()), { status: 409 });
+  }
+}
+
 /** Scan all chairs with ACTIVE sessions and recover stale ones. */
 export async function runStaleSessionRecovery(force = false): Promise<number> {
   const nowMs = Date.now();
@@ -151,43 +280,14 @@ export async function runStaleSessionRecovery(force = false): Promise<number> {
   }
   lastRecoveryAtMs = nowMs;
 
-  const openCount = await countOpenShifts();
-  const hasOpenShopShift = openCount === 1;
-
   const chairs = await prisma.chair.findMany({
-    where: {
-      isEnabled: true,
-      OR: [
-        { status: { in: ['ACTIVE', 'MAYBE_FINISHED'] }, currentSessionId: { not: null } },
-        { sessions: { some: { status: 'ACTIVE' } } },
-      ],
-    },
-    include: {
-      detectionConfigs: { where: { isActive: true }, take: 1 },
-      sessions: {
-        where: { status: 'ACTIVE' },
-        take: 1,
-        orderBy: { startedAt: 'desc' },
-        include: { shift: { select: { status: true } } },
-      },
-    },
+    where: staleActiveChairWhere(),
+    include: CHAIR_STALE_INCLUDE,
   });
 
   let recovered = 0;
   for (const chair of chairs) {
-    const session = chair.sessions[0];
-    if (!session) continue;
-
-    const candidate = await buildCandidate(
-      chair,
-      session,
-      session.shift?.status ?? null,
-      hasOpenShopShift,
-      nowMs,
-    );
-    const decision = evaluateStaleSessionRecovery(candidate);
-    const power = chair.currentPowerWatts ?? session.minPowerWatts ?? 0;
-    if (await applyRecoveryDecision(chair.name, session, chair.id, decision, power)) {
+    if (await recoverChairSession(chair.id)) {
       recovered++;
     }
   }

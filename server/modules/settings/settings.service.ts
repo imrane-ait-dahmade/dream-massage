@@ -14,6 +14,15 @@ import type {
 } from './settings.types';
 import { archiveService } from '../archive/archive.service';
 import {
+  prepareChairForDisable,
+} from '../sessions/session-stale-recovery.service';
+import {
+  syncChairDisabledInRuntime,
+  syncChairEnabledInRuntime,
+} from '../chairs/chair-runtime-cache';
+import { dashboardService } from '../dashboard/dashboard.service';
+import { homeDashboardService } from '../dashboard/home-dashboard.service';
+import {
   mapArchiveFields,
   parseVisibilityFilter,
   staffListWhere,
@@ -122,6 +131,10 @@ class SettingsService {
 
     const oldValue = { displayName: chair.displayName, isEnabled: chair.isEnabled };
 
+    if (input.isEnabled === false && chair.isEnabled === true) {
+      await prepareChairForDisable(chairId);
+    }
+
     // Build partial update — only include fields that were explicitly provided
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data: Record<string, any> = {};
@@ -129,6 +142,16 @@ class SettingsService {
     if (input.isEnabled !== undefined) data.isEnabled = input.isEnabled;
 
     const updated = await prisma.chair.update({ where: { id: chairId }, data });
+
+    if (input.isEnabled === false && chair.isEnabled === true) {
+      syncChairDisabledInRuntime(chairId);
+      dashboardService.invalidateCache();
+      homeDashboardService.invalidateCache();
+    } else if (input.isEnabled === true && chair.isEnabled === false) {
+      syncChairEnabledInRuntime(chairId);
+      dashboardService.invalidateCache();
+      homeDashboardService.invalidateCache();
+    }
 
     await this.audit({
       entityType: 'Chair',
