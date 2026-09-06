@@ -23,3 +23,12 @@ export function resolveOpenShiftForSession(
 export function buildShiftAlreadyOpenMessage(staffName: string, shiftTypeLabel: string): string {
   return `Un shift est déjà actif : ${staffName} — ${shiftTypeLabel}.`;
 }
+
+/** When self-start is enabled, refuse financial ChairSession without exactly one OPEN shift. */
+export function shouldBlockFinancialSessionCreation(
+  selfStartEnabled: boolean,
+  resolved: OpenShiftResolveResult,
+): boolean {
+  if (!selfStartEnabled) return false;
+  return resolved.shiftId == null || resolved.anomalyType != null;
+}

@@ -13,6 +13,7 @@ import {
   powerAggAverage,
   type PowerAgg,
 } from './chair-state.logic';
+import type { StartBlockReason } from './chair-no-shift-block.logic';
 
 export interface DetectionConfigMem {
   id: string;
@@ -53,6 +54,8 @@ export interface ChairMem {
   session: SessionMem | null;
   /** Live fields changed since last DB flush (power / online / lastSynced). */
   dirtyLive: boolean;
+  /** In-memory only: suppress repeated start debounce while shift attribution is blocked. */
+  startBlockReason: StartBlockReason | null;
 }
 
 const FALLBACK_CONFIG: DetectionConfigMem = {
@@ -165,6 +168,7 @@ export async function hydrateRuntimeCache(): Promise<void> {
           }
         : null,
       dirtyLive: false,
+      startBlockReason: null,
     };
     // Seed max from DB if present
     if (mem.session && active) {
@@ -283,6 +287,21 @@ export function bindSessionMem(
 export function clearSessionMem(chair: ChairMem): void {
   chair.currentSessionId = null;
   chair.session = null;
+}
+
+/** After a shop-wide OPEN shift is created, allow blocked chairs to start normally on next poll. */
+export function clearNoShiftStartBlocks(): number {
+  let cleared = 0;
+  for (const chair of chairsById.values()) {
+    if (chair.startBlockReason != null) {
+      chair.startBlockReason = null;
+      cleared++;
+    }
+  }
+  if (cleared > 0) {
+    logger.info(`[chair-runtime] Cleared no-shift start block on ${cleared} chair(s)`);
+  }
+  return cleared;
 }
 
 export { FALLBACK_CONFIG };

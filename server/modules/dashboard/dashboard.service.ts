@@ -81,7 +81,7 @@ export class DashboardService {
         todayStats: {
           expectedRevenue: 0,
           sessionsCount: 0,
-          activeChairs: mem.filter((c) => c.status === 'ACTIVE' || c.status === 'MAYBE_FINISHED').length,
+          activeChairs: mem.filter((c) => c.status === 'ACTIVE').length,
           offlineChairs: mem.filter((c) => c.status === 'OFFLINE').length,
         },
         openShift: null,
@@ -184,9 +184,7 @@ export class DashboardService {
     const sessionsCount = todayAgg._count._all;
     const expectedRevenue =
       Math.round(Number(todayAgg._sum.expectedAmount ?? 0) * 100) / 100;
-    const activeChairs = chairs.filter(
-      (c) => c.status === 'ACTIVE' || c.status === 'MAYBE_FINISHED',
-    ).length;
+    const activeChairs = chairs.filter((c) => c.status === 'ACTIVE').length;
     const offlineChairs = chairs.filter((c) => c.status === 'OFFLINE').length;
 
     const shiftRow = await prisma.shift.findFirst({

@@ -3,6 +3,7 @@ import { prisma } from '../../prisma';
 import { env } from '../../config/env';
 import { primeCalculationService } from '../prime/prime-calculation.service';
 import { shiftService } from '../shifts/shift.service';
+import { clearNoShiftStartBlocks } from '../chairs/chair-runtime-cache';
 import { isAllowedShiftTypeName } from '../shifts/shift-period';
 import type { AuthUser } from '../auth/auth.service';
 import { getBusinessDate, getDayBoundsUtc } from '../../utils/time';
@@ -224,6 +225,8 @@ export class AssistantService {
       user.id,
       user.staffMemberId,
     );
+
+    clearNoShiftStartBlocks();
 
     return {
       ok: true,

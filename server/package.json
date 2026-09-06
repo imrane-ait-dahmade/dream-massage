@@ -19,6 +19,8 @@
     "backfill:staff-members": "tsx scripts/backfill-staff-members.ts",
     "test:shift-close": "tsx modules/shifts/shift-close.logic.test.ts",
     "test:self-start-shift": "tsx modules/shifts/shift-self-start.logic.test.ts",
+    "test:chair-no-shift-block": "tsx modules/chairs/chair-no-shift-block.test.ts",
+    "test:stale-recovery": "tsx modules/sessions/session-stale-recovery.logic.test.ts",
     "test:auto-shift-check": "tsx modules/shifts/auto-shift-check.test.ts",
     "test:schedule-period": "tsx modules/settings/schedule-period.test.ts",
     "test:archive": "tsx modules/archive/archive-filters.test.ts",
@@ -31,7 +33,7 @@
     "test:neon-egress": "tsx modules/chairs/neon-egress.hotfix.test.ts",
     "test:neon-soak": "tsx modules/chairs/neon-egress.soak.test.ts",
     "test:cash": "tsx modules/cash/cash.logic.test.ts && tsx modules/cash/cash-access.logic.test.ts && tsx modules/cash/cash-prime.logic.test.ts",
-    "test": "tsx modules/shifts/shift-close.logic.test.ts && tsx modules/shifts/shift-self-start.logic.test.ts && tsx modules/shifts/auto-shift-check.test.ts && tsx modules/settings/schedule-period.test.ts && tsx modules/archive/archive-filters.test.ts && tsx modules/sessions/session-delete.logic.test.ts && tsx modules/sessions/session-plan-change.logic.test.ts && tsx modules/shifts/shift-delete.logic.test.ts && tsx modules/dashboard/date-range.test.ts && tsx modules/dashboard/session-metrics.logic.test.ts && tsx modules/dashboard/dashboard-filters.test.ts && tsx modules/chairs/neon-egress.hotfix.test.ts && tsx modules/chairs/neon-egress.soak.test.ts && tsx modules/cash/cash.logic.test.ts"
+    "test": "tsx modules/shifts/shift-close.logic.test.ts && tsx modules/shifts/shift-self-start.logic.test.ts && tsx modules/chairs/chair-no-shift-block.test.ts && tsx modules/sessions/session-stale-recovery.logic.test.ts && tsx modules/shifts/auto-shift-check.test.ts && tsx modules/settings/schedule-period.test.ts && tsx modules/archive/archive-filters.test.ts && tsx modules/sessions/session-delete.logic.test.ts && tsx modules/sessions/session-plan-change.logic.test.ts && tsx modules/shifts/shift-delete.logic.test.ts && tsx modules/dashboard/date-range.test.ts && tsx modules/dashboard/session-metrics.logic.test.ts && tsx modules/dashboard/dashboard-filters.test.ts && tsx modules/chairs/neon-egress.hotfix.test.ts && tsx modules/chairs/neon-egress.soak.test.ts && tsx modules/cash/cash.logic.test.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

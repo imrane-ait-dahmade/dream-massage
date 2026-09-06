@@ -22,6 +22,7 @@ import {
   getAllChairMem,
   clearRuntimeCache,
 } from '../modules/chairs/chair-runtime-cache';
+import { runStaleSessionRecovery } from '../modules/sessions/session-stale-recovery.service';
 
 type ChairIdMap = Record<string, string>; // chairName → DB id
 
@@ -77,6 +78,11 @@ export async function processShellySyncTick(): Promise<{ hadTransition: boolean 
       return { hadTransition: false };
     }
     await hydrateRuntimeCache();
+    try {
+      await runStaleSessionRecovery(true);
+    } catch (err) {
+      logger.warn(`[shelly-sync] Stale session recovery on hydrate failed: ${String(err)}`);
+    }
   }
 
   // Periodic DB reconcile (safety) — max once per SHELLY_DB_RECONCILE_INTERVAL_MS
@@ -87,6 +93,7 @@ export async function processShellySyncTick(): Promise<{ hadTransition: boolean 
       try {
         await reconcileRuntimeFromDb();
         chairIdCache = null; // refresh name→id after reconcile
+        await runStaleSessionRecovery();
       } catch (err) {
         if (isTemporaryDbError(err)) recordDbFailure(err, (l) => logger.error(l));
         else throw err;

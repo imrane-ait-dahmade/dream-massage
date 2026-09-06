@@ -461,7 +461,7 @@ export class HomeDashboardService {
         pendingSessionsCount:   summary.pendingSessionsCount,
         correctedSessionsCount: summary.correctedSessionsCount,
         outOfRuleSessionsCount: summary.outOfRuleSessionsCount,
-        activeChairs:           dbChairs.filter((c) => c.status === 'ACTIVE' || c.status === 'MAYBE_FINISHED').length,
+        activeChairs:           dbChairs.filter((c) => c.status === 'ACTIVE').length,
         offlineChairs:          dbChairs.filter((c) => c.status === 'OFFLINE').length,
         totalPrime:             prime.totalPrime,
       },

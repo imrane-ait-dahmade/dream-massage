@@ -12,6 +12,11 @@ import {
   buildSelfStartSchedule,
 } from './shift-self-start.logic';
 import {
+  prepareShiftForClose,
+  buildShiftCloseBlockedMessage,
+  canAutoCloseShift,
+} from '../sessions/session-stale-recovery.service';
+import {
   buildShiftAlreadyOpenMessage,
   resolveOpenShiftForSession,
   type OpenShiftResolveResult,
@@ -278,6 +283,10 @@ export class ShiftService {
       return { closed: false, shiftId };
     }
 
+    if (!(await canAutoCloseShift(shiftId))) {
+      return { closed: false, shiftId };
+    }
+
     try {
       await this.recalculateAndSaveShiftPrimeSummary(shiftId);
     } catch (err) {
@@ -454,6 +463,14 @@ export class ShiftService {
       throw Object.assign(
         new Error(`Le shift n'est pas ouvert (status: ${existing.status})`),
         { status: 400 },
+      );
+    }
+
+    const sessionBlock = await prepareShiftForClose(shiftId);
+    if (sessionBlock.blockingCount > 0) {
+      throw Object.assign(
+        new Error(buildShiftCloseBlockedMessage(sessionBlock.blockingCount)),
+        { status: 409, blockingSessions: sessionBlock.blockingSessionIds },
       );
     }
 

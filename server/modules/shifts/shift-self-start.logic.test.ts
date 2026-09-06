@@ -7,6 +7,7 @@ import { buildScheduledDatetime } from '../../utils/time';
 import {
   resolveOpenShiftForSession,
   buildShiftAlreadyOpenMessage,
+  shouldBlockFinancialSessionCreation,
 } from './shift-open-resolve.logic';
 import {
   assertSelfStartShiftTypeAllowed,
@@ -48,6 +49,26 @@ test('>1 OPEN → MULTIPLE_OPEN_SHIFTS, no silent pick', () => {
   const r = resolveOpenShiftForSession(['shift-a', 'shift-b']);
   assert.equal(r.shiftId, null);
   assert.equal(r.anomalyType, 'MULTIPLE_OPEN_SHIFTS');
+});
+
+test('self-start blocks session when no open shift', () => {
+  const r = resolveOpenShiftForSession([]);
+  assert.equal(shouldBlockFinancialSessionCreation(true, r), true);
+});
+
+test('self-start allows session with one open shift', () => {
+  const r = resolveOpenShiftForSession(['shift-1']);
+  assert.equal(shouldBlockFinancialSessionCreation(true, r), false);
+});
+
+test('legacy mode allows session with NO_OPEN_SHIFT anomaly', () => {
+  const r = resolveOpenShiftForSession([]);
+  assert.equal(shouldBlockFinancialSessionCreation(false, r), false);
+});
+
+test('self-start blocks multiple open shifts', () => {
+  const r = resolveOpenShiftForSession(['a', 'b']);
+  assert.equal(shouldBlockFinancialSessionCreation(true, r), true);
 });
 
 test('409 message format', () => {
