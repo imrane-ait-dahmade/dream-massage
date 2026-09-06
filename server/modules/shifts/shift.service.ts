@@ -12,9 +12,9 @@ import {
   buildSelfStartSchedule,
 } from './shift-self-start.logic';
 import {
-  prepareShiftForClose,
-  buildShiftCloseBlockedMessage,
   canAutoCloseShift,
+  finalizeRecoverableSessionsForShift,
+  assessShiftCloseSessions,
 } from '../sessions/session-stale-recovery.service';
 import {
   buildShiftAlreadyOpenMessage,
@@ -283,7 +283,7 @@ export class ShiftService {
       return { closed: false, shiftId };
     }
 
-    if (!(await canAutoCloseShift(shiftId))) {
+    if (!(await canAutoCloseShift(shiftId, { reason: opts.reason }))) {
       return { closed: false, shiftId };
     }
 
@@ -466,11 +466,13 @@ export class ShiftService {
       );
     }
 
-    const sessionBlock = await prepareShiftForClose(shiftId);
+    await finalizeRecoverableSessionsForShift(shiftId);
+    const sessionBlock = await assessShiftCloseSessions(shiftId);
     if (sessionBlock.blockingCount > 0) {
-      throw Object.assign(
-        new Error(buildShiftCloseBlockedMessage(sessionBlock.blockingCount)),
-        { status: 409, blockingSessions: sessionBlock.blockingSessionIds },
+      // Manual close: sessions belong to this shift — allow cross-shift handoff finish.
+      logger.info(
+        `[shift] Manual close ${shiftId} with ${sessionBlock.blockingCount} active session(s) ` +
+          `(cross-shift allowed)`,
       );
     }
 

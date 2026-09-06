@@ -14,6 +14,7 @@ import {
   type PowerAgg,
 } from './chair-state.logic';
 import type { StartBlockReason } from './chair-no-shift-block.logic';
+import { disabledChairMemPatch } from './chair-disable.logic';
 
 export interface DetectionConfigMem {
   id: string;
@@ -308,14 +309,7 @@ export function clearNoShiftStartBlocks(): number {
 export function syncChairDisabledInRuntime(chairId: string): void {
   const chair = chairsById.get(chairId);
   if (!chair) return;
-  chair.isEnabled = false;
-  chair.startBlockReason = null;
-  chair.status = 'IDLE';
-  chair.currentSessionId = null;
-  chair.maybeFinishedSince = null;
-  chair.maybeActiveSince = null;
-  chair.session = null;
-  chair.dirtyLive = false;
+  Object.assign(chair, disabledChairMemPatch());
 }
 
 /** After re-enable — restore isEnabled flag in memory. */

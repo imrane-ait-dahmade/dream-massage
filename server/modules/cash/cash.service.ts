@@ -34,6 +34,7 @@ import {
   type CashMovementType,
 } from './cash.logic';
 import { primeCalculationService } from '../prime/prime-calculation.service';
+import { resolveHistoricalSessionCashTarget } from '../sessions/cross-shift-session.logic';
 
 export const PHYSICAL_CASH_CODES = ['CASH_1', 'CASH_2'] as const;
 export type PhysicalCashCode = (typeof PHYSICAL_CASH_CODES)[number];
@@ -1090,7 +1091,7 @@ export {
   SESSION_REF_TYPE,
 };
 
-/** Resolve session staff + physical till via current CashAccount.staffMemberId assignment. */
+/** Resolve session staff + till from historical shift snapshot (fallback: current staff till). */
 export async function resolveSessionCashContext(
   sessionId: string,
   db: Prisma.TransactionClient | typeof prisma = prisma,
@@ -1098,25 +1099,36 @@ export async function resolveSessionCashContext(
   const session = await db.chairSession.findUnique({
     where: { id: sessionId },
     select: {
-      shift: { select: { staffMemberId: true } },
+      shift: { select: { staffMemberId: true, cashAccountId: true } },
     },
   });
-  const staffMemberId = session?.shift?.staffMemberId ?? null;
-  if (!staffMemberId) {
+  const shiftStaffMemberId = session?.shift?.staffMemberId ?? null;
+  const shiftCashAccountId = session?.shift?.cashAccountId ?? null;
+
+  if (!shiftStaffMemberId) {
     return { staffMemberId: null, cashAccountId: null };
+  }
+
+  if (shiftCashAccountId) {
+    return resolveHistoricalSessionCashTarget({
+      shiftStaffMemberId,
+      shiftCashAccountId,
+      legacyStaffTillId: null,
+    });
   }
 
   const till = await db.cashAccount.findFirst({
     where: {
-      staffMemberId,
+      staffMemberId: shiftStaffMemberId,
       isActive: true,
       code: { in: [...PHYSICAL_CASH_CODES] },
     },
     select: { id: true },
   });
 
-  return {
-    staffMemberId,
-    cashAccountId: till?.id ?? null,
-  };
+  return resolveHistoricalSessionCashTarget({
+    shiftStaffMemberId,
+    shiftCashAccountId: null,
+    legacyStaffTillId: till?.id ?? null,
+  });
 }

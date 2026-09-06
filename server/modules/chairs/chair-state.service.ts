@@ -433,6 +433,7 @@ export class ChairStateService {
       const s = await tx.chairSession.create({
         data: {
           chairId: chair.id,
+          // shiftId set once at start — never updated on finalize/recovery/plan-change.
           shiftId: resolvedShiftId ?? null,
           status: 'ACTIVE',
           detectedStartAt: maybeActiveSince,

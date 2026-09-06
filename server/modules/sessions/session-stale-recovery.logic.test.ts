@@ -8,6 +8,8 @@ import {
   isBlockingActiveSession,
   resolveReliableEndMs,
   countBlockingSessions,
+  matchesStaleRecoveryScan,
+  shouldSkipCashSyncOnSessionFinalize,
   type StaleSessionCandidate,
 } from './session-stale-recovery.logic';
 
@@ -122,6 +124,41 @@ test('countBlockingSessions aggregates correctly', () => {
     },
   ]);
   assert.equal(n, 1);
+});
+
+test('matchesStaleRecoveryScan includes disabled chair with ACTIVE session', () => {
+  assert.equal(
+    matchesStaleRecoveryScan({
+      status: 'MAYBE_FINISHED',
+      currentSessionId: 'x',
+      hasActiveSession: true,
+    }),
+    true,
+  );
+});
+
+test('shouldSkipCashSyncOnSessionFinalize for NO_OPEN_SHIFT orphan', () => {
+  assert.equal(shouldSkipCashSyncOnSessionFinalize(null), true);
+  assert.equal(shouldSkipCashSyncOnSessionFinalize('shift-id'), false);
+});
+
+test('linked CLOSED shift session is not treated as orphan when shop closed', () => {
+  const nowMs = Date.now();
+  const c = {
+    ...BASE,
+    shiftId: 'shift-matin',
+    shiftStatus: 'CLOSED',
+    hasOpenShopShift: false,
+    chairStatus: 'MAYBE_FINISHED',
+    currentPowerWatts: 2,
+    maybeFinishedSinceMs: nowMs - 200_000,
+    lowPowerDetectedAtMs: nowMs - 200_000,
+  };
+  const d = evaluateStaleSessionRecovery(c);
+  assert.equal(d.action, 'finalize');
+  if (d.action === 'finalize') {
+    assert.notEqual(d.reason, 'ORPHAN_AFTER_SHIFT_CLOSE');
+  }
 });
 
 console.log('\nAll session-stale-recovery logic tests passed.');

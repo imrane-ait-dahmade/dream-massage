@@ -9,14 +9,19 @@ import {
   evaluateStaleSessionRecovery,
   isBlockingActiveSession,
   type StaleSessionCandidate,
+  buildChairDisableBlockedMessage,
+  shouldSkipCashSyncOnSessionFinalize,
 } from './session-stale-recovery.logic';
 import {
   finalizeActiveSession,
   markSessionNeedsReview,
 } from './session-finalize.service';
-import { FALLBACK_CONFIG } from '../chairs/chair-runtime-cache';
-import { clearSessionMem, getChairMem, upsertChairMem } from '../chairs/chair-runtime-cache';
-import { buildChairDisableBlockedMessage } from './session-stale-recovery.logic';
+import {
+  allowsActiveSessionsOnShiftClose,
+  shiftCloseModeFromReason,
+  type ShiftCloseMode,
+} from '../shifts/shift-close-session.logic';
+import { FALLBACK_CONFIG, clearSessionMem, getChairMem, upsertChairMem } from '../chairs/chair-runtime-cache';
 
 export { buildChairDisableBlockedMessage };
 
@@ -146,7 +151,7 @@ async function applyRecoveryDecision(
     avgPowerWatts: null,
     existingAnomalyType: session.anomalyType,
     recoveryReason: recoveryReasonOverride ?? decision.reason,
-    skipCashSync: session.shiftId == null,
+    skipCashSync: shouldSkipCashSyncOnSessionFinalize(session.shiftId),
   });
 
   const mem = getChairMem(chairId);
@@ -390,13 +395,24 @@ export function buildShiftCloseBlockedMessage(count: number): string {
   return `Impossible de terminer le shift : ${count} session(s) sont encore en cours.`;
 }
 
-/** For auto-close: finalize recoverable; skip close if real sessions remain. */
-export async function canAutoCloseShift(shiftId: string): Promise<boolean> {
-  const assessment = await prepareShiftForClose(shiftId);
+/** For auto/manual close: finalize recoverable; block only in DAILY_OR_STALE mode. */
+export async function canAutoCloseShift(
+  shiftId: string,
+  opts?: { reason?: string; closeMode?: ShiftCloseMode },
+): Promise<boolean> {
+  const mode = opts?.closeMode ?? shiftCloseModeFromReason(opts?.reason);
+
+  await finalizeRecoverableSessionsForShift(shiftId);
+
+  if (allowsActiveSessionsOnShiftClose(mode)) {
+    return true;
+  }
+
+  const assessment = await assessShiftCloseSessions(shiftId);
   if (assessment.blockingCount > 0) {
     logger.warn(
       `[shift] Auto-close blocked for ${shiftId}: ${assessment.blockingCount} active session(s) ` +
-        `(ids=[${assessment.blockingSessionIds.map((id) => id.slice(-8)).join(', ')}])`,
+        `(ids=[${assessment.blockingSessionIds.map((id) => id.slice(-8)).join(', ')}]) mode=${mode}`,
     );
     return false;
   }

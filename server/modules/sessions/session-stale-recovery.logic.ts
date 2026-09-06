@@ -1,6 +1,10 @@
 /**
  * Pure rules for stale ACTIVE session recovery (no database).
  */
+import {
+  isHistoricalShiftSession,
+  isStaleOrphanSession,
+} from './cross-shift-session.logic';
 
 export type StaleSessionCandidate = {
   sessionId: string;
@@ -45,6 +49,19 @@ export function resolveReliableEndMs(c: StaleSessionCandidate): number | null {
 export function evaluateStaleSessionRecovery(c: StaleSessionCandidate): StaleRecoveryDecision {
   if (c.sessionStatus !== 'ACTIVE') return { action: 'none' };
 
+  // Cross-shift: real massage on historical shift — not stale (even if shift is CLOSED).
+  if (
+    isHistoricalShiftSession(c.shiftId) &&
+    isBlockingActiveSession({
+      sessionStatus: c.sessionStatus,
+      chairStatus: c.chairStatus,
+      currentPowerWatts: c.currentPowerWatts,
+      stopThresholdWatts: c.stopThresholdWatts,
+    })
+  ) {
+    return { action: 'none' };
+  }
+
   const lowPower = isLowPowerReading(c.currentPowerWatts, c.stopThresholdWatts);
   const endMs = resolveReliableEndMs(c);
 
@@ -65,8 +82,13 @@ export function evaluateStaleSessionRecovery(c: StaleSessionCandidate): StaleRec
     }
   }
 
-  // Orphan: shift closed / no open shift, low power, reliable end, debounce elapsed.
-  if (!c.hasOpenShopShift && lowPower && endMs != null) {
+  // Orphan: no shift at start, shop closed, low power, reliable end, debounce elapsed.
+  if (
+    !c.hasOpenShopShift &&
+    isStaleOrphanSession(c.shiftId) &&
+    lowPower &&
+    endMs != null
+  ) {
     const ageHours = (c.nowMs - c.startedAtMs) / 3_600_000;
     const debounceElapsed =
       c.maybeFinishedSinceMs != null &&
@@ -76,9 +98,9 @@ export function evaluateStaleSessionRecovery(c: StaleSessionCandidate): StaleRec
     }
   }
 
-  // Very stale with no reliable end — do not bill; flag for review.
+  // Very stale orphan with no reliable end — do not bill; flag for review.
   const ageHours = (c.nowMs - c.startedAtMs) / 3_600_000;
-  if (ageHours >= 12 && endMs == null && !c.hasOpenShopShift) {
+  if (ageHours >= 12 && endMs == null && !c.hasOpenShopShift && isStaleOrphanSession(c.shiftId)) {
     return { action: 'mark_review', reason: 'STALE_NO_RELIABLE_END' };
   }
 
@@ -117,4 +139,81 @@ export function countBlockingSessions(
 
 export function buildChairDisableBlockedMessage(): string {
   return 'Impossible de désactiver ce fauteuil : une session est encore en cours.';
+}
+
+/** Recovery must scan disabled chairs with orphan ACTIVE sessions (regression: no isEnabled filter). */
+export function matchesStaleRecoveryScan(chair: {
+  status: string;
+  currentSessionId: string | null;
+  hasActiveSession: boolean;
+}): boolean {
+  if (chair.hasActiveSession) return true;
+  if (
+    chair.currentSessionId != null &&
+    (chair.status === 'ACTIVE' || chair.status === 'MAYBE_FINISHED')
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/** Orphan NO_OPEN_SHIFT sessions cannot credit cash — finalize without till sync. */
+export function shouldSkipCashSyncOnSessionFinalize(shiftId: string | null): boolean {
+  return shiftId == null;
+}
+
+export type ChairDisablePrepInput = {
+  sessionStatus: string | null;
+  chairStatus: string;
+  currentPowerWatts: number | null;
+  stopThresholdWatts: number;
+  staleCandidate: StaleSessionCandidate | null;
+};
+
+export type ChairDisablePrepResult =
+  | { outcome: 'allow' }
+  | { outcome: 'block'; message: string }
+  | {
+      outcome: 'finalize';
+      endedAtMs: number;
+      reason: string;
+      skipCashSync: boolean;
+    }
+  | { outcome: 'mark_review'; reason: string };
+
+/** Pure policy for Settings disable — mirrors prepareChairForDisable(). */
+export function assessPrepareChairForDisable(input: ChairDisablePrepInput): ChairDisablePrepResult {
+  if (input.sessionStatus !== 'ACTIVE') {
+    return { outcome: 'allow' };
+  }
+
+  if (
+    isBlockingActiveSession({
+      sessionStatus: input.sessionStatus,
+      chairStatus: input.chairStatus,
+      currentPowerWatts: input.currentPowerWatts,
+      stopThresholdWatts: input.stopThresholdWatts,
+    })
+  ) {
+    return { outcome: 'block', message: buildChairDisableBlockedMessage() };
+  }
+
+  if (!input.staleCandidate) {
+    return { outcome: 'block', message: buildChairDisableBlockedMessage() };
+  }
+
+  const decision = evaluateStaleSessionRecovery(input.staleCandidate);
+  if (decision.action === 'finalize') {
+    return {
+      outcome: 'finalize',
+      endedAtMs: decision.endedAtMs,
+      reason: decision.reason,
+      skipCashSync: shouldSkipCashSyncOnSessionFinalize(input.staleCandidate.shiftId),
+    };
+  }
+  if (decision.action === 'mark_review') {
+    return { outcome: 'mark_review', reason: decision.reason };
+  }
+
+  return { outcome: 'block', message: buildChairDisableBlockedMessage() };
 }
