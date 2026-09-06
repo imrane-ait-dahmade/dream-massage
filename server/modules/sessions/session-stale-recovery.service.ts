@@ -105,6 +105,7 @@ async function applyRecoveryDecision(
   session: {
     id: string;
     startedAt: Date;
+    shiftId: string | null;
     anomalyType: string | null;
     minPowerWatts: number | null;
     maxPowerWatts: number | null;
@@ -145,6 +146,7 @@ async function applyRecoveryDecision(
     avgPowerWatts: null,
     existingAnomalyType: session.anomalyType,
     recoveryReason: recoveryReasonOverride ?? decision.reason,
+    skipCashSync: session.shiftId == null,
   });
 
   const mem = getChairMem(chairId);
