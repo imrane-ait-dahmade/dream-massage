@@ -20,11 +20,11 @@ Shelly Cloud
 │       │                             │
 │       ├─ DB write ONLY on:          │
 │       │  real state transitions     │
-│       │  reconcile ≤ 1/min          │
+│       │  reconcile ≤ 1/5min         │
 │       │  power flush ≤ 1/min        │
 │       ▼                             │
 │  Socket.IO broadcast                │
-│  (on transition OR heartbeat 60s)   │
+│  (on transition OR heartbeat 5min)  │
 └─────────────────────────────────────┘
 ```
 
@@ -34,10 +34,10 @@ Shelly Cloud
 |----------|---------|------|
 | `SYNC_INTERVAL_MS` | 5000 | Job loop cadence |
 | `SHELLY_POLL_INTERVAL_MS` | 5000 | Shelly HTTP poll |
-| `SHELLY_DB_RECONCILE_INTERVAL_MS` | 60000 | Safety DB reload |
+| `SHELLY_DB_RECONCILE_INTERVAL_MS` | 300000 | Safety DB reload |
 | `POWER_METRICS_FLUSH_INTERVAL_MS` | 60000 | Persist min/max/avg |
 | `DASHBOARD_CACHE_TTL_MS` | 15000 | API response cache |
-| `DASHBOARD_FALLBACK_REFRESH_MS` | 60000 | Heartbeat / REST fallback |
+| `DASHBOARD_FALLBACK_REFRESH_MS` | 300000 | Heartbeat / REST fallback |
 | `DB_ERROR_BACKOFF_MAX_MS` | 60000 | Circuit breaker open window |
 | `AUTO_SHIFT_CHECK_INTERVAL_MS` | 900000 | Unchanged |
 

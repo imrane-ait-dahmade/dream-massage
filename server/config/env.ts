@@ -35,9 +35,10 @@ const envSchema = z.object({
     .default('5000')
     .transform((v) => parseInt(v, 10)),
   // Safety reload of chairs/sessions from DB (ms). Not every Shelly tick.
+  // Live state machine still handles start/stop; stale recovery runs on hydrate + reconcile.
   SHELLY_DB_RECONCILE_INTERVAL_MS: z
     .string()
-    .default('60000')
+    .default('300000')
     .transform((v) => parseInt(v, 10)),
   // Flush aggregated min/max/avg power to DB at most this often per active chair.
   POWER_METRICS_FLUSH_INTERVAL_MS: z
@@ -52,7 +53,7 @@ const envSchema = z.object({
   // Socket.IO heartbeat + client REST fallback cadence when WS is down.
   DASHBOARD_FALLBACK_REFRESH_MS: z
     .string()
-    .default('60000')
+    .default('300000')
     .transform((v) => parseInt(v, 10)),
   // Circuit breaker open duration after consecutive temporary DB errors.
   DB_ERROR_BACKOFF_MAX_MS: z

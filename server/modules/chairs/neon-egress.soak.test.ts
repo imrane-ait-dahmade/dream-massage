@@ -23,9 +23,9 @@ import { usageMetrics } from '../../utils/usage-metrics';
 import { cacheClear, cacheGet, cacheSet, cacheSize } from '../../utils/memory-cache';
 
 const POLL_MS = 5_000;
-const RECONCILE_MS = 60_000;
+const RECONCILE_MS = 300_000;
 const FLUSH_MS = 60_000;
-const DASHBOARD_MS = 60_000;
+const DASHBOARD_MS = 300_000;
 const HOURS = 10;
 const CHAIRS = 5;
 const DURATION_MS = HOURS * 60 * 60 * 1000;
@@ -273,9 +273,9 @@ console.log('[soak-report]', JSON.stringify(report, null, 2));
 // Assertions
 assert.equal(shellyTicks, TICKS, 'tick count');
 assert.equal(dbWritesOnIdleTick, 0, 'no business writes during idle first 50min');
-assert.ok(dbReads <= HOURS * 60 + 5, `dbReads ${dbReads} should be ~1/min reconcile`);
+assert.ok(dbReads <= HOURS * 12 + 5, `dbReads ${dbReads} should be ~1/5min reconcile`);
 assert.ok(dbReads < shellyTicks / 10, 'dbReads << shellyTicks');
-assert.ok(dashboardCalls <= HOURS * 60 + 5, 'dashboard ~1/min');
+assert.ok(dashboardCalls <= HOURS * 12 + 5, 'dashboard ~1/5min');
 assert.ok(transitions > 0, 'at least one real transition occurred');
 assert.ok(transitions < 50, 'transitions stay bounded for the scripted scenario');
 assert.ok(powerSamplesWithoutWrite > 100, 'many power samples without DB write');

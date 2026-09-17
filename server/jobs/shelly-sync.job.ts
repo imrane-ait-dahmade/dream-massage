@@ -85,7 +85,9 @@ export async function processShellySyncTick(): Promise<{ hadTransition: boolean 
     }
   }
 
-  // Periodic DB reconcile (safety) — max once per SHELLY_DB_RECONCILE_INTERVAL_MS
+  // Periodic DB reconcile (safety) — max once per SHELLY_DB_RECONCILE_INTERVAL_MS.
+  // Live start/stop still runs every Shelly tick in memory; stale recovery stays on
+  // hydrate (force), this reconcile path, and shift-close flows.
   const nowMs = Date.now();
   const lastRec = getLastReconcileAt()?.getTime() ?? 0;
   if (nowMs - lastRec >= env.SHELLY_DB_RECONCILE_INTERVAL_MS) {

@@ -7,7 +7,7 @@ import type { DashboardState } from '@/lib/types';
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'unavailable';
 
-const FALLBACK_POLL_MS = 60_000;
+const FALLBACK_POLL_MS = 300_000;
 const SOCKET_DEBOUNCE_MS = 750;
 const BACKOFF_MS = [5_000, 15_000, 30_000, 60_000] as const;
 
@@ -87,7 +87,7 @@ export function useDashboard() {
     const startPoll = () => {
       if (pollRef.current !== null) return;
       if (process.env.NODE_ENV === 'development') {
-        console.log('[dashboard] WebSocket unavailable — REST fallback poll (60s)');
+        console.log('[dashboard] WebSocket unavailable — REST fallback poll (300s)');
       }
       pollRef.current = setInterval(() => {
         void fetchState('poll');

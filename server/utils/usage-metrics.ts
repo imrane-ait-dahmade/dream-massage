@@ -10,6 +10,7 @@ export type MetricsSnapshot = {
   apiResponseBytes: number;
   shellyTicks: number;
   dbReconciliations: number;
+  dashboardDbHits: number;
   stateTransitions: number;
   cacheHits: number;
   cacheMisses: number;
@@ -24,6 +25,7 @@ const counters: MetricsSnapshot = {
   apiResponseBytes: 0,
   shellyTicks: 0,
   dbReconciliations: 0,
+  dashboardDbHits: 0,
   stateTransitions: 0,
   cacheHits: 0,
   cacheMisses: 0,
@@ -61,6 +63,7 @@ export const usageMetrics = {
           apiResponseBytes: s.apiResponseBytes,
           shellyTicks: s.shellyTicks,
           dbReconciliations: s.dbReconciliations,
+          dashboardDbHits: s.dashboardDbHits,
           stateTransitions: s.stateTransitions,
           cacheHits: s.cacheHits,
           cacheMisses: s.cacheMisses,

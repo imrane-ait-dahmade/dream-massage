@@ -198,6 +198,8 @@ export async function reconcileRuntimeFromDb(): Promise<void> {
   await hydrateRuntimeCache();
   usageMetrics.incr('dbReconciliations');
   lastReconcileAt = new Date();
+  const n = usageMetrics.snapshot().dbReconciliations;
+  logger.info(`[chair-runtime] DB reconciliation complete (dbReconciliations=${n})`);
 }
 
 export function getLastReconcileAt(): Date | null {

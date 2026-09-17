@@ -10,6 +10,7 @@ import {
 } from '../../utils/db-circuit-breaker';
 import { getAllChairMem, isRuntimeHydrated } from '../chairs/chair-runtime-cache';
 import { env } from '../../config/env';
+import { logger } from '../../utils/logger';
 import { buildDateRangeFilter, resolvePresetDates } from './date-range';
 import { d2, sessionRevenue, type MetricsSession } from './session-metrics.logic';
 
@@ -53,7 +54,16 @@ export interface DashboardState {
   chairs: ChairState[];
 }
 
+/** Full payload cache (non-hydrated path / short REST bursts). */
 const STATE_CACHE_KEY = 'dashboard:state';
+/** DB-backed revenue + open shift — refreshed at most every FALLBACK interval when hydrated. */
+const META_CACHE_KEY = 'dashboard:db-meta';
+
+type DashboardDbMeta = {
+  expectedRevenue: number;
+  sessionsCount: number;
+  openShift: OpenShift | null;
+};
 
 function warningFor(status: ChairStatus): string | null {
   if (status === 'MAYBE_FINISHED') return 'Possible end detected';
@@ -65,30 +75,21 @@ function warningFor(status: ChairStatus): string | null {
 export class DashboardService {
   /**
    * Returns live dashboard state.
-   * Prefers in-memory chair runtime when hydrated; caches full payload 15s.
+   * When chair runtime is hydrated: chairs always from memory (no Prisma);
+   * today revenue / open shift from a longer meta cache (invalidated on transitions).
    * Throws DbUnavailableError when DB is down — never a fake empty dashboard.
    */
   async getState(): Promise<DashboardState> {
-    const cached = cacheGet<DashboardState>(STATE_CACHE_KEY);
-    if (cached) return cached;
-
-    if (!allowDbAttempt() && isRuntimeHydrated()) {
-      // Serve memory-only snapshot without hitting Neon
-      const mem = this._memoryChairs();
-      const state: DashboardState = {
-        serverTime: nowISO(),
-        connection: 'live',
-        todayStats: {
-          expectedRevenue: 0,
-          sessionsCount: 0,
-          activeChairs: mem.filter((c) => c.status === 'ACTIVE').length,
-          offlineChairs: mem.filter((c) => c.status === 'OFFLINE').length,
-        },
-        openShift: null,
-        chairs: mem,
-      };
-      return state;
+    if (isRuntimeHydrated()) {
+      return this._stateFromMemory();
     }
+
+    const cached = cacheGet<DashboardState>(STATE_CACHE_KEY);
+    if (cached) {
+      usageMetrics.incr('cacheHits');
+      return cached;
+    }
+    usageMetrics.incr('cacheMisses');
 
     try {
       const state = await withDbCircuit(() => this._dbState());
@@ -96,7 +97,6 @@ export class DashboardService {
       return state;
     } catch (err) {
       if (err instanceof DbUnavailableError) throw err;
-      // Non-temporary: still surface as unavailable rather than empty fake data
       console.error('[dashboard] DB read failed:', err instanceof Error ? err.message : String(err));
       throw new DbUnavailableError('Database temporarily unavailable', 60);
     }
@@ -104,6 +104,7 @@ export class DashboardService {
 
   invalidateCache(): void {
     cacheInvalidate(STATE_CACHE_KEY);
+    cacheInvalidate(META_CACHE_KEY);
   }
 
   private _memoryChairs(): ChairState[] {
@@ -123,51 +124,136 @@ export class DashboardService {
     });
   }
 
-  private async _dbState(): Promise<DashboardState> {
-    usageMetrics.incr('dbReads', 3);
+  /** Hydrated path: live chairs from memory; Prisma only for cached today/shift meta. */
+  private async _stateFromMemory(): Promise<DashboardState> {
+    const chairs = this._memoryChairs();
+    const activeChairs = chairs.filter((c) => c.status === 'ACTIVE').length;
+    const offlineChairs = chairs.filter((c) => c.status === 'OFFLINE').length;
 
-    // Prefer memory for live chair fields when available
-    let chairs: ChairState[];
-    if (isRuntimeHydrated()) {
-      chairs = this._memoryChairs();
-    } else {
-      const dbChairs = await prisma.chair.findMany({
-        where: { isEnabled: true },
-        orderBy: { name: 'asc' },
-        select: {
-          id: true,
-          name: true,
-          displayName: true,
-          status: true,
-          currentPowerWatts: true,
-          isOnline: true,
-          sessions: {
-            where: { status: 'ACTIVE' },
-            take: 1,
-            orderBy: { startedAt: 'desc' },
-            select: { startedAt: true },
-          },
+    let meta = cacheGet<DashboardDbMeta>(META_CACHE_KEY);
+    if (meta) {
+      usageMetrics.incr('cacheHits');
+      return {
+        serverTime: nowISO(),
+        connection: 'live',
+        todayStats: {
+          expectedRevenue: meta.expectedRevenue,
+          sessionsCount: meta.sessionsCount,
+          activeChairs,
+          offlineChairs,
         },
-      });
-
-      chairs = dbChairs.map((c) => {
-        const session = c.sessions[0] ?? null;
-        const status = c.status as ChairStatus;
-        return {
-          id: c.id,
-          name: c.name,
-          displayName: c.displayName,
-          status,
-          powerWatts: c.currentPowerWatts ?? 0,
-          isOnline: c.isOnline,
-          sessionStartedAt: session ? session.startedAt.toISOString() : null,
-          elapsedSeconds: session ? elapsedSeconds(session.startedAt) : 0,
-          warning: warningFor(status),
-        };
-      });
+        openShift: meta.openShift,
+        chairs,
+      };
     }
 
-    // Aggregate today stats in PostgreSQL — do not download all rows
+    usageMetrics.incr('cacheMisses');
+
+    if (!allowDbAttempt()) {
+      return {
+        serverTime: nowISO(),
+        connection: 'live',
+        todayStats: {
+          expectedRevenue: 0,
+          sessionsCount: 0,
+          activeChairs,
+          offlineChairs,
+        },
+        openShift: null,
+        chairs,
+      };
+    }
+
+    try {
+      meta = await withDbCircuit(() => this._fetchDbMeta());
+      cacheSet(META_CACHE_KEY, meta, env.DASHBOARD_FALLBACK_REFRESH_MS);
+      return {
+        serverTime: nowISO(),
+        connection: 'live',
+        todayStats: {
+          expectedRevenue: meta.expectedRevenue,
+          sessionsCount: meta.sessionsCount,
+          activeChairs,
+          offlineChairs,
+        },
+        openShift: meta.openShift,
+        chairs,
+      };
+    } catch (err) {
+      if (err instanceof DbUnavailableError) throw err;
+      console.error('[dashboard] DB read failed:', err instanceof Error ? err.message : String(err));
+      throw new DbUnavailableError('Database temporarily unavailable', 60);
+    }
+  }
+
+  private async _fetchDbMeta(): Promise<DashboardDbMeta> {
+    usageMetrics.incr('dbReads', 2);
+    usageMetrics.incr('dashboardDbHits');
+    const hits = usageMetrics.snapshot().dashboardDbHits;
+    logger.info(`[dashboard] DB hit for getState meta (dashboardDbHits=${hits})`);
+    return this._queryDbMeta();
+  }
+
+  private async _dbState(): Promise<DashboardState> {
+    usageMetrics.incr('dbReads', 3);
+    usageMetrics.incr('dashboardDbHits');
+    const hits = usageMetrics.snapshot().dashboardDbHits;
+    logger.info(`[dashboard] DB hit for full getState (dashboardDbHits=${hits})`);
+
+    const dbChairs = await prisma.chair.findMany({
+      where: { isEnabled: true },
+      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        displayName: true,
+        status: true,
+        currentPowerWatts: true,
+        isOnline: true,
+        sessions: {
+          where: { status: 'ACTIVE' },
+          take: 1,
+          orderBy: { startedAt: 'desc' },
+          select: { startedAt: true },
+        },
+      },
+    });
+
+    const chairs = dbChairs.map((c) => {
+      const session = c.sessions[0] ?? null;
+      const status = c.status as ChairStatus;
+      return {
+        id: c.id,
+        name: c.name,
+        displayName: c.displayName,
+        status,
+        powerWatts: c.currentPowerWatts ?? 0,
+        isOnline: c.isOnline,
+        sessionStartedAt: session ? session.startedAt.toISOString() : null,
+        elapsedSeconds: session ? elapsedSeconds(session.startedAt) : 0,
+        warning: warningFor(status),
+      };
+    });
+
+    const meta = await this._queryDbMeta();
+    const activeChairs = chairs.filter((c) => c.status === 'ACTIVE').length;
+    const offlineChairs = chairs.filter((c) => c.status === 'OFFLINE').length;
+
+    return {
+      serverTime: nowISO(),
+      connection: 'live',
+      todayStats: {
+        expectedRevenue: meta.expectedRevenue,
+        sessionsCount: meta.sessionsCount,
+        activeChairs,
+        offlineChairs,
+      },
+      openShift: meta.openShift,
+      chairs,
+    };
+  }
+
+  private async _queryDbMeta(): Promise<DashboardDbMeta> {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
@@ -181,12 +267,6 @@ export class DashboardService {
       _sum: { expectedAmount: true },
     });
 
-    const sessionsCount = todayAgg._count._all;
-    const expectedRevenue =
-      Math.round(Number(todayAgg._sum.expectedAmount ?? 0) * 100) / 100;
-    const activeChairs = chairs.filter((c) => c.status === 'ACTIVE').length;
-    const offlineChairs = chairs.filter((c) => c.status === 'OFFLINE').length;
-
     const shiftRow = await prisma.shift.findFirst({
       where: { status: 'OPEN', endedAt: null },
       select: {
@@ -197,20 +277,16 @@ export class DashboardService {
       orderBy: { startedAt: 'desc' },
     });
 
-    const openShift: OpenShift | null = shiftRow
-      ? {
-          id: shiftRow.id,
-          staffMemberName: shiftRow.staffMember.name,
-          startedAt: shiftRow.startedAt.toISOString(),
-        }
-      : null;
-
     return {
-      serverTime: nowISO(),
-      connection: 'live',
-      todayStats: { expectedRevenue, sessionsCount, activeChairs, offlineChairs },
-      openShift,
-      chairs,
+      expectedRevenue: Math.round(Number(todayAgg._sum.expectedAmount ?? 0) * 100) / 100,
+      sessionsCount: todayAgg._count._all,
+      openShift: shiftRow
+        ? {
+            id: shiftRow.id,
+            staffMemberName: shiftRow.staffMember.name,
+            startedAt: shiftRow.startedAt.toISOString(),
+          }
+        : null,
     };
   }
 }
