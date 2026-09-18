@@ -1119,6 +1119,28 @@ export async function withdrawCash(
   );
 }
 
+/** Admin manual income — POST /api/cash/accounts/:id/credit (existing endpoint). */
+export async function creditCash(
+  cashAccountId: string,
+  payload: { amount: number; reason?: string; staffMemberId?: string },
+): Promise<{
+  ok: boolean;
+  type: 'MANUAL_INCOME';
+  balanceBefore: number;
+  balanceAfter: number;
+  amount: number;
+  movementId: string;
+}> {
+  return apiRequest(
+    `${BASE}/api/cash/accounts/${encodeURIComponent(cashAccountId)}/credit`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
 export async function adjustCash(
   cashAccountId: string,
   payload: { desiredBalance: number; reason?: string },
