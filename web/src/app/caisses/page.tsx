@@ -1339,7 +1339,7 @@ function Modal({
 
 export default function CaissesPage() {
   return (
-    <AuthGuard allowedRoles={['OWNER', 'ADMIN', 'ASSISTANT']}>
+    <AuthGuard allowedRoles={['OWNER', 'ADMIN']}>
       <CashPageContent />
     </AuthGuard>
   );

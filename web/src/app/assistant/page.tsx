@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   AlertTriangle,
@@ -14,13 +13,13 @@ import {
   ListChecks,
   RefreshCw,
   Wallet,
-  ChevronRight,
 } from 'lucide-react';
 import { AuthGuard } from '@/components/AuthGuard';
 import { AssistantPlanChangeRequestModal } from '@/components/assistant/AssistantPlanChangeRequestModal';
 import {
   getAssistantToday,
   getAssistantPlanChangeRequests,
+  getCashAccounts,
   logout,
   startAssistantShift,
   closeAssistantShift,
@@ -31,7 +30,7 @@ import type {
   AssistantShiftTypeOption,
   SessionPlanChangeRequest,
 } from '@/lib/types';
-import { formatDH, formatElapsed, formatTimeHHMM } from '@/lib/format';
+import { formatCashDH, formatDH, formatElapsed, formatTimeHHMM } from '@/lib/format';
 import {
   canRequestPlanChange,
   currentPlanLabel,
@@ -182,6 +181,10 @@ function AssistantContent() {
   const router = useRouter();
   const [data, setData] = useState<AssistantDashboardResponse | null>(null);
   const [requests, setRequests] = useState<SessionPlanChangeRequest[]>([]);
+  const [caisseBalance, setCaisseBalance] = useState<number | null>(null);
+  const [caisseBusinessDate, setCaisseBusinessDate] = useState<string | null>(null);
+  const [caisseName, setCaisseName] = useState<string | null>(null);
+  const [caisseError, setCaisseError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -192,13 +195,28 @@ function AssistantContent() {
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setCaisseError(null);
     try {
-      const [dash, req] = await Promise.all([
+      const [dash, req, cash] = await Promise.all([
         getAssistantToday(),
         getAssistantPlanChangeRequests(),
+        getCashAccounts().catch((err: unknown) => {
+          setCaisseError(err instanceof Error ? err.message : 'Caisse indisponible');
+          return null;
+        }),
       ]);
       setData(dash);
       setRequests(req.requests ?? []);
+      if (cash) {
+        setCaisseBusinessDate(cash.businessDate);
+        const account = cash.accounts[0] ?? null;
+        setCaisseBalance(account ? account.physicalBalance : null);
+        setCaisseName(account ? account.name : null);
+      } else {
+        setCaisseBalance(null);
+        setCaisseBusinessDate(null);
+        setCaisseName(null);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur de chargement');
     } finally {
@@ -322,14 +340,6 @@ function AssistantContent() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Link
-              href="/caisses"
-              className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-2 text-xs font-medium text-stone-700"
-              title="Ma caisse"
-            >
-              <Wallet className="h-3.5 w-3.5" />
-              Caisse
-            </Link>
             <button
               type="button"
               onClick={() => void load()}
@@ -444,20 +454,39 @@ function AssistantContent() {
           )}
         </section>
 
-        <Link
-          href="/caisses"
-          className="flex w-full min-h-[4.5rem] items-center gap-4 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-4 shadow-sm transition active:scale-[0.99] hover:border-amber-300 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500"
-          aria-label="Ma caisse — voir mon solde et mes mouvements"
+        <section
+          className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-4 shadow-sm"
+          aria-label="Caisse"
         >
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-800">
-            <Wallet className="h-6 w-6" aria-hidden />
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-800">
+              <Wallet className="h-6 w-6" aria-hidden />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-base font-semibold text-stone-900">Caisse</p>
+              {caisseError ? (
+                <p className="mt-1 text-sm text-red-600">{caisseError}</p>
+              ) : caisseBalance != null ? (
+                <>
+                  <p className="mt-1 text-2xl font-bold tabular-nums text-stone-900">
+                    {formatCashDH(caisseBalance)}
+                  </p>
+                  <p className="mt-1 text-xs text-stone-500">
+                    {caisseName ? `${caisseName} · ` : ''}
+                    Journée {caisseBusinessDate ?? date}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="mt-1 text-sm text-stone-600">Aucune caisse affectée</p>
+                  <p className="mt-0.5 text-xs text-stone-500">
+                    Journée {caisseBusinessDate ?? date}
+                  </p>
+                </>
+              )}
+            </div>
           </div>
-          <div className="min-w-0 flex-1 text-left">
-            <p className="text-base font-semibold text-stone-900">Ma caisse</p>
-            <p className="text-sm text-stone-600">Voir mon solde et mes mouvements</p>
-          </div>
-          <ChevronRight className="h-5 w-5 shrink-0 text-amber-700" aria-hidden />
-        </Link>
+        </section>
 
         <section>
           <h2 className="mb-2 text-sm font-semibold text-stone-800">Résumé du jour</h2>
