@@ -65,6 +65,72 @@ function getTimeZoneOffsetMs(instant: Date, timeZone: string): number {
   return asUtcMs - instant.getTime();
 }
 
+export interface UtcOffsetTransition {
+  /** UTC instant (ms) from which `offsetMinutes` applies. */
+  at: number;
+  offsetMinutes: number;
+}
+
+/**
+ * UTC offset periods for `timeZone` over [now - pastDays, now + futureDays].
+ * Lets clients with outdated tz databases (old phones) display business time
+ * using the server's up-to-date rules (e.g. Morocco GMT+1 / Ramadan GMT+0).
+ */
+export function getUtcOffsetTransitions(
+  timeZone: string = env.APP_TIMEZONE,
+  now: Date = new Date(),
+  pastDays = 400,
+  futureDays = 60,
+): UtcOffsetTransition[] {
+  const stepMs = 6 * 3600 * 1000;
+  const minuteMs = 60 * 1000;
+  const offsetMin = (ms: number) => Math.round(getTimeZoneOffsetMs(new Date(ms), timeZone) / minuteMs);
+
+  const start = Math.floor((now.getTime() - pastDays * 24 * 3600 * 1000) / minuteMs) * minuteMs;
+  const end = now.getTime() + futureDays * 24 * 3600 * 1000;
+
+  const transitions: UtcOffsetTransition[] = [{ at: start, offsetMinutes: offsetMin(start) }];
+  let prevMs = start;
+  let prevOffset = transitions[0]!.offsetMinutes;
+
+  for (let t = start + stepMs; t <= end; t += stepMs) {
+    const current = offsetMin(t);
+    if (current !== prevOffset) {
+      let loMin = prevMs / minuteMs;
+      let hiMin = t / minuteMs;
+      while (hiMin - loMin > 1) {
+        const midMin = Math.floor((loMin + hiMin) / 2);
+        if (offsetMin(midMin * minuteMs) === prevOffset) loMin = midMin;
+        else hiMin = midMin;
+      }
+      transitions.push({ at: hiMin * minuteMs, offsetMinutes: current });
+      prevOffset = current;
+    }
+    prevMs = t;
+  }
+  return transitions;
+}
+
+const TRANSITIONS_CACHE_TTL_MS = 6 * 3600 * 1000;
+let transitionsCache: { timeZone: string; computedAt: number; value: UtcOffsetTransition[] } | null =
+  null;
+
+export function getCachedUtcOffsetTransitions(
+  timeZone: string = env.APP_TIMEZONE,
+): UtcOffsetTransition[] {
+  const nowMs = Date.now();
+  if (
+    transitionsCache &&
+    transitionsCache.timeZone === timeZone &&
+    nowMs - transitionsCache.computedAt < TRANSITIONS_CACHE_TTL_MS
+  ) {
+    return transitionsCache.value;
+  }
+  const value = getUtcOffsetTransitions(timeZone, new Date(nowMs));
+  transitionsCache = { timeZone, computedAt: nowMs, value };
+  return value;
+}
+
 /**
  * Convert a wall-clock date/time in `timeZone` to a UTC Date.
  * Independent of the host OS timezone.

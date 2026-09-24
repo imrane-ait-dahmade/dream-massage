@@ -469,10 +469,7 @@ function ChairDetailContent() {
                     id: prev.chair.currentSession?.id ?? '',
                     startedAt: live.sessionStartedAt,
                     elapsedSeconds: live.elapsedSeconds,
-                    startedAtLabel: new Date(live.sessionStartedAt).toLocaleTimeString('fr-FR', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    }),
+                    startedAtLabel: formatTimeHHMM(live.sessionStartedAt),
                   }
                 : null,
             },

@@ -24,7 +24,7 @@ import { corsOriginFn } from './config/cors';
 import { requireAuth, requireOwnerAdmin } from './middleware/auth.middleware';
 import { requireCronSecret } from './middleware/shift-automation.middleware';
 import { prisma } from './prisma';
-import { getTimezone } from './utils/time';
+import { getTimezone, getCachedUtcOffsetTransitions } from './utils/time';
 import { usageMetrics } from './utils/usage-metrics';
 import { DbUnavailableError } from './utils/db-circuit-breaker';
 import authRouter from './modules/auth/auth.controller';
@@ -69,6 +69,20 @@ app.get('/health', async (_req, res) => {
     uptime:    Math.floor(process.uptime()),
     database:  dbOk ? 'connected' : 'unavailable',
     ...(dbError ? { dbError } : {}),
+  });
+});
+
+// ── Business time (public, read-only) ─────────────────────────────────────────
+
+app.get('/api/time', (_req, res) => {
+  const now = new Date();
+  const timezone = getTimezone();
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({
+    ok: true,
+    timezone,
+    serverNow: now.toISOString(),
+    transitions: getCachedUtcOffsetTransitions(timezone),
   });
 });
 

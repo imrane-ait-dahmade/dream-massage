@@ -8,7 +8,7 @@ import {
   approveSessionPlanChangeRequest,
   rejectSessionPlanChangeRequest,
 } from '@/lib/api';
-import { formatDH, formatTime } from '@/lib/format';
+import { formatDH, formatDateTime, formatTime } from '@/lib/format';
 import {
   amountDiff,
   computeRemainingAmount,
@@ -112,7 +112,7 @@ export function PlanChangeReviewModal({ request, mode, onClose, onSuccess }: Pro
               {formatTime(request.session.endedAt)}
             </p>
             <p className="mt-1 text-xs text-slate-500">
-              Demande du {new Date(request.createdAt).toLocaleString('fr-FR')} par{' '}
+              Demande du {formatDateTime(request.createdAt)} par{' '}
               {request.requestedBy?.name ?? 'Assistant'}
             </p>
           </div>

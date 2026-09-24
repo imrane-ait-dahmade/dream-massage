@@ -7,6 +7,7 @@ import { useDashboard } from '@/hooks/useDashboard';
 import { useHomeDashboard } from '@/hooks/useHomeDashboard';
 import { logout, getMe, listSessionPlanChangeRequests, type AuthUser } from '@/lib/api';
 import { AuthGuard } from '@/components/AuthGuard';
+import { formatClockTime } from '@/lib/format';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { DashboardFilters } from '@/components/dashboard/DashboardFilters';
 import { DashboardSummaryCards } from '@/components/dashboard/DashboardSummaryCards';
@@ -215,11 +216,7 @@ function DashboardContent() {
         {lastUpdated && (
           <p className="pb-4 text-center text-[11px] text-slate-700">
             Mis à jour :{' '}
-            {lastUpdated.toLocaleTimeString('fr-FR', {
-              hour:   '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-            })}
+            {formatClockTime(lastUpdated, true)}
           </p>
         )}
       </main>

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Settings, LogOut, Wifi, WifiOff, RefreshCw, ClipboardList, Wallet } from 'lucide-react';
 import type { AuthUser } from '@/lib/api';
 import type { ConnectionStatus } from '@/hooks/useDashboard';
+import { formatClockTime } from '@/lib/format';
 
 interface Props {
   user: AuthUser | null;
@@ -122,7 +123,7 @@ function ConnectionPill({
       className="flex items-center gap-1.5 rounded-full bg-red-500/15 px-2.5 py-1 text-xs font-semibold text-red-400 ring-1 ring-red-500/25"
       title={
         lastUpdated
-          ? `Dernière MAJ : ${lastUpdated.toLocaleTimeString('fr-FR')}`
+          ? `Dernière MAJ : ${formatClockTime(lastUpdated, true)}`
           : undefined
       }
     >

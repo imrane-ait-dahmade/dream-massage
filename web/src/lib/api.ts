@@ -1070,6 +1070,17 @@ export async function getAssistantPlanChangeRequests(params?: {
   return apiRequest(`${BASE}/api/assistant/plan-change-requests${suffix}`);
 }
 
+// ── Business time (public) ─────────────────────────────────────────────────────
+
+export async function getBusinessTime(): Promise<{
+  ok: boolean;
+  timezone: string;
+  serverNow: string;
+  transitions: { at: number; offsetMinutes: number }[];
+}> {
+  return apiRequest(`${BASE}/api/time`);
+}
+
 // ── Cash accounts (physical tills) ─────────────────────────────────────────────
 
 export async function getCashAccounts(): Promise<CashAccountsListResponse> {

@@ -2,6 +2,7 @@
 
 import { WifiOff, RefreshCw, AlertTriangle } from 'lucide-react';
 import type { ConnectionStatus } from '@/hooks/useDashboard';
+import { formatClockTime } from '@/lib/format';
 
 interface Props {
   status: ConnectionStatus;
@@ -44,11 +45,7 @@ export function ConnectionStatusBar({ status, lastUpdated, serviceMessage }: Pro
 
       {lastUpdated && (
         <span className="ml-auto shrink-0 text-xs opacity-60">
-          {lastUpdated.toLocaleTimeString('fr-FR', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-          })}
+          {formatClockTime(lastUpdated, true)}
         </span>
       )}
     </div>

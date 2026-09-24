@@ -16,7 +16,7 @@ import type {
   SessionPlanChangeRequest,
   SessionPlanChangeRequestStatus,
 } from '@/lib/types';
-import { formatDH } from '@/lib/format';
+import { formatDH, formatDateTimeShort } from '@/lib/format';
 import {
   amountDiff,
   formatAmountDiff,
@@ -211,12 +211,7 @@ function PlanChangeRequestsContent() {
                   return (
                     <tr key={r.id} className="hover:bg-slate-700/20">
                       <td className="px-3 py-2.5 text-xs text-slate-400 tabular-nums">
-                        {new Date(r.createdAt).toLocaleString('fr-FR', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
+                        {formatDateTimeShort(r.createdAt)}
                       </td>
                       <td className="px-3 py-2.5 text-xs font-semibold text-white">
                         {r.session.chairName}

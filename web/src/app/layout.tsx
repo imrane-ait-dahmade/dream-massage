@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import { BusinessTimeSync } from '@/components/BusinessTimeSync';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -25,7 +26,9 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" className={inter.variable}>
-      <body className="min-h-screen bg-slate-900 font-sans antialiased">{children}</body>
+      <body className="min-h-screen bg-slate-900 font-sans antialiased">
+        <BusinessTimeSync>{children}</BusinessTimeSync>
+      </body>
     </html>
   );
 }
