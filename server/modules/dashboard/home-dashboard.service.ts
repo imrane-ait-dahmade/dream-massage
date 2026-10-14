@@ -6,6 +6,7 @@ import { cacheGet, cacheSet, cacheInvalidate } from '../../utils/memory-cache';
 import { withDbCircuit } from '../../utils/db-circuit-breaker';
 import { usageMetrics } from '../../utils/usage-metrics';
 import { env } from '../../config/env';
+import { getLiveChairFields } from '../chairs/chair-runtime-cache';
 import {
   resolvePresetDates,
   todayBusinessDate,
@@ -502,15 +503,18 @@ export class HomeDashboardService {
       status: string; currentPowerWatts: number | null; isOnline: boolean;
     }>,
   ) {
-    return chairs.map((c) => ({
-      id:          c.id,
-      name:        c.name,
-      displayName: c.displayName,
-      status:      c.status,
-      powerWatts:  c.currentPowerWatts ?? 0,
-      isOnline:    c.isOnline,
-      warning:     warningFor(c.status),
-    }));
+    return chairs.map((c) => {
+      const live = getLiveChairFields(c.id);
+      return {
+        id:          c.id,
+        name:        c.name,
+        displayName: c.displayName,
+        status:      c.status,
+        powerWatts:  (live ? live.currentPowerWatts : c.currentPowerWatts) ?? 0,
+        isOnline:    live ? live.isOnline : c.isOnline,
+        warning:     warningFor(c.status),
+      };
+    });
   }
 
   private formatTotalsByChair(

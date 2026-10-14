@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -23,11 +23,14 @@ import type {
   ChairStatus,
 } from '@/lib/types';
 import { getStatusLabel, getStatusStyle } from '@/lib/status';
-import { formatDH, formatElapsed, formatTimeHHMM } from '@/lib/format';
+import { formatDH, formatElapsed, formatTimeHHMM, serverNowMs } from '@/lib/format';
 import { createSocket } from '@/lib/socket';
 import { AuthGuard } from '@/components/AuthGuard';
 
 // ── Local helpers ──────────────────────────────────────────────────────────────
+
+const FALLBACK_POLL_MS = 300_000;
+const REFETCH_DELAY_MS = 2_000;
 
 function formatDuration(seconds: number): string {
   if (seconds === 0) return '—';
@@ -98,7 +101,7 @@ function LiveTimer({ startedAt }: { startedAt: string }) {
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
     const startMs = new Date(startedAt).getTime();
-    const tick = () => setElapsed(Math.max(0, Math.floor((Date.now() - startMs) / 1000)));
+    const tick = () => setElapsed(Math.max(0, Math.floor((serverNowMs() - startMs) / 1000)));
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
@@ -412,7 +415,10 @@ function ChairDetailContent() {
     }
   }, [chairId]);
 
-  // Initial load + 60-second background refresh (live updates via Socket.IO)
+  const chairIdRef = useRef<string | null>(null);
+  chairIdRef.current = overview?.chair.id ?? null;
+
+  // Initial load + slow fallback refresh; session start/end triggers a refetch via Socket.IO.
   useEffect(() => {
     let cancelled = false;
     let inFlight = false;
@@ -430,7 +436,7 @@ function ChairDetailContent() {
     void run();
     const id = setInterval(() => {
       if (!cancelled) void run();
-    }, 60_000);
+    }, FALLBACK_POLL_MS);
 
     const onVis = () => {
       if (document.visibilityState === 'visible' && !cancelled) void run();
@@ -448,11 +454,23 @@ function ChairDetailContent() {
   useEffect(() => {
     const socket = createSocket();
     let debounceId: ReturnType<typeof setTimeout> | null = null;
+    let refetchId: ReturnType<typeof setTimeout> | null = null;
+    let lastSessionStart: string | null | undefined;
 
     socket.on('dashboard:update', (state: DashboardState) => {
       if (document.visibilityState === 'hidden') return;
       if (debounceId) clearTimeout(debounceId);
       debounceId = setTimeout(() => {
+        const liveChair = state.chairs.find((c) => c.id === chairIdRef.current);
+        if (liveChair) {
+          const sessionStart = liveChair.sessionStartedAt ?? null;
+          if (lastSessionStart !== undefined && sessionStart !== lastSessionStart) {
+            if (refetchId) clearTimeout(refetchId);
+            refetchId = setTimeout(() => void fetchOverview(), REFETCH_DELAY_MS);
+          }
+          lastSessionStart = sessionStart;
+        }
+
         setOverview((prev) => {
           if (!prev) return prev;
           const live = state.chairs.find((c) => c.id === prev.chair.id);
@@ -480,10 +498,11 @@ function ChairDetailContent() {
 
     return () => {
       if (debounceId) clearTimeout(debounceId);
+      if (refetchId) clearTimeout(refetchId);
       socket.off('dashboard:update');
       socket.disconnect();
     };
-  }, []);
+  }, [fetchOverview]);
 
   if (loading) return <LoadingScreen />;
   if (error) {

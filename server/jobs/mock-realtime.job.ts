@@ -95,10 +95,12 @@ export function startRealtimeJob(io: Server): void {
         }
       }
 
-      // Broadcast: on real transition, or heartbeat at DASHBOARD_FALLBACK_REFRESH_MS
+      // Broadcast: on real transition, or heartbeat at DASHBOARD_FALLBACK_REFRESH_MS.
+      // Skipped with no connected clients — new sockets get the state on connect.
       const nowMs = Date.now();
       const heartbeatDue = nowMs - lastBroadcastMs >= env.DASHBOARD_FALLBACK_REFRESH_MS;
-      if (hadTransition || heartbeatDue || lastBroadcastMs === 0) {
+      const hasClients = io.engine.clientsCount > 0;
+      if (hasClients && (hadTransition || heartbeatDue || lastBroadcastMs === 0)) {
         try {
           const state = await dashboardService.getState();
           io.emit('dashboard:update', state);

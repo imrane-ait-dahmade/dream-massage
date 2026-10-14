@@ -56,14 +56,22 @@ export interface DashboardState {
 
 /** Full payload cache (non-hydrated path / short REST bursts). */
 const STATE_CACHE_KEY = 'dashboard:state';
-/** DB-backed revenue + open shift — refreshed at most every FALLBACK interval when hydrated. */
+/** DB-backed revenue + open shift — kept DASHBOARD_META_CACHE_TTL_MS, dropped on invalidation or day change. */
 const META_CACHE_KEY = 'dashboard:db-meta';
 
 type DashboardDbMeta = {
   expectedRevenue: number;
   sessionsCount: number;
   openShift: OpenShift | null;
+  /** Start of the "today" window the totals were computed for. */
+  dayStartMs: number;
 };
+
+function todayStartDate(): Date {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  return todayStart;
+}
 
 function warningFor(status: ChairStatus): string | null {
   if (status === 'MAYBE_FINISHED') return 'Possible end detected';
@@ -131,6 +139,7 @@ export class DashboardService {
     const offlineChairs = chairs.filter((c) => c.status === 'OFFLINE').length;
 
     let meta = cacheGet<DashboardDbMeta>(META_CACHE_KEY);
+    if (meta && meta.dayStartMs !== todayStartDate().getTime()) meta = undefined;
     if (meta) {
       usageMetrics.incr('cacheHits');
       return {
@@ -166,7 +175,7 @@ export class DashboardService {
 
     try {
       meta = await withDbCircuit(() => this._fetchDbMeta());
-      cacheSet(META_CACHE_KEY, meta, env.DASHBOARD_FALLBACK_REFRESH_MS);
+      cacheSet(META_CACHE_KEY, meta, env.DASHBOARD_META_CACHE_TTL_MS);
       return {
         serverTime: nowISO(),
         connection: 'live',
@@ -254,8 +263,7 @@ export class DashboardService {
   }
 
   private async _queryDbMeta(): Promise<DashboardDbMeta> {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
+    const todayStart = todayStartDate();
 
     const todayAgg = await prisma.chairSession.aggregate({
       where: {
@@ -287,6 +295,7 @@ export class DashboardService {
             startedAt: shiftRow.startedAt.toISOString(),
           }
         : null,
+      dayStartMs: todayStart.getTime(),
     };
   }
 }

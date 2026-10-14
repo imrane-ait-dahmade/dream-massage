@@ -17,6 +17,23 @@ export function formatElapsed(totalSeconds: number): string {
   return `${mm}:${ss}`;
 }
 
+// ── Server clock ───────────────────────────────────────────────────────────────
+// Elapsed timers use the server clock: staff phones may have a wrong local time.
+
+let serverClockOffsetMs = 0;
+
+/** Record server time measured by a request sent at requestStartMs and answered at requestEndMs. */
+export function setServerClock(serverNowIso: string, requestStartMs: number, requestEndMs: number): void {
+  const serverMs = new Date(serverNowIso).getTime();
+  if (!Number.isFinite(serverMs)) return;
+  serverClockOffsetMs = serverMs - (requestStartMs + requestEndMs) / 2;
+}
+
+/** Current epoch ms per the server clock (device clock until the first sync). */
+export function serverNowMs(): number {
+  return Date.now() + serverClockOffsetMs;
+}
+
 // ── Business time (Morocco) ────────────────────────────────────────────────────
 // Times are rendered with UTC offsets computed by the server (GET /api/time),
 // never with the phone's own timezone rules, which are outdated on some

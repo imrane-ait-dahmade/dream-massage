@@ -18,15 +18,19 @@ import {
   flushDirtyLiveState,
   flushPowerMetrics,
   getLastReconcileAt,
-  getLastPowerFlushAt,
   getAllChairMem,
   clearRuntimeCache,
+  isRuntimeReconcileRequested,
+  clearRuntimeReconcileRequest,
+  requestRuntimeReconcile,
 } from '../modules/chairs/chair-runtime-cache';
+import { runtimeNeedsStaleRecovery } from '../modules/chairs/chair-runtime-db.logic';
 import { runStaleSessionRecovery } from '../modules/sessions/session-stale-recovery.service';
 
 type ChairIdMap = Record<string, string>; // chairName → DB id
 
 let chairIdCache: ChairIdMap | null = null;
+let lastFlushCycleMs = 0;
 let lastSyncAt: Date | null = null;
 let consecutiveErrors = 0;
 let lastTransitionAt: Date | null = null;
@@ -48,6 +52,14 @@ export function releaseShellyWorkerLock(): void {
 
 export function isShellyWorkerLocked(): boolean {
   return shellyWorkerLock;
+}
+
+async function runStaleSessionRecoveryAndInvalidate(force = false): Promise<void> {
+  const recovered = await runStaleSessionRecovery(force);
+  if (recovered > 0) {
+    dashboardService.invalidateCache();
+    homeDashboardService.invalidateCache();
+  }
 }
 
 async function loadChairIds(): Promise<ChairIdMap> {
@@ -79,34 +91,39 @@ export async function processShellySyncTick(): Promise<{ hadTransition: boolean 
     }
     await hydrateRuntimeCache();
     try {
-      await runStaleSessionRecovery(true);
+      await runStaleSessionRecoveryAndInvalidate(true);
     } catch (err) {
       logger.warn(`[shelly-sync] Stale session recovery on hydrate failed: ${String(err)}`);
     }
   }
 
-  // Periodic DB reconcile (safety) — max once per SHELLY_DB_RECONCILE_INTERVAL_MS.
-  // Live start/stop still runs every Shelly tick in memory; stale recovery stays on
-  // hydrate (force), this reconcile path, and shift-close flows.
+  // DB reconcile (safety) — every SHELLY_DB_RECONCILE_INTERVAL_MS, or on request after
+  // API mutations. Live start/stop still runs every Shelly tick in memory; stale recovery
+  // stays on hydrate (force), this reconcile path, and shift-close flows.
   const nowMs = Date.now();
   const lastRec = getLastReconcileAt()?.getTime() ?? 0;
-  if (nowMs - lastRec >= env.SHELLY_DB_RECONCILE_INTERVAL_MS) {
+  const reconcileRequested = isRuntimeReconcileRequested();
+  if (reconcileRequested || nowMs - lastRec >= env.SHELLY_DB_RECONCILE_INTERVAL_MS) {
     if (allowDbAttempt()) {
+      clearRuntimeReconcileRequest();
       try {
         await reconcileRuntimeFromDb();
         chairIdCache = null; // refresh name→id after reconcile
-        await runStaleSessionRecovery();
+        if (runtimeNeedsStaleRecovery(getAllChairMem())) {
+          await runStaleSessionRecoveryAndInvalidate();
+        }
       } catch (err) {
+        if (reconcileRequested) requestRuntimeReconcile();
         if (isTemporaryDbError(err)) recordDbFailure(err, (l) => logger.error(l));
         else throw err;
       }
     }
   }
 
-  // Periodic power metrics flush
-  const lastFlush = getLastPowerFlushAt()?.getTime() ?? 0;
-  if (nowMs - lastFlush >= env.POWER_METRICS_FLUSH_INTERVAL_MS) {
+  // Periodic flush of power metrics + live fields (memory stays authoritative in between).
+  if (nowMs - lastFlushCycleMs >= env.POWER_METRICS_FLUSH_INTERVAL_MS) {
     if (allowDbAttempt()) {
+      lastFlushCycleMs = nowMs;
       try {
         await flushPowerMetrics();
         await flushDirtyLiveState();

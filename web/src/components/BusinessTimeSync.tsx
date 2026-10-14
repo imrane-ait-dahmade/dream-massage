@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { getBusinessTime } from '@/lib/api';
-import { hasBusinessTimeTransitions, setBusinessTimeTransitions } from '@/lib/format';
+import {
+  hasBusinessTimeTransitions,
+  setBusinessTimeTransitions,
+  setServerClock,
+} from '@/lib/format';
 
 /** Max wait for GET /api/time on a device with no cached offsets. */
 const FIRST_LOAD_TIMEOUT_MS = 3000;
@@ -24,8 +28,12 @@ export function BusinessTimeSync({ children }: { children: React.ReactNode }) {
     if (hasBusinessTimeTransitions()) markReady();
     const timeout = setTimeout(markReady, FIRST_LOAD_TIMEOUT_MS);
 
+    const requestStartMs = Date.now();
     getBusinessTime()
-      .then((res) => setBusinessTimeTransitions(res.transitions))
+      .then((res) => {
+        setBusinessTimeTransitions(res.transitions);
+        setServerClock(res.serverNow, requestStartMs, Date.now());
+      })
       .catch(() => {})
       .finally(() => {
         clearTimeout(timeout);

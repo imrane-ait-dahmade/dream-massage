@@ -7,6 +7,7 @@ import { logger } from './utils/logger';
 import { dashboardService, revenueStatsService } from './modules/dashboard/dashboard.service';
 import { homeDashboardService } from './modules/dashboard/home-dashboard.service';
 import { chairStateService } from './modules/chairs/chair-state.service';
+import { flushRuntimeState, requestRuntimeReconcile } from './modules/chairs/chair-runtime-cache';
 import { createSocketServer } from './socket';
 import {
   startRealtimeJob,
@@ -47,6 +48,32 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(cookieParser());
+
+// Successful API writes may change revenue, shifts or chair/session rows behind the
+// long-lived dashboard caches and the chair runtime memory.
+const RUNTIME_MUTATION_PREFIXES = [
+  '/api/sessions',
+  '/api/session-plan-change-requests',
+  '/api/settings',
+  '/api/chairs',
+  '/api/shifts',
+  '/api/assistant',
+  '/internal/jobs',
+];
+
+app.use((req, res, next) => {
+  if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return next();
+  if (req.path.startsWith('/api/auth')) return next();
+  res.on('finish', () => {
+    if (res.statusCode >= 400) return;
+    dashboardService.invalidateCache();
+    homeDashboardService.invalidateCache();
+    if (RUNTIME_MUTATION_PREFIXES.some((p) => req.originalUrl.startsWith(p))) {
+      requestRuntimeReconcile();
+    }
+  });
+  next();
+});
 
 // ── Health (public) ────────────────────────────────────────────────────────────
 
@@ -388,14 +415,20 @@ function shutdown(signal: string): void {
   logger.info(`[server] ${signal} — shutting down`);
   stopRealtimeJob();
   stopAutoShiftJob();
-  httpServer.close(() => {
-    logger.info('[server] HTTP server closed');
-    process.exit(0);
-  });
   setTimeout(() => {
     logger.warn('[server] Forced exit after timeout');
     process.exit(1);
   }, 5000);
+  flushRuntimeState()
+    .catch((err: unknown) => {
+      logger.warn(`[server] Runtime flush on shutdown failed: ${String(err)}`);
+    })
+    .finally(() => {
+      httpServer.close(() => {
+        logger.info('[server] HTTP server closed');
+        process.exit(0);
+      });
+    });
 }
 
 process.on('SIGINT', () => shutdown('SIGINT'));

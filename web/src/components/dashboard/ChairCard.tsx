@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Activity, Wifi, WifiOff, Clock, AlertTriangle } from 'lucide-react';
 import type { ChairCardData } from '@/lib/types';
 import { getStatusLabel, getDarkStatusStyle } from '@/lib/status';
-import { formatElapsed } from '@/lib/format';
+import { formatElapsed, serverNowMs } from '@/lib/format';
 
 const STATUS_LABEL_FR: Record<string, string> = {
   IDLE:           'Disponible',
@@ -36,7 +36,7 @@ export function ChairCard({ chair, compact = false }: Props) {
   useEffect(() => {
     if (!isRunning || sessionStartedAtMs === null) return;
     const id = setInterval(() => {
-      setDisplayElapsed(Math.max(0, Math.floor((Date.now() - sessionStartedAtMs) / 1000)));
+      setDisplayElapsed(Math.max(0, Math.floor((serverNowMs() - sessionStartedAtMs) / 1000)));
     }, 1000);
     return () => clearInterval(id);
   }, [isRunning, sessionStartedAtMs]);

@@ -1,6 +1,7 @@
 import { prisma } from '../../prisma';
 import { elapsedSeconds } from '../../utils/time';
 import { SESSION_OPERATIONAL_WHERE } from '../archive/archive-filters';
+import { getLiveChairFields } from './chair-runtime-cache';
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 // TODO: Replace with timezone-aware midnight using APP_TIMEZONE (Africa/Casablanca).
@@ -308,16 +309,19 @@ class ChairDetailService {
         }
       : null;
 
+    const live = getLiveChairFields(chair.id);
+    const lastSyncedAt = live ? live.lastSyncedAt : chair.lastSyncedAt;
+
     return {
       chair: {
         id: chair.id,
         name: chair.name,
         displayName: chair.displayName,
         status: chair.status,
-        powerWatts: chair.currentPowerWatts ?? 0,
-        isOnline: chair.isOnline,
-        relayIsOn: chair.relayIsOn,
-        lastSyncedAt: chair.lastSyncedAt?.toISOString() ?? null,
+        powerWatts: (live ? live.currentPowerWatts : chair.currentPowerWatts) ?? 0,
+        isOnline: live ? live.isOnline : chair.isOnline,
+        relayIsOn: live ? live.relayIsOn : chair.relayIsOn,
+        lastSyncedAt: lastSyncedAt?.toISOString() ?? null,
         currentSession,
       },
       today: computeStats(todayRows as StatsRow[]),

@@ -28,10 +28,15 @@ export function defaultFilters(): HomeDashboardFilters {
   };
 }
 
-const FALLBACK_POLL_MS = 60_000;
+const FALLBACK_POLL_MS = 300_000;
+const LIVE_REFETCH_DELAY_MS = 2_000;
 const BACKOFF_MS = [5_000, 15_000, 30_000, 60_000] as const;
 
-export function useHomeDashboard() {
+/**
+ * @param liveSignal Changes when live data shown here may have changed (from the
+ *   dashboard socket); a change triggers a refetch instead of polling every minute.
+ */
+export function useHomeDashboard(liveSignal?: string | null) {
   const [filters, _setFiltersInternal] = useState<HomeDashboardFilters>(defaultFilters());
   const [data, setData] = useState<HomeDashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -143,6 +148,18 @@ export function useHomeDashboard() {
       }
     };
   }, [filters, load]);
+
+  const lastSignalRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!liveSignal) return;
+    const prev = lastSignalRef.current;
+    lastSignalRef.current = liveSignal;
+    if (prev === null || prev === liveSignal) return;
+    const id = setTimeout(() => {
+      void load('live');
+    }, LIVE_REFETCH_DELAY_MS);
+    return () => clearTimeout(id);
+  }, [liveSignal, load]);
 
   const reset = useCallback(() => {
     setFilters(defaultFilters());

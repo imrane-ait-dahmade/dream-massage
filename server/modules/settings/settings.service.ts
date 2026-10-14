@@ -17,6 +17,7 @@ import {
   prepareChairForDisable,
 } from '../sessions/session-stale-recovery.service';
 import {
+  getLiveChairFields,
   syncChairDisabledInRuntime,
   syncChairEnabledInRuntime,
 } from '../chairs/chair-runtime-cache';
@@ -97,6 +98,8 @@ class SettingsService {
     return {
       items: chairs.map((c) => {
         const cfg = c.detectionConfigs[0] ?? null;
+        const live = getLiveChairFields(c.id);
+        const lastSyncedAt = live ? live.lastSyncedAt : c.lastSyncedAt;
         return {
           id: c.id,
           name: c.name,
@@ -105,9 +108,9 @@ class SettingsService {
           shellyChannel: c.shellyChannel,
           status: c.status,
           isEnabled: c.isEnabled,
-          isOnline: c.isOnline,
-          currentPowerWatts: c.currentPowerWatts ?? 0,
-          lastSyncedAt: c.lastSyncedAt?.toISOString() ?? null,
+          isOnline: live ? live.isOnline : c.isOnline,
+          currentPowerWatts: (live ? live.currentPowerWatts : c.currentPowerWatts) ?? 0,
+          lastSyncedAt: lastSyncedAt?.toISOString() ?? null,
           detectionConfig: cfg
             ? {
                 id: cfg.id,

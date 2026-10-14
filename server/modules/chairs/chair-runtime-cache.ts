@@ -15,6 +15,7 @@ import {
 } from './chair-state.logic';
 import type { StartBlockReason } from './chair-no-shift-block.logic';
 import { disabledChairMemPatch } from './chair-disable.logic';
+import { carryOverRuntimeState } from './chair-runtime-db.logic';
 
 export interface DetectionConfigMem {
   id: string;
@@ -73,9 +74,46 @@ const chairsById = new Map<string, ChairMem>();
 let hydrated = false;
 let lastReconcileAt: Date | null = null;
 let lastPowerFlushAt: Date | null = null;
+let reconcileRequested = false;
 
 export function isRuntimeHydrated(): boolean {
   return hydrated;
+}
+
+/** Ask the Shelly worker to reconcile on its next tick (after DB changes made outside it). */
+export function requestRuntimeReconcile(): void {
+  reconcileRequested = true;
+}
+
+export function isRuntimeReconcileRequested(): boolean {
+  return reconcileRequested;
+}
+
+export function clearRuntimeReconcileRequest(): void {
+  reconcileRequested = false;
+}
+
+/** Live fields from memory — fresher than the DB between periodic flushes. */
+export function getLiveChairFields(chairId: string): {
+  currentPowerWatts: number | null;
+  isOnline: boolean;
+  relayIsOn: boolean | null;
+  lastSyncedAt: Date | null;
+} | null {
+  if (!hydrated) return null;
+  const c = chairsById.get(chairId);
+  if (!c) return null;
+  return {
+    currentPowerWatts: c.currentPowerWatts,
+    isOnline: c.isOnline,
+    relayIsOn: c.relayIsOn,
+    lastSyncedAt: c.lastSyncedAt,
+  };
+}
+
+export function livePowerWatts(chairId: string, dbValue: number | null): number | null {
+  const live = getLiveChairFields(chairId);
+  return live ? live.currentPowerWatts : dbValue;
 }
 
 export function getChairMem(chairId: string): ChairMem | undefined {
@@ -95,6 +133,7 @@ export function clearRuntimeCache(): void {
   hydrated = false;
   lastReconcileAt = null;
   lastPowerFlushAt = null;
+  reconcileRequested = false;
 }
 
 function mapConfig(
@@ -136,6 +175,7 @@ export async function hydrateRuntimeCache(): Promise<void> {
     },
   });
 
+  const previous = new Map(chairsById);
   chairsById.clear();
   for (const c of rows) {
     const active = c.sessions[0] ?? null;
@@ -180,7 +220,7 @@ export async function hydrateRuntimeCache(): Promise<void> {
         mem.session.power.min = Math.min(mem.session.power.min ?? active.minPowerWatts, active.minPowerWatts);
       }
     }
-    chairsById.set(c.id, mem);
+    chairsById.set(c.id, carryOverRuntimeState(previous.get(c.id), mem));
   }
 
   hydrated = true;
@@ -190,7 +230,7 @@ export async function hydrateRuntimeCache(): Promise<void> {
 
 /**
  * Safety reconcile: reload from DB and flush dirty live/metrics.
- * Call at most once per SHELLY_DB_RECONCILE_INTERVAL_MS.
+ * Runs every SHELLY_DB_RECONCILE_INTERVAL_MS, or sooner via requestRuntimeReconcile().
  */
 export async function reconcileRuntimeFromDb(): Promise<void> {
   await flushDirtyLiveState();
@@ -270,6 +310,12 @@ export async function flushPowerMetrics(): Promise<number> {
   }
   lastPowerFlushAt = new Date();
   return dirtySessions.length;
+}
+
+/** Persist everything still held only in memory (used before shutdown). */
+export async function flushRuntimeState(): Promise<void> {
+  await flushPowerMetrics();
+  await flushDirtyLiveState();
 }
 
 /** Attach a newly created session to memory. */

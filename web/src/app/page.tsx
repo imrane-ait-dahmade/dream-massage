@@ -94,7 +94,15 @@ function DashboardContent() {
   const router = useRouter();
 
   const { state, connStatus, lastUpdated, serviceMessage } = useDashboard();
-  const { data, loading, error, filters, setFilters, reset, refetch } = useHomeDashboard();
+  const liveSignal = state
+    ? [
+        state.todayStats.sessionsCount,
+        state.todayStats.expectedRevenue,
+        state.todayStats.activeChairs,
+        state.openShift?.id ?? '',
+      ].join('|')
+    : null;
+  const { data, loading, error, filters, setFilters, reset, refetch } = useHomeDashboard(liveSignal);
 
   const [user, setUser] = useState<AuthUser | null>(null);
   const [pendingPlanChanges, setPendingPlanChanges] = useState(0);

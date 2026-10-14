@@ -21,7 +21,13 @@ import {
   shiftCloseModeFromReason,
   type ShiftCloseMode,
 } from '../shifts/shift-close-session.logic';
-import { FALLBACK_CONFIG, clearSessionMem, getChairMem, upsertChairMem } from '../chairs/chair-runtime-cache';
+import {
+  FALLBACK_CONFIG,
+  clearSessionMem,
+  getChairMem,
+  livePowerWatts,
+  upsertChairMem,
+} from '../chairs/chair-runtime-cache';
 
 export { buildChairDisableBlockedMessage };
 
@@ -95,7 +101,7 @@ async function buildCandidate(
     maybeFinishedSinceMs: chair.maybeFinishedSince?.getTime() ?? null,
     lowPowerDetectedAtMs: session.lowPowerDetectedAt?.getTime() ?? null,
     lastLowPowerEventMs: lastLow,
-    currentPowerWatts: chair.currentPowerWatts,
+    currentPowerWatts: livePowerWatts(chair.id, chair.currentPowerWatts),
     stopThresholdWatts: stopThreshold,
     stopConfirmSeconds: stopConfirm,
     nowMs,
@@ -202,7 +208,7 @@ export async function recoverChairSession(
     nowMs,
   );
   const decision = evaluateStaleSessionRecovery(candidate);
-  const power = chair.currentPowerWatts ?? session.minPowerWatts ?? 0;
+  const power = livePowerWatts(chair.id, chair.currentPowerWatts) ?? session.minPowerWatts ?? 0;
   return applyRecoveryDecision(
     chair.name,
     session,
@@ -225,12 +231,13 @@ export async function prepareChairForDisable(chairId: string): Promise<void> {
 
   const cfg = chair.detectionConfigs[0];
   const stopThreshold = cfg?.stopThresholdWatts ?? FALLBACK_CONFIG.stopThresholdWatts;
+  const currentPowerWatts = livePowerWatts(chair.id, chair.currentPowerWatts);
 
   if (
     isBlockingActiveSession({
       sessionStatus: session.status,
       chairStatus: chair.status,
-      currentPowerWatts: chair.currentPowerWatts,
+      currentPowerWatts,
       stopThresholdWatts: stopThreshold,
     })
   ) {
@@ -247,7 +254,7 @@ export async function prepareChairForDisable(chairId: string): Promise<void> {
     nowMs,
   );
   const decision = evaluateStaleSessionRecovery(candidate);
-  const power = chair.currentPowerWatts ?? session.minPowerWatts ?? 0;
+  const power = currentPowerWatts ?? session.minPowerWatts ?? 0;
 
   if (decision.action === 'finalize') {
     await applyRecoveryDecision(
@@ -332,7 +339,7 @@ export async function finalizeRecoverableSessionsForShift(shiftId: string): Prom
     );
     const decision = evaluateStaleSessionRecovery(candidate);
     if (decision.action !== 'finalize') continue;
-    const power = chair.currentPowerWatts ?? session.minPowerWatts ?? 0;
+    const power = livePowerWatts(chair.id, chair.currentPowerWatts) ?? session.minPowerWatts ?? 0;
     if (await applyRecoveryDecision(chair.name, session, chair.id, decision, power)) {
       finalized++;
     }
@@ -355,6 +362,7 @@ export async function assessShiftCloseSessions(
       id: true,
       chair: {
         select: {
+          id: true,
           status: true,
           currentPowerWatts: true,
           detectionConfigs: {
@@ -375,7 +383,7 @@ export async function assessShiftCloseSessions(
       isBlockingActiveSession({
         sessionStatus: 'ACTIVE',
         chairStatus: s.chair.status,
-        currentPowerWatts: s.chair.currentPowerWatts,
+        currentPowerWatts: livePowerWatts(s.chair.id, s.chair.currentPowerWatts),
         stopThresholdWatts: stopThreshold,
       })
     ) {

@@ -36,14 +36,17 @@ const envSchema = z.object({
     .transform((v) => parseInt(v, 10)),
   // Safety reload of chairs/sessions from DB (ms). Not every Shelly tick.
   // Live state machine still handles start/stop; stale recovery runs on hydrate + reconcile.
+  // API mutations request an immediate reconcile, so this only bounds drift.
+  // Any DB touch more often than Neon's ~5 min autosuspend keeps compute billed.
   SHELLY_DB_RECONCILE_INTERVAL_MS: z
     .string()
-    .default('300000')
+    .default('1800000')
     .transform((v) => parseInt(v, 10)),
-  // Flush aggregated min/max/avg power to DB at most this often per active chair.
+  // Flush aggregated min/max/avg power + live chair fields (power, lastSynced) to DB.
+  // Session start/end and status changes are always written immediately.
   POWER_METRICS_FLUSH_INTERVAL_MS: z
     .string()
-    .default('60000')
+    .default('900000')
     .transform((v) => parseInt(v, 10)),
   // Short in-process cache for dashboard/home API responses.
   DASHBOARD_CACHE_TTL_MS: z
@@ -54,6 +57,11 @@ const envSchema = z.object({
   DASHBOARD_FALLBACK_REFRESH_MS: z
     .string()
     .default('300000')
+    .transform((v) => parseInt(v, 10)),
+  // Today revenue / open shift cache. Invalidated on transitions and API mutations.
+  DASHBOARD_META_CACHE_TTL_MS: z
+    .string()
+    .default('1800000')
     .transform((v) => parseInt(v, 10)),
   // Circuit breaker open duration after consecutive temporary DB errors.
   DB_ERROR_BACKOFF_MAX_MS: z
